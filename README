@@ -1,0 +1,4 @@
+
+No-runtime-value-error-language
+
+A language wth a largely-python-like where there are no value errors. Can call null like a function
