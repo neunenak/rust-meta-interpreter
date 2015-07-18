@@ -33,8 +33,11 @@ fn repl() {
         let line = stdin.lock().read_line(&mut buf);
         match line {
             Ok(n) => {
-                let result = tokenize(&buf);
-                println!("Tokens: {:?}", result);
+                let tokens = tokenize(&buf);
+                println!("Tokens: {:?}", tokens);
+
+                let ast = parse(tokens);
+                println!("AST: {:?}", ast);
             },
             Err(err) => {
                 println!("Error: {}", err);
