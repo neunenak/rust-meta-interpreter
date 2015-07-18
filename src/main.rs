@@ -38,6 +38,9 @@ fn repl() {
 
                 let ast = parse(tokens);
                 println!("AST: {:?}", ast);
+
+                let eval = evaluate(&ast);
+                println!("{}", eval);
             },
             Err(err) => {
                 println!("Error: {}", err);
@@ -62,4 +65,15 @@ fn tokenize(input: &str) -> Vec<Token> {
 
 fn parse(_input: Vec<Token>) -> ASTNode {
     ASTNode::GenericNode
+}
+
+fn evaluate(input: &ASTNode) -> String {
+
+    return match eval_ast(input) {
+        ASTNode::GenericNode => "Not implemented".to_string()
+    };
+
+    fn eval_ast(_input: &ASTNode) -> ASTNode {
+        return ASTNode::GenericNode;
+    }
 }
