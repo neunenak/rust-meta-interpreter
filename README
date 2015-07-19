@@ -2,3 +2,25 @@
 No-runtime-value-error-language
 
 A language wth a largely-python-like where there are no value errors. Can call null like a function
+
+
+
+Grammar:
+
+#comments are hashes
+# newlines are equivalent to semicolons for breaking up statements
+
+let a = 1.3; let b = "string literal"
+let c = 2
+
+if a < 3 then any(); number(); of(); exprs(); else whatever(); end
+
+while condition; do(); whatever(); let a = 3; a; end
+
+#function definition
+fn my_function(arg1, arg2); statements(); end
+
+
+Keywords:
+if, then, else, while, let, fn, end
+
