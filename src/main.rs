@@ -11,6 +11,9 @@ fn main() {
 #[derive(Debug)]
 enum Token {
     EOF,
+    Separator,
+    LParen,
+    RParen,
     NumLiteral(i32),
     StrLiteral(String),
     Identifier(String)
@@ -76,19 +79,26 @@ fn tokenize(input: &str) -> Vec<Token> {
                     break;
                 }
             }
+        } else if c == ';' || c == '\n' {
+            tokens.push(Token::Separator);
+        } else if c == '(' {
+            tokens.push(Token::LParen);
+        } else if c == ')' {
+            tokens.push(Token::RParen);
         } else {
+
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
-            while let Some(x) = iterator.next() {
-                if char::is_whitespace(x) {
+
+            while let Some(x) = iterator.peek().cloned() {
+                if !char::is_alphanumeric(x) {
                     break;
                 }
-                buffer.push(x);
+                buffer.push(iterator.next().unwrap());
             }
             tokens.push(Token::Identifier(buffer));
         }
     }
-
     tokens.push(Token::EOF);
     tokens
 }
