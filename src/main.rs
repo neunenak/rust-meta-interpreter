@@ -14,6 +14,7 @@ enum Token {
     Separator,
     LParen,
     RParen,
+    Comma,
     NumLiteral(i32),
     StrLiteral(String),
     Identifier(String)
@@ -85,8 +86,9 @@ fn tokenize(input: &str) -> Vec<Token> {
             tokens.push(Token::LParen);
         } else if c == ')' {
             tokens.push(Token::RParen);
+        } else if c == ',' {
+            tokens.push(Token::Comma);
         } else {
-
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
 
