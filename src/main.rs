@@ -1,6 +1,7 @@
 use std::io;
 use std::io::Write;
 use std::io::BufRead;
+use std::char;
 
 fn main() {
     println!("Unnamed language 0.01");
@@ -34,6 +35,7 @@ fn repl() {
         match line {
             Ok(n) => {
                 let tokens = tokenize(&buf);
+                buf.clear();
                 println!("Tokens: {:?}", tokens);
 
                 let ast = parse(tokens);
@@ -52,11 +54,39 @@ fn repl() {
 
 fn tokenize(input: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
-    let mut buffer = String::with_capacity(20);
-    let mut iterator = input.chars();
-    loop {
+    let mut iterator = input.chars().peekable();
 
-        break;
+    while let Some(c) = iterator.next() {
+        if char::is_whitespace(c) {
+            continue;
+        } else if c == '"' {
+
+            let mut buffer = String::with_capacity(20);
+            while let Some(x) = iterator.next() {
+                if x == '"' {
+                    break;
+                }
+                buffer.push(x);
+            }
+            tokens.push(Token::StrLiteral(buffer));
+
+        } else if c == '#' {
+            while let Some(x) = iterator.next() {
+                if x == '\n' {
+                    break;
+                }
+            }
+        } else {
+            let mut buffer = String::with_capacity(20);
+            buffer.push(c);
+            while let Some(x) = iterator.next() {
+                if char::is_whitespace(x) {
+                    break;
+                }
+                buffer.push(x);
+            }
+            tokens.push(Token::Identifier(buffer));
+        }
     }
 
     tokens.push(Token::EOF);
