@@ -22,5 +22,5 @@ fn my_function(arg1, arg2); statements(); end
 
 
 Keywords:
-if, then, else, while, let, fn, end
+if, then, else, while, let, fn, end, null
 
