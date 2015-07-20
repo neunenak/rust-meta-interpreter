@@ -38,6 +38,9 @@ fn repl() {
         let line = stdin.lock().read_line(&mut buf);
         match line {
             Ok(_) => {
+                if buf.is_empty() {
+                    break;
+                }
                 let tokens = tokenize(&buf);
                 buf.clear();
                 println!("Tokens: {:?}", tokens);
