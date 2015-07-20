@@ -24,9 +24,15 @@ enum Token {
 
 #[derive(Debug)]
 enum ASTNode {
-    GenericNode
+    Name(String),
+    Number(f64),
+    BinOp(Box<ASTNode>, Box<ASTNode>, Box<ASTNode>)
 }
 
+enum ParseResult<'a> {
+    Ok(ASTNode, &'a [Token]),
+    Err(String, &'a [Token])
+}
 
 fn repl() {
     let stdin = io::stdin();
@@ -45,11 +51,15 @@ fn repl() {
                 buf.clear();
                 println!("Tokens: {:?}", tokens);
 
-                let ast = parse(tokens);
-                println!("AST: {:?}", ast);
+                match parse(tokens) {
+                    ParseResult::Ok(ast, _) => println!("AST: {:?}", ast),
+                    ParseResult::Err(err, _) => println!("Error: {}", err)
+                }
 
+                /*
                 let eval = evaluate(&ast);
                 println!("{}", eval);
+                */
             },
             Err(err) => {
                 println!("Error: {}", err);
@@ -123,17 +133,11 @@ fn tokenize(input: &str) -> Vec<Token> {
     tokens
 }
 
-fn parse(_input: Vec<Token>) -> ASTNode {
-    ASTNode::GenericNode
+fn parse<'a>(input: Vec<Token>) -> ParseResult<'a> {
+
+    let mut tokens = input.iter().peekable();
+
+
+    return ParseResult::Ok(ASTNode::Name("Hella".to_string()), &[]);
 }
 
-fn evaluate(input: &ASTNode) -> String {
-
-    return match eval_ast(input) {
-        ASTNode::GenericNode => "Not implemented".to_string()
-    };
-
-    fn eval_ast(_input: &ASTNode) -> ASTNode {
-        return ASTNode::GenericNode;
-    }
-}
