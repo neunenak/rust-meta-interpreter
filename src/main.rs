@@ -29,12 +29,13 @@ enum Token {
 enum ASTNode {
     Name(String),
     Number(f64),
-    BinOp(Box<ASTNode>, Box<ASTNode>, Box<ASTNode>)
+    BinOp(Box<ASTNode>, Box<ASTNode>, Box<ASTNode>),
+    Binding(String, Box<ASTNode>)
 }
 
-enum ParseResult<'a> {
-    Ok(ASTNode, &'a [Token]),
-    Err(String, &'a [Token])
+enum ParseResult {
+    Ok(ASTNode),
+    Err(String)
 }
 
 fn repl() {
@@ -55,8 +56,8 @@ fn repl() {
                 println!("Tokens: {:?}", tokens);
 
                 match parse(tokens) {
-                    ParseResult::Ok(ast, _) => println!("AST: {:?}", ast),
-                    ParseResult::Err(err, _) => println!("Error: {}", err)
+                    ParseResult::Ok(ast) => println!("AST: {:?}", ast),
+                    ParseResult::Err(err) => println!("Error: {}", err)
                 }
 
                 /*
@@ -136,16 +137,17 @@ fn tokenize(input: &str) -> Vec<Token> {
     tokens
 }
 
-fn parse<'a>(input: Vec<Token>) -> ParseResult<'a> {
+fn parse(input: Vec<Token>) -> ParseResult {
 
     let mut tokens = input.iter();
 
-    /*
-    let_expression(tokens);
-    expect(Token::EOF, tokens);
-    */
+    if let ParseResult::Ok(ast) = let_expression(&mut tokens) {
+        if expect(EOF, &mut tokens) {
+            return ParseResult::Ok(ast);
+        }
+    }
 
-    return ParseResult::Ok(ASTNode::Name("Hella".to_string()), &[]);
+    return ParseResult::Err("Bad parse".to_string());
 }
 
 fn expect(tok: Token, tokens: &mut Iter<Token>) -> bool {
@@ -167,9 +169,31 @@ fn expect(tok: Token, tokens: &mut Iter<Token>) -> bool {
     return false;
 }
 
-/*
-fn let_expression<'a>(input: &mut Vec<Token>) -> ParseResult<'a> {
+fn let_expression<'a>(input: &mut Iter<Token>) -> ParseResult {
+    if expect(Identifier("let".to_string()), input) {
+        if let Some(&Identifier(ref name)) = input.next() {
+            if let Some(&Identifier(ref s)) = input.next() {
+                if s == "=" {
+                    let next = input.next();
+                    if let Some(&Identifier(ref value)) = next {
+                        let ast = ASTNode::Binding(name.clone(), Box::new(ASTNode::Name(value.clone())));
+                        return ParseResult::Ok(ast);
+                    }
 
+                    if let Some(&StrLiteral(ref value)) = next {
+                        let ast = ASTNode::Binding(name.clone(), Box::new(ASTNode::Name(value.clone())));
+                        return ParseResult::Ok(ast);
+                    }
+
+                    if let Some(&NumLiteral(n)) = next {
+                        let ast = ASTNode::Binding(name.clone(), Box::new(ASTNode::Number(n)));
+                        return ParseResult::Ok(ast);
+                    }
+                }
+            }
+        }
+    }
+
+    return ParseResult::Err("Bad parse".to_string());
 }
-*/
 
