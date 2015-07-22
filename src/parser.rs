@@ -17,20 +17,26 @@ pub enum ParseResult {
     Err(String)
 }
 
+macro_rules! expect {
+    ($tok:expr, $tokens:expr) => ( if !expect_token($tok, $tokens) {
+        println!("yo hitting");
+        return ParseResult::Err(format!("Expected {:?}", $tok));
+    })
+}
+
 pub fn parse(input: Vec<Token>) -> ParseResult {
 
     let mut tokens = input.iter();
 
     if let ParseResult::Ok(ast) = let_expression(&mut tokens) {
-        if expect(EOF, &mut tokens) {
-            return ParseResult::Ok(ast);
-        }
+        expect!(EOF, &mut tokens);
+        return ParseResult::Ok(ast);
     }
 
     return ParseResult::Err("Bad parse".to_string());
 }
 
-fn expect(tok: Token, tokens: &mut Iter<Token>) -> bool {
+fn expect_token(tok: Token, tokens: &mut Iter<Token>) -> bool {
     if let Some(n) = tokens.next() {
         let next = (*n).clone();
         return match (tok, next) {
@@ -50,25 +56,24 @@ fn expect(tok: Token, tokens: &mut Iter<Token>) -> bool {
 }
 
 fn let_expression<'a>(input: &mut Iter<Token>) -> ParseResult {
-    if expect(Identifier("let".to_string()), input) {
-        if let Some(&Identifier(ref name)) = input.next() {
-            if let Some(&Identifier(ref s)) = input.next() {
-                if s == "=" {
-                    let next = input.next();
-                    if let Some(&Identifier(ref value)) = next {
-                        let ast = AST::Binding(name.clone(), Box::new(AST::Name(value.clone())));
-                        return ParseResult::Ok(ast);
-                    }
+    expect!(Identifier("let".to_string()), input);
+    if let Some(&Identifier(ref name)) = input.next() {
+        if let Some(&Identifier(ref s)) = input.next() {
+            if s == "=" {
+                let next = input.next();
+                if let Some(&Identifier(ref value)) = next {
+                    let ast = AST::Binding(name.clone(), Box::new(AST::Name(value.clone())));
+                    return ParseResult::Ok(ast);
+                }
 
-                    if let Some(&StrLiteral(ref value)) = next {
-                        let ast = AST::Binding(name.clone(), Box::new(AST::LangString(value.clone())));
-                        return ParseResult::Ok(ast);
-                    }
+                if let Some(&StrLiteral(ref value)) = next {
+                    let ast = AST::Binding(name.clone(), Box::new(AST::LangString(value.clone())));
+                    return ParseResult::Ok(ast);
+                }
 
-                    if let Some(&NumLiteral(n)) = next {
-                        let ast = AST::Binding(name.clone(), Box::new(AST::Number(n)));
-                        return ParseResult::Ok(ast);
-                    }
+                if let Some(&NumLiteral(n)) = next {
+                    let ast = AST::Binding(name.clone(), Box::new(AST::Number(n)));
+                    return ParseResult::Ok(ast);
                 }
             }
         }
