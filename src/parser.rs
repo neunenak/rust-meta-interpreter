@@ -1,7 +1,7 @@
 use std::slice::Iter;
 use std::iter::Peekable;
 
-use tokenizer::{Token};
+use tokenizer::{Token, Kw};
 use tokenizer::Token::*;
 
 #[derive(Debug)]
@@ -39,6 +39,7 @@ fn expect_token(tok: Token, tokens: &mut Tokens) -> bool {
             (NumLiteral(_), NumLiteral(_)) => true,
             (StrLiteral(_), StrLiteral(_)) => true,
             (Identifier(ref i1), Identifier(ref i2)) => i1 == i2,
+            (Keyword(k1), Keyword(k2)) => k1 == k2,
             _ => false
         }
     }
@@ -60,7 +61,7 @@ pub fn parse(input: Vec<Token>) -> ParseResult {
 
 
 fn let_expression(input: &mut Tokens) -> ParseResult {
-    expect!(Identifier("let".to_string()), input);
+    expect!(Keyword(Kw::Let), input);
     if let Some(&Identifier(ref name)) = input.next() {
         if let Some(&Identifier(ref s)) = input.next() {
             if s == "=" {

@@ -7,8 +7,21 @@ pub enum Token {
     Comma,
     NumLiteral(f64),
     StrLiteral(String),
-    Identifier(String)
-    /* Keyword(Keyword) */ //implement in future
+    Identifier(String),
+    Keyword(Kw)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Kw {
+    If,
+    Then,
+    Else,
+    While,
+    Do,
+    End,
+    Let,
+    Fn,
+    Null
 }
 
 pub fn tokenize(input: &str) -> Vec<Token> {
@@ -67,10 +80,18 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 
             match buffer.parse::<f64>() {
                 Ok(f) => tokens.push(Token::NumLiteral(f)),
-                _ => tokens.push(Token::Identifier(buffer))
+                _ => tokens.push(handle_identifier(buffer))
             }
         }
     }
     tokens.push(Token::EOF);
     tokens
+}
+
+fn handle_identifier(identifier: String) -> Token {
+    if identifier == "let" {
+        return Token::Keyword(Kw::Let);
+    }
+
+    return Token::Identifier(identifier);
 }
