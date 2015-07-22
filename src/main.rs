@@ -28,6 +28,7 @@ enum Token {
 #[derive(Debug)]
 enum ASTNode {
     Name(String),
+    LangString(String),
     Number(f64),
     BinOp(Box<ASTNode>, Box<ASTNode>, Box<ASTNode>),
     Binding(String, Box<ASTNode>)
@@ -181,7 +182,7 @@ fn let_expression<'a>(input: &mut Iter<Token>) -> ParseResult {
                     }
 
                     if let Some(&StrLiteral(ref value)) = next {
-                        let ast = ASTNode::Binding(name.clone(), Box::new(ASTNode::Name(value.clone())));
+                        let ast = ASTNode::Binding(name.clone(), Box::new(ASTNode::LangString(value.clone())));
                         return ParseResult::Ok(ast);
                     }
 
