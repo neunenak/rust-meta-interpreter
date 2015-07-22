@@ -4,7 +4,10 @@ use std::io::BufRead;
 use std::char;
 use std::slice::Iter;
 
-use Token::*;
+use tokenizer::Token;
+use tokenizer::Token::*;
+
+mod tokenizer;
 
 
 fn main() {
@@ -12,18 +15,6 @@ fn main() {
     repl();
 }
 
-#[derive(Debug, Clone)]
-enum Token {
-    EOF,
-    Separator,
-    LParen,
-    RParen,
-    Comma,
-    NumLiteral(f64),
-    StrLiteral(String),
-    Identifier(String)
-    /* Keyword(Keyword) */ //implement in future
-}
 
 #[derive(Debug)]
 enum AST {
