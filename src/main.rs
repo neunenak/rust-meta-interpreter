@@ -26,16 +26,16 @@ enum Token {
 }
 
 #[derive(Debug)]
-enum ASTNode {
+enum AST {
     Name(String),
     LangString(String),
     Number(f64),
-    BinOp(Box<ASTNode>, Box<ASTNode>, Box<ASTNode>),
-    Binding(String, Box<ASTNode>)
+    BinOp(Box<AST>, Box<AST>, Box<AST>),
+    Binding(String, Box<AST>)
 }
 
 enum ParseResult {
-    Ok(ASTNode),
+    Ok(AST),
     Err(String)
 }
 
@@ -177,17 +177,17 @@ fn let_expression<'a>(input: &mut Iter<Token>) -> ParseResult {
                 if s == "=" {
                     let next = input.next();
                     if let Some(&Identifier(ref value)) = next {
-                        let ast = ASTNode::Binding(name.clone(), Box::new(ASTNode::Name(value.clone())));
+                        let ast = AST::Binding(name.clone(), Box::new(AST::Name(value.clone())));
                         return ParseResult::Ok(ast);
                     }
 
                     if let Some(&StrLiteral(ref value)) = next {
-                        let ast = ASTNode::Binding(name.clone(), Box::new(ASTNode::LangString(value.clone())));
+                        let ast = AST::Binding(name.clone(), Box::new(AST::LangString(value.clone())));
                         return ParseResult::Ok(ast);
                     }
 
                     if let Some(&NumLiteral(n)) = next {
-                        let ast = ASTNode::Binding(name.clone(), Box::new(ASTNode::Number(n)));
+                        let ast = AST::Binding(name.clone(), Box::new(AST::Number(n)));
                         return ParseResult::Ok(ast);
                     }
                 }
