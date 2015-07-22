@@ -1,4 +1,5 @@
 use std::slice::Iter;
+use std::iter::Peekable;
 
 use tokenizer::{Token};
 use tokenizer::Token::*;
@@ -17,7 +18,7 @@ pub enum ParseResult {
     Err(String)
 }
 
-type Tokens<'a> = Iter<'a,Token>;
+type Tokens<'a> = Peekable<Iter<'a,Token>>;
 
 macro_rules! expect {
     ($tok:expr, $tokens:expr) => ( if !expect_token($tok, $tokens) {
@@ -27,7 +28,7 @@ macro_rules! expect {
 
 pub fn parse(input: Vec<Token>) -> ParseResult {
 
-    let mut tokens = input.iter();
+    let mut tokens: Tokens = input.iter().peekable();
 
     if let ParseResult::Ok(ast) = let_expression(&mut tokens) {
         expect!(EOF, &mut tokens);
