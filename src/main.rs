@@ -2,13 +2,17 @@ use std::io;
 use std::io::Write;
 use std::io::BufRead;
 use std::char;
+use std::slice::Iter;
+
+use Token::*;
+
 
 fn main() {
     println!("Unnamed language 0.01");
     repl();
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Token {
     EOF,
     Separator,
@@ -19,7 +23,6 @@ enum Token {
     StrLiteral(String),
     Identifier(String)
     /* Keyword(Keyword) */ //implement in future
-
 }
 
 #[derive(Debug)]
@@ -135,9 +138,38 @@ fn tokenize(input: &str) -> Vec<Token> {
 
 fn parse<'a>(input: Vec<Token>) -> ParseResult<'a> {
 
-    let mut tokens = input.iter().peekable();
+    let mut tokens = input.iter();
 
+    /*
+    let_expression(tokens);
+    expect(Token::EOF, tokens);
+    */
 
     return ParseResult::Ok(ASTNode::Name("Hella".to_string()), &[]);
 }
+
+fn expect(tok: Token, tokens: &mut Iter<Token>) -> bool {
+    if let Some(n) = tokens.next() {
+        let next = (*n).clone();
+        return match (tok, next) {
+            (EOF, EOF) => true,
+            (Separator, Separator) => true,
+            (LParen, LParen) => true,
+            (RParen, RParen) => true,
+            (Comma, Comma) => true,
+            (NumLiteral(_), NumLiteral(_)) => true,
+            (StrLiteral(_), StrLiteral(_)) => true,
+            (Identifier(ref i1), Identifier(ref i2)) => i1 == i2,
+            _ => false
+        }
+    }
+
+    return false;
+}
+
+/*
+fn let_expression<'a>(input: &mut Vec<Token>) -> ParseResult<'a> {
+
+}
+*/
 
