@@ -20,22 +20,11 @@ pub enum ParseResult {
 
 type Tokens<'a> = Peekable<Iter<'a,Token>>;
 
+/* expect calls .next() and thus advances the token list */
 macro_rules! expect {
     ($tok:expr, $tokens:expr) => ( if !expect_token($tok, $tokens) {
         return ParseResult::Err(format!("Expected {:?}", $tok));
     })
-}
-
-pub fn parse(input: Vec<Token>) -> ParseResult {
-
-    let mut tokens: Tokens = input.iter().peekable();
-
-    if let ParseResult::Ok(ast) = let_expression(&mut tokens) {
-        expect!(EOF, &mut tokens);
-        return ParseResult::Ok(ast);
-    }
-
-    return ParseResult::Err("Bad parse".to_string());
 }
 
 fn expect_token(tok: Token, tokens: &mut Tokens) -> bool {
@@ -54,8 +43,21 @@ fn expect_token(tok: Token, tokens: &mut Tokens) -> bool {
         }
     }
 
-    return false;
+    false
 }
+
+pub fn parse(input: Vec<Token>) -> ParseResult {
+
+    let mut tokens: Tokens = input.iter().peekable();
+
+    if let ParseResult::Ok(ast) = let_expression(&mut tokens) {
+        expect!(EOF, &mut tokens);
+        return ParseResult::Ok(ast);
+    }
+
+    return ParseResult::Err("Bad parse".to_string());
+}
+
 
 fn let_expression(input: &mut Tokens) -> ParseResult {
     expect!(Identifier("let".to_string()), input);
