@@ -96,7 +96,10 @@ fn statements(input: &mut Tokens) -> ParseResult {
 }
 
 fn statement(input: &mut Tokens) -> ParseResult {
-    let_expression(input)
+    match input.peek().map(|i| i.clone()) {
+        Some(&Keyword(Kw::Let)) => let_expression(input),
+        _ => expression(input)
+    }
 }
 
 fn let_expression(input: &mut Tokens) -> ParseResult {
@@ -114,6 +117,10 @@ fn let_expression(input: &mut Tokens) -> ParseResult {
     }
 
     return ParseResult::Err("Bad parse in let_expression()".to_string());
+}
+
+fn expression(input: &mut Tokens) -> ParseResult {
+    ParseResult::Err("dame".to_string())
 }
 
 fn rhs(input: &mut Tokens) -> ParseResult {
