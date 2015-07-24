@@ -2,7 +2,7 @@
 
 <program> := <statements> EOF
 
-<statements> := <statement> 
+<statements> := <statement>
              |  <statement> SEP <statements>
 
 <statement> := let <id> = <expr>
@@ -18,4 +18,11 @@
 
 <binexpr> :=
 
+
+/* actual grammar encoded in program */
+
+<program> := <statements> EOF
+<statements> := <statement> | <statement> SEP <statements>
+<let_expression> := let <identifier> = <rhs>
+<rhs> := <num_literal> | <str_literal> | <identifier>
 
