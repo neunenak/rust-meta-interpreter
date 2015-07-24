@@ -52,6 +52,10 @@ pub fn parse(input: Vec<Token>) -> ParseResult {
 
     let mut tokens: Tokens = input.iter().peekable();
 
+    if let Some(&&EOF) = tokens.peek() {
+        return ParseResult::Ok(AST::Statements(vec!()));
+    }
+
     match statements(&mut tokens) {
         ok@ParseResult::Ok(_) => {
             expect!(EOF, &mut tokens);
