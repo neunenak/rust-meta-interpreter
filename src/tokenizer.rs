@@ -60,7 +60,10 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 }
             }
         } else if c == ';' || c == '\n' {
-            tokens.push(Token::Separator);
+            if let Some(&Token::Separator) = tokens.last() {
+            } else {
+                tokens.push(Token::Separator);
+            }
         } else if c == '(' {
             tokens.push(Token::LParen);
         } else if c == ')' {
