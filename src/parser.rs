@@ -104,24 +104,31 @@ fn let_expression(input: &mut Tokens) -> ParseResult {
     if let Some(&Identifier(ref name)) = input.next() {
         if let Some(&Identifier(ref s)) = input.next() {
             if s == "=" {
-                let next = input.next();
-                if let Some(&Identifier(ref value)) = next {
-                    let ast = AST::Binding(name.clone(), Box::new(AST::Name(value.clone())));
-                    return ParseResult::Ok(ast);
-                }
-
-                if let Some(&StrLiteral(ref value)) = next {
-                    let ast = AST::Binding(name.clone(), Box::new(AST::LangString(value.clone())));
-                    return ParseResult::Ok(ast);
-                }
-
-                if let Some(&NumLiteral(n)) = next {
-                    let ast = AST::Binding(name.clone(), Box::new(AST::Number(n)));
-                    return ParseResult::Ok(ast);
+                if let ParseResult::Ok(rhs) = rhs(input) {
+                    return ParseResult::Ok(
+                        AST::Binding(name.clone(),
+                                Box::new(rhs)));
                 }
             }
         }
     }
 
     return ParseResult::Err("Bad parse in let_expression()".to_string());
+}
+
+fn rhs(input: &mut Tokens) -> ParseResult {
+    let next = input.next();
+    if let Some(&Identifier(ref value)) = next {
+        return ParseResult::Ok(AST::Name(value.clone()));
+    }
+
+    if let Some(&StrLiteral(ref value)) = next {
+        return ParseResult::Ok(AST::LangString(value.clone()));
+    }
+
+    if let Some(&NumLiteral(n)) = next {
+        return ParseResult::Ok(AST::Number(n));
+    }
+
+    return ParseResult::Err("Bad parse in rhs()".to_string());
 }
