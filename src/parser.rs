@@ -10,7 +10,8 @@ pub enum AST {
     LangString(String),
     Number(f64),
     BinOp(Box<AST>, Box<AST>, Box<AST>),
-    Binding(String, Box<AST>)
+    Binding(String, Box<AST>),
+    Statements(Vec<AST>)
 }
 
 pub enum ParseResult {
@@ -51,14 +52,48 @@ pub fn parse(input: Vec<Token>) -> ParseResult {
 
     let mut tokens: Tokens = input.iter().peekable();
 
-    if let ParseResult::Ok(ast) = let_expression(&mut tokens) {
-        expect!(EOF, &mut tokens);
-        return ParseResult::Ok(ast);
+    match statements(&mut tokens) {
+        ok@ParseResult::Ok(_) => {
+            expect!(EOF, &mut tokens);
+            ok
+        },
+        err@ParseResult::Err(_) => err
     }
-
-    return ParseResult::Err("Bad parse".to_string());
 }
 
+fn statements(input: &mut Tokens) -> ParseResult {
+
+    let mut statements = Vec::new();
+
+    let initial_statement = statement(input);
+    match initial_statement {
+        ParseResult::Ok(ast) => {
+            statements.push(ast);
+            loop {
+                let lookahead = input.peek().map(|i| i.clone());
+                if let Some(&Separator) = lookahead {
+                    input.next();
+                    if let ParseResult::Ok(ast_next) = statement(input) {
+                        statements.push(ast_next);
+                    } else {
+                        return ParseResult::Err("bad thing happened".to_string());
+                    }
+                } else {
+                    break;
+                }
+            }
+        },
+        err@ParseResult::Err(_) => {
+            return err;
+        }
+    }
+
+    return ParseResult::Ok(AST::Statements(statements));
+}
+
+fn statement(input: &mut Tokens) -> ParseResult {
+    let_expression(input)
+}
 
 fn let_expression(input: &mut Tokens) -> ParseResult {
     expect!(Keyword(Kw::Let), input);
@@ -84,5 +119,5 @@ fn let_expression(input: &mut Tokens) -> ParseResult {
         }
     }
 
-    return ParseResult::Err("Bad parse".to_string());
+    return ParseResult::Err("Bad parse in let_expression()".to_string());
 }
