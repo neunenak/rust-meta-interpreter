@@ -145,12 +145,24 @@ fn if_expression(input: &mut Tokens) -> ParseResult {
         ParseResult::Ok(ast) => ast
     };
 
+    let else_clause = match input.peek().map(|i| i.clone()) {
+        Some(&Keyword(Kw::Else)) => {
+            input.next();
+            match expression(input) {
+                err@ParseResult::Err(_) => return err,
+                ParseResult::Ok(ast) => Some(ast)
+            }
+        },
+        _ => None
+    };
+
     expect!(Keyword(Kw::End), input);
 
     ParseResult::Ok( AST::IfStatement(
             Box::new(if_clause),
             Box::new(then_clause),
-            None))
+            else_clause.map(|ast| Box::new(ast))
+            ))
 }
 
 fn rhs(input: &mut Tokens) -> ParseResult {
