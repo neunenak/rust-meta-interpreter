@@ -11,7 +11,8 @@ pub enum AST {
     Number(f64),
     BinOp(Box<AST>, Box<AST>, Box<AST>),
     Binding(String, Box<AST>),
-    Statements(Vec<AST>)
+    Statements(Vec<AST>),
+    IfStatement(Box<AST>, Box<AST>, Option<Box<AST>>)
 }
 
 pub enum ParseResult {
@@ -120,8 +121,27 @@ fn let_expression(input: &mut Tokens) -> ParseResult {
 }
 
 fn expression(input: &mut Tokens) -> ParseResult {
-    ParseResult::Err("dame".to_string())
+    let lookahead = input.peek().map(|i| i.clone());
+    println!("{:?}", lookahead);
+    match lookahead {
+        Some(&Keyword(Kw::If)) => {
+            input.next();
+            ParseResult::Ok( AST::IfStatement(
+                    Box::new(AST::Number(1.0)),
+                    Box::new(AST::Number(2.0)),
+                    None))
+        },
+
+        _ => ParseResult::Err("error in expression()".to_string())
+    }
 }
+
+/*
+fn if_expression(input: &mut Tokens) -> ParseResult {
+
+
+}
+*/
 
 fn rhs(input: &mut Tokens) -> ParseResult {
     let next = input.next();

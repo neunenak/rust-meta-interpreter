@@ -92,9 +92,9 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 }
 
 fn handle_identifier(identifier: String) -> Token {
-    if identifier == "let" {
-        return Token::Keyword(Kw::Let);
+    match &identifier[..] {
+        "let" => Token::Keyword(Kw::Let),
+        "if" =>  Token::Keyword(Kw::If),
+        _ => Token::Identifier(identifier)
     }
-
-    return Token::Identifier(identifier);
 }
