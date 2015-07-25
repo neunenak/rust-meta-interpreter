@@ -12,7 +12,8 @@ pub enum AST {
     BinOp(Box<AST>, Box<AST>, Box<AST>),
     Binding(String, Box<AST>),
     Statements(Vec<AST>),
-    IfStatement(Box<AST>, Box<AST>, Option<Box<AST>>)
+    IfStatement(Box<AST>, Box<AST>, Option<Box<AST>>),
+    WhileStatement(Box<AST>, Box<AST>)
 }
 
 pub enum ParseResult {
@@ -126,6 +127,9 @@ fn expression(tokens: &mut Tokens) -> ParseResult {
         Some(&Keyword(Kw::If)) => {
             if_expression(tokens)
         },
+        Some(&Keyword(Kw::While)) => {
+            while_expression(tokens)
+        },
         _ => rhs(tokens)
     }
 }
@@ -162,6 +166,27 @@ fn if_expression(tokens: &mut Tokens) -> ParseResult {
             Box::new(if_clause),
             Box::new(then_clause),
             else_clause.map(|ast| Box::new(ast))
+            ))
+}
+
+fn while_expression(tokens: &mut Tokens) -> ParseResult {
+    expect!(Keyword(Kw::While), tokens);
+    let while_expression = match expression(tokens) {
+        err@ParseResult::Err(_) => return err,
+        ParseResult::Ok(ast) => ast
+    };
+
+    expect!(Separator, tokens);
+    let statements = match statements(tokens) {
+        err@ParseResult::Err(_) => return err,
+        ParseResult::Ok(ast) => ast
+    };
+
+    expect!(Keyword(Kw::End), tokens);
+
+    ParseResult::Ok(AST::WhileStatement(
+            Box::new(while_expression),
+            Box::new(statements),
             ))
 }
 
