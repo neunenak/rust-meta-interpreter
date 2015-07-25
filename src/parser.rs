@@ -122,26 +122,36 @@ fn let_expression(input: &mut Tokens) -> ParseResult {
 
 fn expression(input: &mut Tokens) -> ParseResult {
     let lookahead = input.peek().map(|i| i.clone());
-    println!("{:?}", lookahead);
     match lookahead {
         Some(&Keyword(Kw::If)) => {
-            input.next();
-            ParseResult::Ok( AST::IfStatement(
-                    Box::new(AST::Number(1.0)),
-                    Box::new(AST::Number(2.0)),
-                    None))
+            if_expression(input)
         },
-
-        _ => ParseResult::Err("error in expression()".to_string())
+        _ => rhs(input)
     }
 }
 
-/*
 fn if_expression(input: &mut Tokens) -> ParseResult {
 
+    expect!(Keyword(Kw::If), input);
+    let if_clause = match expression(input) {
+        err@ParseResult::Err(_) => return err,
+        ParseResult::Ok(ast) => ast
+    };
 
+    expect!(Keyword(Kw::Then), input);
+
+    let then_clause = match expression(input) {
+        err@ParseResult::Err(_) => return err,
+        ParseResult::Ok(ast) => ast
+    };
+
+    expect!(Keyword(Kw::End), input);
+
+    ParseResult::Ok( AST::IfStatement(
+            Box::new(if_clause),
+            Box::new(then_clause),
+            None))
 }
-*/
 
 fn rhs(input: &mut Tokens) -> ParseResult {
     let next = input.next();
