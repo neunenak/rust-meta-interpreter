@@ -66,19 +66,19 @@ pub fn parse(input: Vec<Token>) -> ParseResult {
     }
 }
 
-fn statements(input: &mut Tokens) -> ParseResult {
+fn statements(tokens: &mut Tokens) -> ParseResult {
 
     let mut statements = Vec::new();
 
-    let initial_statement = statement(input);
+    let initial_statement = statement(tokens);
     match initial_statement {
         ParseResult::Ok(ast) => {
             statements.push(ast);
             loop {
-                let lookahead = input.peek().map(|i| i.clone());
+                let lookahead = tokens.peek().map(|i| i.clone());
                 if let Some(&Separator) = lookahead {
-                    input.next();
-                    if let ParseResult::Ok(ast_next) = statement(input) {
+                    tokens.next();
+                    if let ParseResult::Ok(ast_next) = statement(tokens) {
                         statements.push(ast_next);
                     } else {
                         return ParseResult::Err("bad thing happened".to_string());
@@ -96,19 +96,19 @@ fn statements(input: &mut Tokens) -> ParseResult {
     return ParseResult::Ok(AST::Statements(statements));
 }
 
-fn statement(input: &mut Tokens) -> ParseResult {
-    match input.peek().map(|i| i.clone()) {
-        Some(&Keyword(Kw::Let)) => let_expression(input),
-        _ => expression(input)
+fn statement(tokens: &mut Tokens) -> ParseResult {
+    match tokens.peek().map(|i| i.clone()) {
+        Some(&Keyword(Kw::Let)) => let_expression(tokens),
+        _ => expression(tokens)
     }
 }
 
-fn let_expression(input: &mut Tokens) -> ParseResult {
-    expect!(Keyword(Kw::Let), input);
-    if let Some(&Identifier(ref name)) = input.next() {
-        if let Some(&Identifier(ref s)) = input.next() {
+fn let_expression(tokens: &mut Tokens) -> ParseResult {
+    expect!(Keyword(Kw::Let), tokens);
+    if let Some(&Identifier(ref name)) = tokens.next() {
+        if let Some(&Identifier(ref s)) = tokens.next() {
             if s == "=" {
-                if let ParseResult::Ok(rhs) = rhs(input) {
+                if let ParseResult::Ok(rhs) = rhs(tokens) {
                     return ParseResult::Ok(
                         AST::Binding(name.clone(),
                                 Box::new(rhs)));
@@ -120,35 +120,35 @@ fn let_expression(input: &mut Tokens) -> ParseResult {
     return ParseResult::Err("Bad parse in let_expression()".to_string());
 }
 
-fn expression(input: &mut Tokens) -> ParseResult {
-    let lookahead = input.peek().map(|i| i.clone());
+fn expression(tokens: &mut Tokens) -> ParseResult {
+    let lookahead = tokens.peek().map(|i| i.clone());
     match lookahead {
         Some(&Keyword(Kw::If)) => {
-            if_expression(input)
+            if_expression(tokens)
         },
-        _ => rhs(input)
+        _ => rhs(tokens)
     }
 }
 
-fn if_expression(input: &mut Tokens) -> ParseResult {
+fn if_expression(tokens: &mut Tokens) -> ParseResult {
 
-    expect!(Keyword(Kw::If), input);
-    let if_clause = match expression(input) {
+    expect!(Keyword(Kw::If), tokens);
+    let if_clause = match expression(tokens) {
         err@ParseResult::Err(_) => return err,
         ParseResult::Ok(ast) => ast
     };
 
-    expect!(Keyword(Kw::Then), input);
+    expect!(Keyword(Kw::Then), tokens);
 
-    let then_clause = match expression(input) {
+    let then_clause = match expression(tokens) {
         err@ParseResult::Err(_) => return err,
         ParseResult::Ok(ast) => ast
     };
 
-    let else_clause = match input.peek().map(|i| i.clone()) {
+    let else_clause = match tokens.peek().map(|i| i.clone()) {
         Some(&Keyword(Kw::Else)) => {
-            input.next();
-            match expression(input) {
+            tokens.next();
+            match expression(tokens) {
                 err@ParseResult::Err(_) => return err,
                 ParseResult::Ok(ast) => Some(ast)
             }
@@ -156,7 +156,7 @@ fn if_expression(input: &mut Tokens) -> ParseResult {
         _ => None
     };
 
-    expect!(Keyword(Kw::End), input);
+    expect!(Keyword(Kw::End), tokens);
 
     ParseResult::Ok( AST::IfStatement(
             Box::new(if_clause),
@@ -165,8 +165,8 @@ fn if_expression(input: &mut Tokens) -> ParseResult {
             ))
 }
 
-fn rhs(input: &mut Tokens) -> ParseResult {
-    let next = input.next();
+fn rhs(tokens: &mut Tokens) -> ParseResult {
+    let next = tokens.next();
     if let Some(&Identifier(ref value)) = next {
         return ParseResult::Ok(AST::Name(value.clone()));
     }
