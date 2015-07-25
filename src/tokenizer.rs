@@ -17,7 +17,6 @@ pub enum Kw {
     Then,
     Else,
     While,
-    Do,
     End,
     Let,
     Fn,
@@ -92,9 +91,18 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 }
 
 fn handle_identifier(identifier: String) -> Token {
-    match &identifier[..] {
-        "let" => Token::Keyword(Kw::Let),
-        "if" =>  Token::Keyword(Kw::If),
-        _ => Token::Identifier(identifier)
-    }
+
+    let keyword = match &identifier[..] {
+        "let" => Kw::Let,
+        "if"  => Kw::If,
+        "then" => Kw::Then,
+        "else" => Kw::Else,
+        "while" => Kw::While,
+        "end" => Kw::End,
+        "fn" => Kw::Fn,
+        "null" => Kw::Null,
+        _ => return Token::Identifier(identifier)
+    };
+
+    return Token::Keyword(keyword);
 }
