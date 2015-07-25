@@ -71,26 +71,26 @@ fn statements(tokens: &mut Tokens) -> ParseResult {
 
     let mut statements = Vec::new();
 
-    let initial_statement = statement(tokens);
-    match initial_statement {
-        ParseResult::Ok(ast) => {
-            statements.push(ast);
-            loop {
-                let lookahead = tokens.peek().map(|i| i.clone());
-                if let Some(&Separator) = lookahead {
-                    tokens.next();
-                    if let ParseResult::Ok(ast_next) = statement(tokens) {
+    let initial_statement = match statement(tokens) {
+        err@ParseResult::Err(_) => return err,
+        ParseResult::Ok(ast) => ast
+    };
+
+    statements.push(initial_statement);
+
+    loop {
+        let lookahead = tokens.peek().map(|i| i.clone());
+        match lookahead {
+            Some(&Separator) => {
+                tokens.next();
+                match statement(tokens) {
+                    ParseResult::Ok(ast_next) => {
                         statements.push(ast_next);
-                    } else {
-                        return ParseResult::Err("bad thing happened".to_string());
-                    }
-                } else {
-                    break;
-                }
-            }
-        },
-        err@ParseResult::Err(_) => {
-            return err;
+                    },
+                    err@ParseResult::Err(_) => return err
+                };
+            },
+            _ => break
         }
     }
 
