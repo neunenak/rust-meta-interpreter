@@ -109,7 +109,7 @@ fn let_expression(tokens: &mut Tokens) -> ParseResult {
     if let Some(&Identifier(ref name)) = tokens.next() {
         if let Some(&Identifier(ref s)) = tokens.next() {
             if s == "=" {
-                if let ParseResult::Ok(expr) = simple_expression(tokens) {
+                if let ParseResult::Ok(expr) = expression(tokens) {
                     return ParseResult::Ok(
                         AST::Binding(name.clone(),
                                 Box::new(expr)));
