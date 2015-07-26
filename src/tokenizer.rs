@@ -5,6 +5,7 @@ pub enum Token {
     LParen,
     RParen,
     Comma,
+    Period,
     NumLiteral(f64),
     StrLiteral(String),
     Identifier(String),
@@ -34,6 +35,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             ';' => true,
             '(' => true,
             ')' => true,
+            '.' => true,
             _ => false
         }
     }
@@ -69,6 +71,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             tokens.push(Token::RParen);
         } else if c == ',' {
             tokens.push(Token::Comma);
+        } else if c == '.' {
+            tokens.push(Token::Period);
         } else {
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
