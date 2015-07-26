@@ -12,7 +12,10 @@
        |  if <expr> then <statements> else <statements> end
        |  while <expr> SEP <statements> end
        |  ( <expr> )
-       |  <simple_expr>
+       |  <binop>
+
+<binop> := <simple_expr>
+        |  <simple_expr> <id> <binop>
 
 <simple_expr> := <id>
               | <number>

@@ -136,7 +136,7 @@ fn expression(tokens: &mut Tokens) -> ParseResult {
             expect!(RParen, tokens);
             expr
         },
-        _ => simple_expression(tokens)
+        _ => binop_expression(tokens)
     }
 }
 
@@ -194,6 +194,74 @@ fn while_expression(tokens: &mut Tokens) -> ParseResult {
             Box::new(while_expression),
             Box::new(statements),
             ))
+}
+
+fn binop_expression(tokens: &mut Tokens) -> ParseResult {
+    let lhs = match simple_expression(tokens) {
+        err@ParseResult::Err(_) => return err,
+        ParseResult::Ok(ast) => ast
+    };
+
+    binop_rhs(0, lhs, tokens)
+}
+
+fn binop_rhs(precedence: i32, lhs: AST, tokens: &mut Tokens) -> ParseResult {
+
+    let lookahead_precedence = tokens.peek().and_then(|tok| get_binop_precedence(tok));
+
+    let output = match lookahead_precedence {
+        None => lhs,
+        Some(next) => {
+            if next < precedence {
+                lhs
+            } else {
+                let binop = match tokens.next() {
+                    Some(&Identifier(ref s)) => AST::Name(s.clone()),
+                    _ => return ParseResult::Err("Bad binop parse".to_string())
+                };
+                let preliminary_rhs = match simple_expression(tokens) {
+                    err@ParseResult::Err(_) => return err,
+                    ParseResult::Ok(ast) => ast
+                };
+
+                let after_rhs_precedence = tokens.peek().and_then(|tok| get_binop_precedence(tok));
+                let true_rhs = match after_rhs_precedence {
+                    Some(arp) if arp >= next => {
+                        match binop_rhs(precedence+1, preliminary_rhs, tokens) {
+                            ParseResult::Ok(ast) => ast,
+                            err@ParseResult::Err(_) => return err
+                        }
+                    },
+
+                    _ => preliminary_rhs
+                };
+
+                AST::BinOp(
+                    Box::new(binop),
+                    Box::new(lhs),
+                    Box::new(true_rhs)
+                )
+            }
+        }
+    };
+
+    ParseResult::Ok(output)
+}
+
+fn get_binop_precedence(token: &Token) -> Option<i32> {
+    let identifier_str = match token {
+        &Identifier(ref s) => s,
+        _ => return None
+    };
+    let precedence = match &identifier_str[..] {
+        "+" => 20,
+        "-" => 20,
+        "*" => 40,
+        "/" => 40,
+        _ => -1
+    };
+
+    Some(precedence)
 }
 
 fn simple_expression(tokens: &mut Tokens) -> ParseResult {
