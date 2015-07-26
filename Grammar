@@ -18,10 +18,3 @@
               | <string>
 
 
-/* actual grammar encoded in program */
-
-<program> := <statements> EOF
-<statements> := <statement> | <statement> SEP <statements>
-<let_expression> := let <identifier> = <rhs>
-<rhs> := <num_literal> | <str_literal> | <identifier>
-
