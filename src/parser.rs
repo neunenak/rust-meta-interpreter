@@ -109,10 +109,10 @@ fn let_expression(tokens: &mut Tokens) -> ParseResult {
     if let Some(&Identifier(ref name)) = tokens.next() {
         if let Some(&Identifier(ref s)) = tokens.next() {
             if s == "=" {
-                if let ParseResult::Ok(rhs) = rhs(tokens) {
+                if let ParseResult::Ok(expr) = simple_expression(tokens) {
                     return ParseResult::Ok(
                         AST::Binding(name.clone(),
-                                Box::new(rhs)));
+                                Box::new(expr)));
                 }
             }
         }
@@ -130,7 +130,7 @@ fn expression(tokens: &mut Tokens) -> ParseResult {
         Some(&Keyword(Kw::While)) => {
             while_expression(tokens)
         },
-        _ => rhs(tokens)
+        _ => simple_expression(tokens)
     }
 }
 
@@ -190,7 +190,7 @@ fn while_expression(tokens: &mut Tokens) -> ParseResult {
             ))
 }
 
-fn rhs(tokens: &mut Tokens) -> ParseResult {
+fn simple_expression(tokens: &mut Tokens) -> ParseResult {
     let next = tokens.next();
     if let Some(&Identifier(ref value)) = next {
         return ParseResult::Ok(AST::Name(value.clone()));
@@ -204,5 +204,5 @@ fn rhs(tokens: &mut Tokens) -> ParseResult {
         return ParseResult::Ok(AST::Number(n));
     }
 
-    return ParseResult::Err("Bad parse in rhs()".to_string());
+    return ParseResult::Err("Bad parse in simple_expression()".to_string());
 }

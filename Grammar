@@ -11,12 +11,11 @@
 <expr> := if <expr> then <statements> end
        |  if <expr> then <statements> else <statements> end
        |  while <expr> SEP <statements> end
-       |  <binexpr>
-       |  <number>
-       |  <id>
+       |  <simple_expr>
 
-
-<binexpr> :=
+<simple_expr> := <id>
+              | <number>
+              | <string>
 
 
 /* actual grammar encoded in program */
