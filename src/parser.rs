@@ -130,6 +130,12 @@ fn expression(tokens: &mut Tokens) -> ParseResult {
         Some(&Keyword(Kw::While)) => {
             while_expression(tokens)
         },
+        Some(&LParen) => {
+            tokens.next();
+            let expr = expression(tokens);
+            expect!(RParen, tokens);
+            expr
+        },
         _ => simple_expression(tokens)
     }
 }
