@@ -13,7 +13,8 @@ pub enum AST {
     Binding(String, Box<AST>),
     Statements(Vec<AST>),
     IfStatement(Box<AST>, Box<AST>, Option<Box<AST>>),
-    WhileStatement(Box<AST>, Box<AST>)
+    WhileStatement(Box<AST>, Box<AST>),
+    DoNothing
 }
 
 pub enum ParseResult {

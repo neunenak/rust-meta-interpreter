@@ -5,9 +5,11 @@ use std::process;
 
 use tokenizer::tokenize;
 use parser::{parse, ParseResult};
+use evaluate::evaluate;
 
 mod tokenizer;
 mod parser;
+mod evaluate;
 
 
 fn main() {
@@ -39,14 +41,13 @@ fn repl() {
                 println!("Tokens: {:?}", tokens);
 
                 match parse(tokens) {
-                    ParseResult::Ok(ast) => println!("AST: {:?}", ast),
+                    ParseResult::Ok(ast) => {
+                        println!("AST: {:?}", ast);
+                        let eval = evaluate(ast);
+                        println!("{}", eval);
+                    },
                     ParseResult::Err(err) => println!("Error: {}", err)
                 }
-
-                /*
-                let eval = evaluate(&ast);
-                println!("{}", eval);
-                */
             },
             Err(err) => {
                 println!("Error: {}", err);
