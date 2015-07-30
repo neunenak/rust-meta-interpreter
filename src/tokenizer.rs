@@ -46,11 +46,12 @@ pub fn tokenize(input: &str) -> Vec<Token> {
         } else if c == '"' {
 
             let mut buffer = String::with_capacity(20);
-            while let Some(x) = iterator.next() {
-                if x == '"' {
-                    break;
+            loop {
+                match iterator.next() {
+                    Some(x) if x == '"' => break,
+                    Some(x) => buffer.push(x),
+                    None => return tokens,
                 }
-                buffer.push(x);
             }
             tokens.push(Token::StrLiteral(buffer));
 
