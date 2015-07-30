@@ -1,25 +1,43 @@
+use std::collections::HashMap;
+
 use parser::AST;
 use parser::AST::*;
 
-pub fn evaluate(ast: AST) -> String {
-    match reduce(ast) {
-        None => return "error".to_string(),
-        Some(DoNothing) => "".to_string(),
-        Some(Number(n)) => return format!("{}", n),
-        Some(LangString(s)) => return format!("\"{}\"", s),
+pub struct Environment(pub HashMap<String, AST>);
+type EvalResult = (AST, Environment);
+
+impl Environment {
+    pub fn new() -> Environment {
+        Environment(HashMap::new())
+    }
+}
+
+pub fn evaluate(ast: AST, env: Environment) -> String {
+
+    let (reduced_ast, final_env) = reduce((ast, env));
+
+    match reduced_ast {
+        DoNothing => "".to_string(),
+        Number(n) => return format!("{}", n),
+        LangString(s) => return format!("\"{}\"", s),
         _ => return "not implemented".to_string()
     }
 }
 
-fn reduce(ast: AST) -> Option<AST> {
+fn reduce(evr: EvalResult) -> EvalResult {
+    let (ast, env) = evr;
+
     match ast {
         Statements(stmts) => {
-            let mut reduction = Some(DoNothing);
+            let mut reduced_ast = DoNothing;
+            let mut reduced_env = env;
             for stmt in stmts.into_iter() {
-                reduction = reduce(stmt);
+                let (a, b) = reduce((stmt, reduced_env));
+                reduced_ast = a;
+                reduced_env = b;
             }
-            reduction
+            (reduced_ast, reduced_env)
         },
-        other_ast => Some(other_ast)
+        other_ast => (other_ast, env)
     }
 }

@@ -5,7 +5,7 @@ use std::process;
 
 use tokenizer::tokenize;
 use parser::{parse, ParseResult};
-use evaluate::evaluate;
+use evaluate::{evaluate, Environment};
 
 mod tokenizer;
 mod parser;
@@ -43,7 +43,9 @@ fn repl() {
                 match parse(tokens) {
                     ParseResult::Ok(ast) => {
                         println!("AST: {:?}", ast);
-                        let eval = evaluate(ast);
+
+                        let env = Environment::new();
+                        let eval = evaluate(ast, env);
                         println!("{}", eval);
                     },
                     ParseResult::Err(err) => println!("Error: {}", err)
