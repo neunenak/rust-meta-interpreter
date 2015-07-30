@@ -3,18 +3,24 @@ use std::collections::HashMap;
 use parser::AST;
 use parser::AST::*;
 
-pub struct Environment(pub HashMap<String, AST>);
+pub struct Environment(pub HashMap<String, Box<AST>>);
 type EvalResult = (AST, Environment);
 
 impl Environment {
     pub fn new() -> Environment {
         Environment(HashMap::new())
     }
+
+    fn add_binding(&mut self, name: String, binding: Box<AST>) {
+        match *self {
+            Environment(ref mut hash_map) => hash_map.insert(name, binding)
+        };
+    }
 }
 
 pub fn evaluate(ast: AST, env: Environment) -> String {
 
-    let (reduced_ast, final_env) = reduce((ast, env));
+    let (mut reduced_ast, final_env) = reduce((ast, env));
 
     match reduced_ast {
         DoNothing => "".to_string(),
@@ -25,7 +31,7 @@ pub fn evaluate(ast: AST, env: Environment) -> String {
 }
 
 fn reduce(evr: EvalResult) -> EvalResult {
-    let (ast, env) = evr;
+    let (mut ast, mut env) = evr;
 
     match ast {
         Statements(stmts) => {
@@ -38,6 +44,12 @@ fn reduce(evr: EvalResult) -> EvalResult {
             }
             (reduced_ast, reduced_env)
         },
+
+        Binding(name, binding) => {
+            env.add_binding(name, binding);
+            (DoNothing, env)
+        },
+
         other_ast => (other_ast, env)
     }
 }
