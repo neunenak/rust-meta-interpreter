@@ -35,17 +35,19 @@ impl Environment {
     }
 }
 
-pub fn evaluate(ast: AST, env: Environment) -> String {
+pub fn evaluate(ast: AST, env: Environment) -> (String, Environment) {
 
     let (mut reduced_ast, final_env) = reduce((ast, env));
 
-    match reduced_ast {
+    let output = match reduced_ast {
         DoNothing => "".to_string(),
-        Number(n) => return format!("{}", n),
-        LangString(s) => return format!("\"{}\"", s),
+        Number(n) => format!("{}", n),
+        LangString(s) => format!("\"{}\"", s),
         Null => "null".to_string(),
-        _ => return "not implemented".to_string()
-    }
+        _ => "not implemented".to_string()
+    };
+
+    (output, final_env)
 }
 
 fn reduce(evr: EvalResult) -> EvalResult {

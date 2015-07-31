@@ -21,6 +21,7 @@ fn repl() {
     let stdin = io::stdin();
     let mut stdout = io::stdout();
     let mut buf = String::with_capacity(20);
+    let mut env = Environment::new();
     loop {
         buf.clear();
         print!(">> ");
@@ -44,9 +45,9 @@ fn repl() {
                     ParseResult::Ok(ast) => {
                         println!("AST: {:?}", ast);
 
-                        let env = Environment::new();
-                        let eval = evaluate(ast, env);
+                        let (eval, new_env) = evaluate(ast, env);
                         println!("{}", eval);
+                        env = new_env;
                     },
                     ParseResult::Err(err) => println!("Error: {}", err)
                 }
