@@ -16,6 +16,12 @@ impl Environment {
             Environment(ref mut hash_map) => hash_map.insert(name, binding)
         };
     }
+
+    fn lookup_binding(&mut self, name: &String) -> Option<&Box<AST>> {
+        match *self {
+            Environment(ref mut hash_map) => hash_map.get(name)
+        }
+    }
 }
 
 pub fn evaluate(ast: AST, env: Environment) -> String {
@@ -26,6 +32,7 @@ pub fn evaluate(ast: AST, env: Environment) -> String {
         DoNothing => "".to_string(),
         Number(n) => return format!("{}", n),
         LangString(s) => return format!("\"{}\"", s),
+        Null => "null".to_string(),
         _ => return "not implemented".to_string()
     }
 }
@@ -34,6 +41,15 @@ fn reduce(evr: EvalResult) -> EvalResult {
     let (mut ast, mut env) = evr;
 
     match ast {
+        Name(name) => {
+            match env.lookup_binding(&name) {
+                Some(_) => {
+                    (Null, env)
+                },
+                None => (Null, env)
+            }
+        },
+
         Statements(stmts) => {
             let mut reduced_ast = DoNothing;
             let mut reduced_env = env;

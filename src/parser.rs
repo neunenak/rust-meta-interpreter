@@ -6,6 +6,7 @@ use tokenizer::Token::*;
 
 #[derive(Debug)]
 pub enum AST {
+    Null,
     Name(String),
     LangString(String),
     Number(f64),
