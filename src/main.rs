@@ -34,7 +34,7 @@ fn repl() {
                     break;
                 }
 
-                if handle_interpreter_directive(&buf) {
+                if handle_interpreter_directive(&buf, &env) {
                     continue;
                 }
 
@@ -59,7 +59,7 @@ fn repl() {
     }
 }
 
-fn handle_interpreter_directive(input: &str) -> bool {
+fn handle_interpreter_directive(input: &str, env: &Environment) -> bool {
 
     match input.chars().nth(0) {
         Some('.') => (),
@@ -71,6 +71,9 @@ fn handle_interpreter_directive(input: &str) -> bool {
         Some(s) if *s == ".quit" => {
             println!("Siturei simasu");
             process::exit(0);
+        },
+        Some(s) if *s == ".env" => {
+            env.display();
         },
         Some(s) => {
             println!("Unknown directive: {}", s);

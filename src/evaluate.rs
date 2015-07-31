@@ -23,7 +23,7 @@ impl Environment {
         }
     }
 
-    fn display(&self) {
+    pub fn display(&self) {
         match *self {
             Environment(ref hash_map) =>
                 for (var, binding) in hash_map {
@@ -37,7 +37,7 @@ impl Environment {
 
 pub fn evaluate(ast: AST, env: Environment) -> (String, Environment) {
 
-    let (mut reduced_ast, final_env) = reduce((ast, env));
+    let (reduced_ast, final_env) = reduce((ast, env));
 
     let output = match reduced_ast {
         DoNothing => "".to_string(),
@@ -51,7 +51,7 @@ pub fn evaluate(ast: AST, env: Environment) -> (String, Environment) {
 }
 
 fn reduce(evr: EvalResult) -> EvalResult {
-    let (mut ast, mut env) = evr;
+    let (ast, mut env) = evr;
 
     match ast {
         Name(name) => {
