@@ -209,14 +209,30 @@ fn binop_expression(precedence: i32, tokens: &mut Tokens) -> ParseResult {
     let lookahead: Option<&Token> = tokens.peek().map(|i| i.clone());
     let precedence = lookahead.and_then(|t| get_binop_precedence(t));
 
-    if let Some(p) = precedence {
-        println!("Precedence {}", p);
+    if let None = precedence {
+        return ParseResult::Ok(left);
     }
 
-    match lookahead {
-        Some(&Identifier(ref s)) => ParseResult::Ok(left),
-        _ => ParseResult::Ok(left)
-    }
+    binop_rhs(left, tokens)
+}
+
+fn binop_rhs(lhs: AST, tokens: &mut Tokens) -> ParseResult {
+
+    let op: AST = match simple_expression(tokens) {
+        err@ParseResult::Err(_) => return err,
+        ParseResult::Ok(ast) => ast
+    };
+
+    let rhs: AST = match binop_expression(0, tokens) {
+        err@ParseResult::Err(_) => return err,
+        ParseResult::Ok(ast) => ast
+    };
+
+    ParseResult::Ok(AST::BinOp(
+            Box::new(op),
+            Box::new(lhs),
+            Box::new(rhs)
+            ))
 }
 
 fn get_binop_precedence(token: &Token) -> Option<i32> {
@@ -224,15 +240,14 @@ fn get_binop_precedence(token: &Token) -> Option<i32> {
         &Identifier(ref s) => s,
         _ => return None
     };
-    let precedence = match &identifier_str[..] {
-        "+" => 20,
-        "-" => 20,
-        "*" => 40,
-        "/" => 40,
-        _ => -1
-    };
 
-    Some(precedence)
+    match &identifier_str[..] {
+        "+" => Some(20),
+        "-" => Some(20),
+        "*" => Some(20),
+        "/" => Some(20),
+        _ => None
+    }
 }
 
 fn simple_expression(tokens: &mut Tokens) -> ParseResult {
