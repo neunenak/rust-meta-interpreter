@@ -201,29 +201,36 @@ fn while_expression(tokens: &mut Tokens) -> ParseResult {
 fn binop_expression(precedence: i32, tokens: &mut Tokens) -> ParseResult {
 
     //TODO left needs to match on an identifiers vs. a prefix operator and return *that* AST
-    let left: AST = match simple_expression(tokens) {
+    let mut left: AST = match simple_expression(tokens) {
         err@ParseResult::Err(_) => return err,
         ParseResult::Ok(ast) => ast
     };
 
-    let lookahead: Option<&Token> = tokens.peek().map(|i| i.clone());
-    let precedence = lookahead.and_then(|t| get_binop_precedence(t));
+    loop {
+        let lookahead: Option<&Token> = tokens.peek().map(|i| i.clone());
+        let next_precedence = lookahead.and_then(|t| get_binop_precedence(t));
 
-    if let None = precedence {
-        return ParseResult::Ok(left);
+        match next_precedence {
+            Some(next) if precedence < next => {
+                left = match binop_rhs(next, left, tokens) {
+                    err@ParseResult::Err(_) => return err,
+                    ParseResult::Ok(ast) => ast
+                };
+            },
+
+            _ => return ParseResult::Ok(left),
+        }
     }
-
-    binop_rhs(left, tokens)
 }
 
-fn binop_rhs(lhs: AST, tokens: &mut Tokens) -> ParseResult {
+fn binop_rhs(precedence: i32, lhs: AST, tokens: &mut Tokens) -> ParseResult {
 
     let op: AST = match simple_expression(tokens) {
         err@ParseResult::Err(_) => return err,
         ParseResult::Ok(ast) => ast
     };
 
-    let rhs: AST = match binop_expression(0, tokens) {
+    let rhs: AST = match binop_expression(precedence, tokens) {
         err@ParseResult::Err(_) => return err,
         ParseResult::Ok(ast) => ast
     };
@@ -244,8 +251,8 @@ fn get_binop_precedence(token: &Token) -> Option<i32> {
     match &identifier_str[..] {
         "+" => Some(20),
         "-" => Some(20),
-        "*" => Some(20),
-        "/" => Some(20),
+        "*" => Some(40),
+        "/" => Some(40),
         _ => None
     }
 }
