@@ -2,6 +2,8 @@ use std::io;
 use std::io::Write;
 use std::io::BufRead;
 use std::process;
+use std::cell::RefCell;
+use std::collections::HashMap;
 
 use tokenizer::tokenize;
 use parser::{parse, ParseResult};
@@ -11,10 +13,30 @@ mod tokenizer;
 mod parser;
 mod evaluate;
 
+type BinopTable = HashMap<&'static str, i32>;
+
+thread_local!(static BINOP_TABLE: RefCell<BinopTable> = RefCell::new(HashMap::new()));
 
 fn main() {
     println!("Unnamed language 0.01");
+    init_binop_table();
     repl();
+}
+
+fn init_binop_table() {
+    BINOP_TABLE.with(|hm| {
+        macro_rules! insert_precedence {
+            ($op:expr, $prec:expr) => { hm.borrow_mut().insert($op, $prec) }
+        }
+        insert_precedence!("+", 20);
+        insert_precedence!("-", 20);
+        insert_precedence!("*", 40);
+        insert_precedence!("/", 40);
+        insert_precedence!("==", 10);
+        insert_precedence!(">", 15);
+        insert_precedence!("<", 15);
+        insert_precedence!("<=>", 15);
+    });
 }
 
 fn repl() {

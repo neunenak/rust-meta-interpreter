@@ -1,6 +1,5 @@
 use std::slice::Iter;
 use std::iter::Peekable;
-use std::collections::HashMap;
 
 use tokenizer::{Token, Kw};
 use tokenizer::Token::*;
@@ -233,22 +232,19 @@ fn binop_rhs(precedence: i32, lhs: AST, tokens: &mut Tokens) -> ParseResult {
 }
 
 fn get_binop_precedence(token: &Token) -> Option<i32> {
-    let identifier_str = match token {
+    let identifier_str: &String = match token {
         &Identifier(ref s) => s,
         _ => return None
     };
 
-    match &identifier_str[..] {
-        "+" => Some(20),
-        "-" => Some(20),
-        "*" => Some(30),
-        "/" => Some(30),
-        "==" => Some(10),
-        ">" => Some(15),
-        "<" => Some(15),
-        "<=>" => Some(15),
-        _ => None
-    }
+    let output =
+    ::BINOP_TABLE.with(|hm| {
+        let prec_table = hm.borrow();
+        let val: Option<i32> = prec_table.get(&identifier_str[..]).map(|i| *i);
+        val
+    });
+
+    output
 }
 
 fn simple_expression(tokens: &mut Tokens) -> ParseResult {
