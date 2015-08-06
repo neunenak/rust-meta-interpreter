@@ -97,6 +97,16 @@ fn handle_interpreter_directive(input: &str, env: &Environment) -> bool {
         Some(s) if *s == ".env" => {
             env.display();
         },
+        Some(s) if *s == ".prec" => {
+            BINOP_TABLE.with(|hm| {
+
+                println!("{0: <10} | {1: <10}", "operator", "precedence");
+                let prec_table = hm.borrow();
+                for (op, prec) in prec_table.iter() {
+                    println!("{0: <10} | {1: <10}", op, prec);
+                }
+            });
+        },
         Some(s) => {
             println!("Unknown directive: {}", s);
         },
