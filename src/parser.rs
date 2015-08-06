@@ -68,6 +68,7 @@ pub fn parse(input: Vec<Token>) -> ParseResult {
         return ParseResult::Ok(AST::Statements(vec!()));
     }
 
+
     match statements(&mut tokens) {
         ok@ParseResult::Ok(_) => {
             expect!(EOF, &mut tokens);
@@ -262,4 +263,21 @@ fn simple_expression(tokens: &mut Tokens) -> ParseResult {
     }
 
     return ParseResult::Err("Bad parse in simple_expression()".to_string());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokenizer::tokenize;
+
+    #[test]
+    fn parse_tests() {
+        ::init_binop_table();
+
+        match parse(tokenize("a + b * c")) {
+            ParseResult::Ok(ast) =>
+                assert_eq!(format!("{:?}", ast), "Statements([BinOp(Name(\"+\"), Name(\"a\"), BinOp(Name(\"*\"), Name(\"b\"), Name(\"c\")))])"),
+            ParseResult::Err(err) => panic!("err: {:?}", err)
+        }
+    }
 }
