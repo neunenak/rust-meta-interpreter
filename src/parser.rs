@@ -1,5 +1,6 @@
 use std::slice::Iter;
 use std::iter::Peekable;
+use std::collections::HashMap;
 
 use tokenizer::{Token, Kw};
 use tokenizer::Token::*;
@@ -30,6 +31,14 @@ macro_rules! expect {
     ($tok:expr, $tokens:expr) => ( if !expect_token($tok, $tokens) {
         return ParseResult::Err(format!("Expected {:?}", $tok));
     })
+}
+
+macro_rules! expect_parse {
+    ($parse_fn:ident, $tokens:ident) => (
+        match $parse_fn($tokens) {
+            err@ParseResult::Err(_) => return err,
+            ParseResult::Ok(ast) => ast
+        })
 }
 
 fn expect_token(tok: Token, tokens: &mut Tokens) -> bool {
@@ -73,11 +82,7 @@ fn statements(tokens: &mut Tokens) -> ParseResult {
 
     let mut statements = Vec::new();
 
-    let initial_statement = match statement(tokens) {
-        err@ParseResult::Err(_) => return err,
-        ParseResult::Ok(ast) => ast
-    };
-
+    let initial_statement = expect_parse!(statement, tokens);
     statements.push(initial_statement);
 
     loop {
@@ -145,17 +150,10 @@ fn expression(tokens: &mut Tokens) -> ParseResult {
 fn if_expression(tokens: &mut Tokens) -> ParseResult {
 
     expect!(Keyword(Kw::If), tokens);
-    let if_clause = match expression(tokens) {
-        err@ParseResult::Err(_) => return err,
-        ParseResult::Ok(ast) => ast
-    };
+    let if_clause = expect_parse!(expression, tokens);
 
     expect!(Keyword(Kw::Then), tokens);
-
-    let then_clause = match expression(tokens) {
-        err@ParseResult::Err(_) => return err,
-        ParseResult::Ok(ast) => ast
-    };
+    let then_clause = expect_parse!(expression, tokens);
 
     let else_clause = match tokens.peek().map(|i| i.clone()) {
         Some(&Keyword(Kw::Else)) => {
@@ -179,16 +177,11 @@ fn if_expression(tokens: &mut Tokens) -> ParseResult {
 
 fn while_expression(tokens: &mut Tokens) -> ParseResult {
     expect!(Keyword(Kw::While), tokens);
-    let while_expression = match expression(tokens) {
-        err@ParseResult::Err(_) => return err,
-        ParseResult::Ok(ast) => ast
-    };
+    let while_expression = expect_parse!(expression, tokens);
 
     expect!(Separator, tokens);
-    let statements = match statements(tokens) {
-        err@ParseResult::Err(_) => return err,
-        ParseResult::Ok(ast) => ast
-    };
+
+    let statements = expect_parse!(statements, tokens);
 
     expect!(Keyword(Kw::End), tokens);
 
@@ -201,10 +194,7 @@ fn while_expression(tokens: &mut Tokens) -> ParseResult {
 fn binop_expression(precedence: i32, tokens: &mut Tokens) -> ParseResult {
 
     //TODO left needs to match on an identifiers vs. a prefix operator and return *that* AST
-    let mut left: AST = match simple_expression(tokens) {
-        err@ParseResult::Err(_) => return err,
-        ParseResult::Ok(ast) => ast
-    };
+    let mut left: AST = expect_parse!(simple_expression, tokens);
 
     loop {
         let lookahead: Option<&Token> = tokens.peek().map(|i| i.clone());
@@ -251,8 +241,12 @@ fn get_binop_precedence(token: &Token) -> Option<i32> {
     match &identifier_str[..] {
         "+" => Some(20),
         "-" => Some(20),
-        "*" => Some(40),
-        "/" => Some(40),
+        "*" => Some(30),
+        "/" => Some(30),
+        "==" => Some(10),
+        ">" => Some(15),
+        "<" => Some(15),
+        "<=>" => Some(15),
         _ => None
     }
 }
