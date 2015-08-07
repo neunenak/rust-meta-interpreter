@@ -56,8 +56,10 @@ fn reduce(evr: EvalResult) -> EvalResult {
     match ast {
 
         BinOp(op, lhs, rhs) => {
-            let result: AST = reduce_binop(*op, *lhs, *rhs);
-            (result, env)
+            let (reduced_lhs, new_env) = reduce((*lhs, env));
+            let (reduced_rhs, new_env2) = reduce((*rhs, new_env));
+            let result: AST = reduce_binop(*op, reduced_lhs, reduced_rhs);
+            (result, new_env2)
         },
         Name(name) => {
             let result = match env.lookup_binding(&name) {
@@ -123,4 +125,11 @@ fn reduce_binop(op: AST, lhs: AST, rhs: AST) -> AST {
 
         _ => Null
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+
 }
