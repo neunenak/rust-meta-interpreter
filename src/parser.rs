@@ -248,6 +248,9 @@ fn simple_expression(tokens: &mut Tokens) -> ParseResult {
     let next = tokens.next();
 
     match next {
+        Some(&Keyword(Kw::Null)) =>
+            ParseResult::Ok(AST::Name("null".to_string())),
+
         Some(&Identifier(ref value)) =>
             ParseResult::Ok(AST::Name(value.clone())),
 
