@@ -68,7 +68,6 @@ pub fn parse(input: Vec<Token>) -> ParseResult {
         return ParseResult::Ok(AST::Statements(vec!()));
     }
 
-
     match statements(&mut tokens) {
         ok@ParseResult::Ok(_) => {
             expect!(EOF, &mut tokens);
@@ -250,19 +249,19 @@ fn get_binop_precedence(token: &Token) -> Option<i32> {
 
 fn simple_expression(tokens: &mut Tokens) -> ParseResult {
     let next = tokens.next();
-    if let Some(&Identifier(ref value)) = next {
-        return ParseResult::Ok(AST::Name(value.clone()));
-    }
 
-    if let Some(&StrLiteral(ref value)) = next {
-        return ParseResult::Ok(AST::LangString(value.clone()));
-    }
+    match next {
+        Some(&Identifier(ref value)) =>
+            ParseResult::Ok(AST::Name(value.clone())),
 
-    if let Some(&NumLiteral(n)) = next {
-        return ParseResult::Ok(AST::Number(n));
-    }
+        Some(&StrLiteral(ref value)) =>
+            ParseResult::Ok(AST::LangString(value.clone())),
 
-    return ParseResult::Err("Bad parse in simple_expression()".to_string());
+        Some(&NumLiteral(n)) =>
+            ParseResult::Ok(AST::Number(n)),
+
+        _ => ParseResult::Err("Bad parse in simple_expression()".to_string())
+    }
 }
 
 #[cfg(test)]
