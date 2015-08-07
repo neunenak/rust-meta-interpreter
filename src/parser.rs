@@ -280,5 +280,11 @@ mod tests {
                 assert_eq!(format!("{:?}", ast), "Statements([BinOp(Name(\"+\"), Name(\"a\"), BinOp(Name(\"*\"), Name(\"b\"), Name(\"c\")))])"),
             ParseResult::Err(err) => panic!("err: {:?}", err)
         }
+
+        match parse(tokenize("(a + b) * c")) {
+            ParseResult::Ok(ast) =>
+                assert_eq!(format!("{:?}", ast), "Statements([BinOp(Name(\"*\"), BinOp(Name(\"+\"), Name(\"a\"), Name(\"b\")), Name(\"c\"))])"),
+            ParseResult::Err(err) => panic!("err: {:?}", err)
+        }
     }
 }
