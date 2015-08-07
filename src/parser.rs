@@ -18,6 +18,7 @@ pub enum AST {
     DoNothing
 }
 
+#[derive(Debug)]
 pub enum ParseResult {
     Ok(AST),
     Err(String)
@@ -28,7 +29,9 @@ type Tokens<'a> = Peekable<Iter<'a,Token>>;
 /* expect calls .next() and thus advances the token list */
 macro_rules! expect {
     ($tok:expr, $tokens:expr) => ( if !expect_token($tok, $tokens) {
-        return ParseResult::Err(format!("Expected {:?}", $tok));
+        let tokens_left: Vec<&Token> = $tokens.collect();
+        let err_string = format!("Expected {:?}\ntokens: {:?}", $tok, tokens_left);
+        return ParseResult::Err(err_string);
     })
 }
 
@@ -135,12 +138,6 @@ fn expression(tokens: &mut Tokens) -> ParseResult {
         },
         Some(&Keyword(Kw::While)) => {
             while_expression(tokens)
-        },
-        Some(&LParen) => {
-            tokens.next();
-            let expr = expression(tokens);
-            expect!(RParen, tokens);
-            expr
         },
         _ => binop_expression(0, tokens)
     }
@@ -260,6 +257,11 @@ fn simple_expression(tokens: &mut Tokens) -> ParseResult {
         Some(&NumLiteral(n)) =>
             ParseResult::Ok(AST::Number(n)),
 
+        Some(&LParen) => {
+            let within_paren = expression(tokens);
+            expect!(RParen, tokens);
+            within_paren
+        },
         _ => ParseResult::Err("Bad parse in simple_expression()".to_string())
     }
 }
