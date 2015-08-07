@@ -54,6 +54,11 @@ fn reduce(evr: EvalResult) -> EvalResult {
     let (ast, mut env) = evr;
 
     match ast {
+
+        BinOp(op, lhs, rhs) => {
+            let result: AST = reduce_binop(*op, *lhs, *rhs);
+            (result, env)
+        },
         Name(name) => {
             let result = match env.lookup_binding(&name) {
                 Some(binding) => match binding {
@@ -90,5 +95,32 @@ fn reduce(evr: EvalResult) -> EvalResult {
         },
 
         other_ast => (other_ast, env)
+    }
+}
+
+fn reduce_binop(op: AST, lhs: AST, rhs: AST) -> AST {
+    macro_rules! LangBool {
+        (true) => [Name("true".to_string())];
+        (false) => [Name("false".to_string())];
+    }
+
+    match (lhs, rhs) {
+        (Number(l), Number(r)) => match op {
+            Name(ref s) if *s == "+" => Number(l + r),
+            Name(ref s) if *s == "-" => Number(l - r),
+            Name(ref s) if *s == "*" => Number(l * r),
+            Name(ref s) if *s == "/" => if r == 0.0 { Null } else { Number(l / r) },
+            Name(ref s) if *s == "==" => if l == r { LangBool!(true) } else { LangBool!(false) },
+            Name(ref s) if *s == ">" => if l > r { LangBool!(true) } else { LangBool!(false) },
+            Name(ref s) if *s == "<" => if l < r { LangBool!(true) } else { LangBool!(false) },
+            _ => Null
+        },
+
+        (LangString(s1), LangString(s2)) => match op {
+            Name(ref s) if *s == "+" => LangString(format!("{}{}", s1, s2)),
+            _ => Null
+        },
+
+        _ => Null
     }
 }
