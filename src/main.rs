@@ -46,6 +46,8 @@ fn init_binop_table() {
         insert_precedence!("-", 20);
         insert_precedence!("*", 40);
         insert_precedence!("/", 40);
+        insert_precedence!("%", 40);
+        insert_precedence!("**", 50);
         insert_precedence!("==", 10);
         insert_precedence!(">", 15);
         insert_precedence!("<", 15);
