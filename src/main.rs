@@ -13,6 +13,20 @@ mod tokenizer;
 mod parser;
 mod evaluate;
 
+struct REPLOptions {
+    show_tokenization: bool,
+    show_ast: bool
+}
+
+impl REPLOptions {
+    fn new() -> REPLOptions {
+        REPLOptions {
+            show_tokenization: false,
+            show_ast: false
+        }
+    }
+}
+
 type BinopTable = HashMap<&'static str, i32>;
 
 thread_local!(static BINOP_TABLE: RefCell<BinopTable> = RefCell::new(HashMap::new()));
@@ -40,6 +54,9 @@ fn init_binop_table() {
 }
 
 fn repl() {
+
+    let mut options = REPLOptions::new();
+
     let stdin = io::stdin();
     let mut stdout = io::stdout();
     let mut buf = String::with_capacity(20);
@@ -56,16 +73,20 @@ fn repl() {
                     break;
                 }
 
-                if handle_interpreter_directive(&buf, &env) {
+                if handle_interpreter_directive(&buf, &env, &mut options) {
                     continue;
                 }
 
                 let tokens = tokenize(&buf);
-                println!("Tokens: {:?}", tokens);
+                if options.show_tokenization {
+                    println!("Tokens: {:?}", tokens);
+                }
 
                 match parse(tokens) {
                     ParseResult::Ok(ast) => {
-                        println!("AST: {:?}", ast);
+                        if options.show_ast {
+                            println!("AST: {:?}", ast);
+                        }
 
                         let (eval, new_env) = evaluate(ast, env);
                         println!("{}", eval);
@@ -81,7 +102,9 @@ fn repl() {
     }
 }
 
-fn handle_interpreter_directive(input: &str, env: &Environment) -> bool {
+fn handle_interpreter_directive(input: &str,
+                                env: &Environment,
+                                options: &mut REPLOptions) -> bool {
 
     match input.chars().nth(0) {
         Some('.') => (),
@@ -90,6 +113,34 @@ fn handle_interpreter_directive(input: &str, env: &Environment) -> bool {
 
     let commands: Vec<&str> = input.split(|c: char| c.is_whitespace()).collect();
     match commands.get(0) {
+        Some(s) if *s == ".show" => {
+            match commands.get(1) {
+                Some(s) if *s == "parse"  => {
+                    options.show_ast = true;
+                    println!("Showing parse result");
+                },
+                Some(s) if *s == "tokens" => {
+                    options.show_tokenization = true;
+                    println!("Showing tokenization");
+                },
+                _ => println!("Bad option for show"),
+            }
+        },
+
+        Some(s) if *s == ".hide" => {
+            match commands.get(1) {
+                Some(s) if *s == "parse" => {
+                    options.show_ast = false;
+                    println!("Hiding parse result");
+                },
+                Some(s) if *s == "tokens" => {
+                    options.show_tokenization = false;
+                    println!("Hiding tokenization");
+                },
+                _ => println!("Bad option for hide"),
+            }
+        },
+
         Some(s) if *s == ".quit" => {
             println!("Siturei simasu");
             process::exit(0);
