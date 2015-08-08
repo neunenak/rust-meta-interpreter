@@ -15,7 +15,8 @@ pub enum AST {
     Statements(Vec<AST>),
     IfStatement(Box<AST>, Box<AST>, Option<Box<AST>>),
     WhileStatement(Box<AST>, Box<AST>),
-    Function(Vec<String>, Box<AST>),
+    Function(Box<AST>, Box<AST>),
+    ArgList(Vec<String>),
     DoNothing
 }
 
@@ -113,9 +114,45 @@ fn statement(tokens: &mut Tokens) -> ParseResult {
 
 fn function_block(tokens: &mut Tokens) -> ParseResult {
     expect!(Keyword(Kw::Fn), tokens);
+
+    let name = match tokens.next() {
+        Some(&Identifier(ref s)) => AST::Name(s.clone()),
+        _ => return Err("bad parse in function_block()".to_string())
+    };
+
+    expect!(LParen, tokens);
+
+    let arguments = try!(argument_list(tokens));
+
+    expect!(RParen, tokens);
+
+    let body = try!(statements(tokens));
+
     expect!(Keyword(Kw::End), tokens);
 
-    Ok(AST::Function(Vec::new(), Box::new(AST::DoNothing)))
+    Ok(AST::Function(
+            Box::new(arguments),
+            Box::new(body)
+            ))
+}
+
+fn argument_list(tokens: &mut Tokens) -> ParseResult {
+
+    let mut args: Vec<String> = Vec::new();
+
+    loop {
+        let lookahead = tokens.peek().map(|i| i.clone());
+        match lookahead {
+            Some(&Identifier(ref s)) => {
+                args.push(s.clone());
+                tokens.next();
+                expect!(Comma, tokens);
+            },
+            _ => break
+        }
+    }
+
+    Ok(AST::ArgList(args))
 }
 
 fn let_expression(tokens: &mut Tokens) -> ParseResult {
