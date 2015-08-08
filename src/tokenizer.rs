@@ -21,7 +21,8 @@ pub enum Kw {
     End,
     Let,
     Fn,
-    Null
+    Null,
+    Assign
 }
 
 pub fn tokenize(input: &str) -> Vec<Token> {
@@ -106,6 +107,7 @@ fn handle_identifier(identifier: String) -> Token {
         "end" => Kw::End,
         "fn" => Kw::Fn,
         "null" => Kw::Null,
+        "=" => Kw::Assign,
         _ => return Token::Identifier(identifier)
     };
 

@@ -112,13 +112,11 @@ fn statement(tokens: &mut Tokens) -> ParseResult {
 fn let_expression(tokens: &mut Tokens) -> ParseResult {
     expect!(Keyword(Kw::Let), tokens);
     if let Some(&Identifier(ref name)) = tokens.next() {
-        if let Some(&Identifier(ref s)) = tokens.next() {
-            if s == "=" {
-                if let Ok(expr) = expression(tokens) {
-                    return Ok(
-                        AST::Binding(name.clone(),
-                                Box::new(expr)));
-                }
+        if let Some(&Keyword(Kw::Assign)) = tokens.next() {
+            if let Ok(expr) = expression(tokens) {
+                return Ok(
+                    AST::Binding(name.clone(),
+                    Box::new(expr)));
             }
         }
     }
@@ -160,7 +158,7 @@ fn if_expression(tokens: &mut Tokens) -> ParseResult {
 
     expect!(Keyword(Kw::End), tokens);
 
-    Ok( AST::IfStatement(
+    Ok(AST::IfStatement(
             Box::new(if_clause),
             Box::new(then_clause),
             else_clause.map(|ast| Box::new(ast))
