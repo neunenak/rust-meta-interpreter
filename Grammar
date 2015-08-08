@@ -7,6 +7,12 @@
 
 <statement> := let <id> = <expr>
             |  <expr>
+            | <fn_block>
+
+<fn_block> := fn <id> ( <arg_list> ) <statements> end
+
+<arg_list> := e
+           | <id> , <arg_list>
 
 <expr> := if <expr> then <statements> end
        |  if <expr> then <statements> else <statements> end

@@ -15,6 +15,7 @@ pub enum AST {
     Statements(Vec<AST>),
     IfStatement(Box<AST>, Box<AST>, Option<Box<AST>>),
     WhileStatement(Box<AST>, Box<AST>),
+    Function(Vec<String>, Box<AST>),
     DoNothing
 }
 
@@ -105,8 +106,16 @@ fn statements(tokens: &mut Tokens) -> ParseResult {
 fn statement(tokens: &mut Tokens) -> ParseResult {
     match tokens.peek().map(|i| i.clone()) {
         Some(&Keyword(Kw::Let)) => let_expression(tokens),
+        Some(&Keyword(Kw::Fn)) => function_block(tokens),
         _ => expression(tokens)
     }
+}
+
+fn function_block(tokens: &mut Tokens) -> ParseResult {
+    expect!(Keyword(Kw::Fn), tokens);
+    expect!(Keyword(Kw::End), tokens);
+
+    Ok(AST::Function(Vec::new(), Box::new(AST::DoNothing)))
 }
 
 fn let_expression(tokens: &mut Tokens) -> ParseResult {
