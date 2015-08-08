@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use tokenizer::tokenize;
-use parser::{parse, ParseResult};
+use parser::{parse};
 use evaluate::{evaluate, Environment};
 
 mod tokenizer;
@@ -85,7 +85,7 @@ fn repl() {
                 }
 
                 match parse(tokens) {
-                    ParseResult::Ok(ast) => {
+                    Ok(ast) => {
                         if options.show_ast {
                             println!("AST: {:?}", ast);
                         }
@@ -94,7 +94,7 @@ fn repl() {
                         println!("{}", eval);
                         env = new_env;
                     },
-                    ParseResult::Err(err) => println!("Error: {}", err)
+                    Err(err) => println!("Error: {}", err)
                 }
             },
             Err(err) => {

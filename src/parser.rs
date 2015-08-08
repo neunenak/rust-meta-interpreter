@@ -18,11 +18,7 @@ pub enum AST {
     DoNothing
 }
 
-#[derive(Debug)]
-pub enum ParseResult {
-    Ok(AST),
-    Err(String)
-}
+pub type ParseResult = Result<AST, String>;
 
 type Tokens<'a> = Peekable<Iter<'a,Token>>;
 
@@ -31,15 +27,15 @@ macro_rules! expect {
     ($tok:expr, $tokens:expr) => ( if !expect_token($tok, $tokens) {
         let tokens_left: Vec<&Token> = $tokens.collect();
         let err_string = format!("Expected {:?}\ntokens: {:?}", $tok, tokens_left);
-        return ParseResult::Err(err_string);
+        return Err(err_string);
     })
 }
 
 macro_rules! expect_parse {
     ($parse_fn:ident, $tokens:ident) => (
         match $parse_fn($tokens) {
-            err@ParseResult::Err(_) => return err,
-            ParseResult::Ok(ast) => ast
+            err@Err(_) => return err,
+            Ok(ast) => ast
         })
 }
 
@@ -68,15 +64,15 @@ pub fn parse(input: Vec<Token>) -> ParseResult {
     let mut tokens: Tokens = input.iter().peekable();
 
     if let Some(&&EOF) = tokens.peek() {
-        return ParseResult::Ok(AST::Statements(vec!()));
+        return Ok(AST::Statements(vec!()));
     }
 
     match statements(&mut tokens) {
-        ok@ParseResult::Ok(_) => {
+        ok@Ok(_) => {
             expect!(EOF, &mut tokens);
             ok
         },
-        err@ParseResult::Err(_) => err
+        err@Err(_) => err
     }
 }
 
@@ -93,17 +89,17 @@ fn statements(tokens: &mut Tokens) -> ParseResult {
             Some(&Separator) => {
                 tokens.next();
                 match statement(tokens) {
-                    ParseResult::Ok(ast_next) => {
+                    Ok(ast_next) => {
                         statements.push(ast_next);
                     },
-                    err@ParseResult::Err(_) => return err
+                    err@Err(_) => return err
                 };
             },
             _ => break
         }
     }
 
-    return ParseResult::Ok(AST::Statements(statements));
+    return Ok(AST::Statements(statements));
 }
 
 fn statement(tokens: &mut Tokens) -> ParseResult {
@@ -118,8 +114,8 @@ fn let_expression(tokens: &mut Tokens) -> ParseResult {
     if let Some(&Identifier(ref name)) = tokens.next() {
         if let Some(&Identifier(ref s)) = tokens.next() {
             if s == "=" {
-                if let ParseResult::Ok(expr) = expression(tokens) {
-                    return ParseResult::Ok(
+                if let Ok(expr) = expression(tokens) {
+                    return Ok(
                         AST::Binding(name.clone(),
                                 Box::new(expr)));
                 }
@@ -127,7 +123,7 @@ fn let_expression(tokens: &mut Tokens) -> ParseResult {
         }
     }
 
-    return ParseResult::Err("Bad parse in let_expression()".to_string());
+    return Err("Bad parse in let_expression()".to_string());
 }
 
 fn expression(tokens: &mut Tokens) -> ParseResult {
@@ -155,8 +151,8 @@ fn if_expression(tokens: &mut Tokens) -> ParseResult {
         Some(&Keyword(Kw::Else)) => {
             tokens.next();
             match expression(tokens) {
-                err@ParseResult::Err(_) => return err,
-                ParseResult::Ok(ast) => Some(ast)
+                err@Err(_) => return err,
+                Ok(ast) => Some(ast)
             }
         },
         _ => None
@@ -164,7 +160,7 @@ fn if_expression(tokens: &mut Tokens) -> ParseResult {
 
     expect!(Keyword(Kw::End), tokens);
 
-    ParseResult::Ok( AST::IfStatement(
+    Ok( AST::IfStatement(
             Box::new(if_clause),
             Box::new(then_clause),
             else_clause.map(|ast| Box::new(ast))
@@ -181,7 +177,7 @@ fn while_expression(tokens: &mut Tokens) -> ParseResult {
 
     expect!(Keyword(Kw::End), tokens);
 
-    ParseResult::Ok(AST::WhileStatement(
+    Ok(AST::WhileStatement(
             Box::new(while_expression),
             Box::new(statements),
             ))
@@ -199,12 +195,12 @@ fn binop_expression(precedence: i32, tokens: &mut Tokens) -> ParseResult {
         match next_precedence {
             Some(next) if precedence < next => {
                 left = match binop_rhs(next, left, tokens) {
-                    err@ParseResult::Err(_) => return err,
-                    ParseResult::Ok(ast) => ast
+                    err@Err(_) => return err,
+                    Ok(ast) => ast
                 };
             },
 
-            _ => return ParseResult::Ok(left),
+            _ => return Ok(left),
         }
     }
 }
@@ -212,16 +208,16 @@ fn binop_expression(precedence: i32, tokens: &mut Tokens) -> ParseResult {
 fn binop_rhs(precedence: i32, lhs: AST, tokens: &mut Tokens) -> ParseResult {
 
     let op: AST = match simple_expression(tokens) {
-        err@ParseResult::Err(_) => return err,
-        ParseResult::Ok(ast) => ast
+        err@Err(_) => return err,
+        Ok(ast) => ast
     };
 
     let rhs: AST = match binop_expression(precedence, tokens) {
-        err@ParseResult::Err(_) => return err,
-        ParseResult::Ok(ast) => ast
+        err@Err(_) => return err,
+        Ok(ast) => ast
     };
 
-    ParseResult::Ok(AST::BinOp(
+    Ok(AST::BinOp(
             Box::new(op),
             Box::new(lhs),
             Box::new(rhs)
@@ -249,23 +245,23 @@ fn simple_expression(tokens: &mut Tokens) -> ParseResult {
 
     match next {
         Some(&Keyword(Kw::Null)) =>
-            ParseResult::Ok(AST::Name("null".to_string())),
+            Ok(AST::Name("null".to_string())),
 
         Some(&Identifier(ref value)) =>
-            ParseResult::Ok(AST::Name(value.clone())),
+            Ok(AST::Name(value.clone())),
 
         Some(&StrLiteral(ref value)) =>
-            ParseResult::Ok(AST::LangString(value.clone())),
+            Ok(AST::LangString(value.clone())),
 
         Some(&NumLiteral(n)) =>
-            ParseResult::Ok(AST::Number(n)),
+            Ok(AST::Number(n)),
 
         Some(&LParen) => {
             let within_paren = expression(tokens);
             expect!(RParen, tokens);
             within_paren
         },
-        _ => ParseResult::Err("Bad parse in simple_expression()".to_string())
+        _ => Err("Bad parse in simple_expression()".to_string())
     }
 }
 
@@ -279,15 +275,15 @@ mod tests {
         ::init_binop_table();
 
         match parse(tokenize("a + b * c")) {
-            ParseResult::Ok(ast) =>
+            Ok(ast) =>
                 assert_eq!(format!("{:?}", ast), "Statements([BinOp(Name(\"+\"), Name(\"a\"), BinOp(Name(\"*\"), Name(\"b\"), Name(\"c\")))])"),
-            ParseResult::Err(err) => panic!("err: {:?}", err)
+            Err(err) => panic!("err: {:?}", err)
         }
 
         match parse(tokenize("(a + b) * c")) {
-            ParseResult::Ok(ast) =>
+            Ok(ast) =>
                 assert_eq!(format!("{:?}", ast), "Statements([BinOp(Name(\"*\"), BinOp(Name(\"+\"), Name(\"a\"), Name(\"b\")), Name(\"c\"))])"),
-            ParseResult::Err(err) => panic!("err: {:?}", err)
+            Err(err) => panic!("err: {:?}", err)
         }
     }
 }
