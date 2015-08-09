@@ -12,6 +12,7 @@
 <fn_block> := fn <id> ( <arg_list> ) <statements> end
 
 <arg_list> := e
+           | <id>
            | <id> , <arg_list>
 
 <expr> := if <expr> then <statements> end

@@ -147,7 +147,11 @@ fn argument_list(tokens: &mut Tokens) -> ParseResult {
             Some(&Identifier(ref s)) => {
                 args.push(s.clone());
                 tokens.next();
-                expect!(Comma, tokens);
+                if let Some(&Comma) = tokens.peek().map(|i| i.clone()) {
+                    tokens.next();
+                } else {
+                    break;
+                }
             },
             _ => break
         }
