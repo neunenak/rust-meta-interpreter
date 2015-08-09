@@ -55,12 +55,25 @@ fn reduce(evr: EvalResult) -> EvalResult {
 
     match ast {
 
+        IfStatement(if_clause, then_clause, else_clause) => {
+            let (condition, new_env) = reduce((*if_clause, env));
+            match condition {
+                Null => match else_clause {
+                    Some(cl) => reduce((*cl, new_env)),
+                    None => (DoNothing, new_env)
+                },
+
+                _ => reduce((*then_clause, new_env))
+            }
+        },
+
         BinOp(op, lhs, rhs) => {
             let (reduced_lhs, new_env) = reduce((*lhs, env));
             let (reduced_rhs, new_env2) = reduce((*rhs, new_env));
             let result: AST = reduce_binop(*op, reduced_lhs, reduced_rhs);
             (result, new_env2)
         },
+
         Name(name) => {
             let result = match env.lookup_binding(&name) {
                 Some(binding) => match binding {
