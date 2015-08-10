@@ -91,7 +91,9 @@ fn repl() {
                         }
 
                         let (eval, new_env) = evaluate(ast, env);
-                        println!("{}", eval);
+                        if !eval.is_empty() {
+                            println!("{}", eval);
+                        }
                         env = new_env;
                     },
                     Err(err) => println!("Error: {}", err)
