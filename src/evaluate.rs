@@ -9,7 +9,10 @@ type EvalResult = (AST, Environment);
 
 impl Environment {
     pub fn new() -> Environment {
-        Environment(HashMap::new())
+        let mut map = HashMap::new();
+        map.insert("true".to_string(), LangTrue);
+        map.insert("false".to_string(), LangFalse);
+        Environment(map)
     }
 
     fn add_binding(&mut self, name: String, binding: AST) {
@@ -45,7 +48,9 @@ pub fn evaluate(ast: AST, env: Environment) -> (String, Environment) {
         Number(n) => format!("{}", n),
         LangString(s) => format!("\"{}\"", s),
         Null => "null".to_string(),
-        _ => "not implemented".to_string()
+        LangFalse => "false".to_string(),
+        LangTrue => "true".to_string(),
+        other => format!("reducing {:?} not implemented", other)
     };
 
     (output, final_env)
@@ -59,7 +64,7 @@ fn reduce(evr: EvalResult) -> EvalResult {
         IfStatement(if_clause, then_clause, else_clause) => {
             let (condition, new_env) = reduce((*if_clause, env));
             match condition {
-                Null => match else_clause {
+                Null | LangFalse => match else_clause {
                     Some(cl) => reduce((*cl, new_env)),
                     None => (DoNothing, new_env)
                 },
@@ -71,7 +76,7 @@ fn reduce(evr: EvalResult) -> EvalResult {
         WhileStatement(condition, body) => {
             let (continue_loop, env) = reduce((*condition.clone(), env));
             match continue_loop {
-                Null => (DoNothing, env),
+                Null | LangFalse => (DoNothing, env),
                 _ => {
                     let (_, new_env) = reduce((*body.clone(), env));
                     reduce((WhileStatement(condition, body), new_env))
@@ -83,13 +88,15 @@ fn reduce(evr: EvalResult) -> EvalResult {
             let (reduced_lhs, new_env) = reduce((*lhs, env));
             let (reduced_rhs, new_env2) = reduce((*rhs, new_env));
             let result: AST = reduce_binop(*op, reduced_lhs, reduced_rhs);
-            (result, new_env2)
+            reduce((result, new_env2))
         },
 
         Name(name) => {
             let result = match env.lookup_binding(&name) {
                 Some(binding) => match binding {
                     &DoNothing => DoNothing,
+                    &LangTrue => LangTrue,
+                    &LangFalse => LangFalse,
                     &Number(n) => Number(n),
                     &LangString(ref s) => LangString(s.clone()),
                     &Null => Null,
@@ -126,10 +133,6 @@ fn reduce(evr: EvalResult) -> EvalResult {
 }
 
 fn reduce_binop(op: AST, lhs: AST, rhs: AST) -> AST {
-    macro_rules! LangBool {
-        (true) => [Name("true".to_string())];
-        (false) => [Name("false".to_string())];
-    }
 
     match (lhs, rhs) {
         (Number(l), Number(r)) => match op {
@@ -137,9 +140,9 @@ fn reduce_binop(op: AST, lhs: AST, rhs: AST) -> AST {
             Name(ref s) if *s == "-" => Number(l - r),
             Name(ref s) if *s == "*" => Number(l * r),
             Name(ref s) if *s == "/" => if r == 0.0 { Null } else { Number(l / r) },
-            Name(ref s) if *s == "==" => if l == r { LangBool!(true) } else { LangBool!(false) },
-            Name(ref s) if *s == ">" => if l > r { LangBool!(true) } else { LangBool!(false) },
-            Name(ref s) if *s == "<" => if l < r { LangBool!(true) } else { LangBool!(false) },
+            Name(ref s) if *s == "==" => if l == r { LangTrue } else { LangFalse },
+            Name(ref s) if *s == ">" => if l > r { LangTrue } else { LangFalse },
+            Name(ref s) if *s == "<" => if l < r { LangTrue } else { LangFalse },
             _ => Null
         },
 

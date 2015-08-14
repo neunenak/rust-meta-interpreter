@@ -7,6 +7,8 @@ use tokenizer::Token::*;
 #[derive(Debug, Clone)]
 pub enum AST {
     Null,
+    LangTrue,
+    LangFalse,
     Name(String),
     LangString(String),
     Number(f64),
