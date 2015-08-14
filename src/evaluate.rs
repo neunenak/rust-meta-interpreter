@@ -41,9 +41,12 @@ impl Environment {
 
 pub fn evaluate(ast: AST, env: Environment) -> (String, Environment) {
 
-    let (reduced_ast, final_env) = reduce((ast, env));
+    let mut reduction = (ast, env);
+    while is_reducable(&reduction.0) {
+        reduction = reduce(reduction);
+    }
 
-    let output = match reduced_ast {
+    let output = match reduction.0 {
         DoNothing => "".to_string(),
         Number(n) => format!("{}", n),
         LangString(s) => format!("\"{}\"", s),
@@ -53,7 +56,19 @@ pub fn evaluate(ast: AST, env: Environment) -> (String, Environment) {
         other => format!("reducing {:?} not implemented", other)
     };
 
-    (output, final_env)
+    (output, reduction.1)
+}
+
+fn is_reducable(ast: &AST) -> bool {
+    match *ast {
+        DoNothing => false,
+        Number(_) => false,
+        LangString(_) => false,
+        Null => false,
+        LangFalse => false,
+        LangTrue => false,
+        _ => true
+    }
 }
 
 fn reduce(evr: EvalResult) -> EvalResult {
@@ -62,14 +77,14 @@ fn reduce(evr: EvalResult) -> EvalResult {
     match ast {
 
         IfStatement(if_clause, then_clause, else_clause) => {
-            let (condition, new_env) = reduce((*if_clause, env));
+            let (condition, new_env) = (*if_clause, env);
             match condition {
                 Null | LangFalse => match else_clause {
-                    Some(cl) => reduce((*cl, new_env)),
+                    Some(cl) => (*cl, new_env),
                     None => (DoNothing, new_env)
                 },
 
-                _ => reduce((*then_clause, new_env))
+                _ => (*then_clause, new_env)
             }
         },
 
@@ -79,7 +94,7 @@ fn reduce(evr: EvalResult) -> EvalResult {
                 Null | LangFalse => (DoNothing, env),
                 _ => {
                     let (_, new_env) = reduce((*body.clone(), env));
-                    reduce((WhileStatement(condition, body), new_env))
+                    (WhileStatement(condition, body), new_env)
                 }
             }
         },
@@ -88,7 +103,7 @@ fn reduce(evr: EvalResult) -> EvalResult {
             let (reduced_lhs, new_env) = reduce((*lhs, env));
             let (reduced_rhs, new_env2) = reduce((*rhs, new_env));
             let result: AST = reduce_binop(*op, reduced_lhs, reduced_rhs);
-            reduce((result, new_env2))
+            (result, new_env2)
         },
 
         Name(name) => {
