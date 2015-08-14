@@ -4,7 +4,7 @@ use std::iter::Peekable;
 use tokenizer::{Token, Kw};
 use tokenizer::Token::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AST {
     Null,
     Name(String),

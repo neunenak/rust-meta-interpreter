@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::clone::Clone;
 
 use parser::AST;
 use parser::AST::*;
@@ -64,6 +65,17 @@ fn reduce(evr: EvalResult) -> EvalResult {
                 },
 
                 _ => reduce((*then_clause, new_env))
+            }
+        },
+
+        WhileStatement(condition, body) => {
+            let (continue_loop, env) = reduce((*condition.clone(), env));
+            match continue_loop {
+                Null => (DoNothing, env),
+                _ => {
+                    let (_, new_env) = reduce((*body.clone(), env));
+                    reduce((WhileStatement(condition, body), new_env))
+                }
             }
         },
 
