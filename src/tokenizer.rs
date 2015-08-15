@@ -42,7 +42,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
     }
 
     while let Some(c) = iterator.next() {
-        if char::is_whitespace(c) {
+
+        if char::is_whitespace(c) && c != '\n' {
             continue;
         } else if c == '"' {
 
