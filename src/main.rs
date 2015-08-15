@@ -4,6 +4,9 @@ use std::io::BufRead;
 use std::process;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::path::Path;
+use std::fs::File;
+use std::io::Read;
 
 use tokenizer::tokenize;
 use parser::{parse};
@@ -32,9 +35,24 @@ type BinopTable = HashMap<&'static str, i32>;
 thread_local!(static BINOP_TABLE: RefCell<BinopTable> = RefCell::new(HashMap::new()));
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
     println!("Unnamed language 0.01");
     init_binop_table();
-    repl();
+    if let Some(filename) = args.get(1) {
+        let mut source_file = File::open(&Path::new(filename)).unwrap();
+        let mut buffer = String::new();
+        source_file.read_to_string(&mut buffer).unwrap();
+
+        match parse(tokenize(&buffer)) {
+            Ok(ast) => {
+                let (result, env) = evaluate(ast, Environment::new());
+                println!("{}", result);
+            }, 
+            Err(err) => println!("{}", err)
+        }
+    } else {
+        repl();
+    }
 }
 
 fn init_binop_table() {
