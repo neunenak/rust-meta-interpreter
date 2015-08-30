@@ -36,7 +36,7 @@ thread_local!(static BINOP_TABLE: RefCell<BinopTable> = RefCell::new(HashMap::ne
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    println!("Unnamed language 0.01");
+    println!("Schala v 0.02");
     init_binop_table();
     if let Some(filename) = args.get(1) {
         let mut source_file = File::open(&Path::new(filename)).unwrap();
