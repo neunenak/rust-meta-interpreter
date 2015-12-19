@@ -65,6 +65,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             }
         } else if c == ';' || c == '\n' {
             if let Some(&Token::Separator) = tokens.last() {
+                //skip past multiple separators
             } else {
                 tokens.push(Token::Separator);
             }
