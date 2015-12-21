@@ -125,5 +125,11 @@ mod tests {
         let t1 = "let a = 3\n";
         assert_eq!(format!("{:?}", tokenize(t1)),
             "[Keyword(Let), Identifier(\"a\"), Keyword(Assign), NumLiteral(3), Separator, EOF]");
+
+        // this is intentional
+        let t2 = "a + b*c\n";
+        assert_eq!(format!("{:?}", tokenize(t2)),
+            "[Identifier(\"a\"), Identifier(\"+\"), Identifier(\"b*c\"), Separator, EOF]");
+
     }
 }
