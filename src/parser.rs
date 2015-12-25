@@ -29,33 +29,29 @@ struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>
 }
 
+macro_rules! expect {
+    ($tok:expr, $self_:ident) => {
+        match $self_.tokens.next() {
+            Some(next) if *next == $tok => (),
+            Some(next) => {
+                let err = format!("Expected {:?} but got {:?}", $tok, next);
+                return Err(ParseError { err: err });
+            },
+            None => {
+                let err = format!("Expected {:?} but got end of input", $tok);
+                return Err(ParseError { err: err });
+            }
+        }
+    }
+}
+
 impl<'a> Parser<'a> {
 
     fn parse(&mut self) -> ParseResult {
         let r = self.expr();
-        match self.expect(Token::Separator) {
-            None => (),
-            Some(err) => return Err(err)
-        }
-        match self.expect(Token::EOF) {
-            None => (),
-            Some(err) => return Err(err)
-        }
+        expect!(Token::Separator, self);
+        expect!(Token::EOF, self);
         r
-    }
-
-    fn expect(&mut self, expected: Token) -> Option<ParseError> {
-        match self.tokens.next() {
-            Some(next) if *next == expected => None,
-            Some(next) => {
-                let err = format!("Expected {:?} but got {:?}", expected, next);
-                Some(ParseError { err: err })
-            }
-            None => {
-                let err = format!("Expected {:?} but got end of input", expected);
-                Some(ParseError { err: err })
-            }
-        }
     }
 
     fn expr(&mut self) -> ParseResult {
