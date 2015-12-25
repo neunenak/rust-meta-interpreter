@@ -57,10 +57,11 @@ impl ReplState for InterpreterState {
 
 fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
     if state.show_tokens {
-        format!("Tokens: {:?}", tokenize(input))
-    } else if state.show_parse{
-        format!("Parse: {:?}", parse(tokenize(input)))
-    } else {
-        format!("{:?}", parse(tokenize(input)))
+        println!("Tokens: {:?}", tokenize(input))
     }
+
+    if state.show_parse {
+        println!("Parse: {:?}", parse(tokenize(input)))
+    }
+    format!("{:?}", parse(tokenize(input)))
 }

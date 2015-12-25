@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     EOF,
     Separator,
@@ -36,7 +36,6 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             ';' => true,
             '(' => true,
             ')' => true,
-            '.' => true,
             _ => false
         }
     }
