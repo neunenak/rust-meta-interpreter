@@ -4,7 +4,7 @@ use std::slice::Iter;
 use tokenizer::Token;
 
 #[derive(Debug)]
-enum AST {
+pub enum AST {
     BinOp(Box<AST>, Box<AST>, Box<AST>),
     Number(f64),
     Name(String),
@@ -15,7 +15,7 @@ pub struct ParseError {
     err: String
 }
 
-pub type ParseResult = Result<AST, ParseError>;
+pub type ParseResult<T> = Result<T, ParseError>;
 
 /* grammar
 
@@ -29,38 +29,36 @@ struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>
 }
 
-macro_rules! expect {
-    ($tok:expr, $self_:ident) => {
-        match $self_.tokens.next() {
-            Some(next) if *next == $tok => (),
+impl<'a> Parser<'a> {
+
+    fn expect(&mut self, expected: Token) -> ParseResult<()> {
+        match self.tokens.next() {
+            Some(next) if *next == expected => Ok(()),
             Some(next) => {
-                let err = format!("Expected {:?} but got {:?}", $tok, next);
+                let err = format!("Expected {:?} but got {:?}", expected, next);
                 return Err(ParseError { err: err });
             },
             None => {
-                let err = format!("Expected {:?} but got end of input", $tok);
+                let err = format!("Expected {:?} but got end of input", expected);
                 return Err(ParseError { err: err });
             }
         }
     }
-}
 
-impl<'a> Parser<'a> {
-
-    fn parse(&mut self) -> ParseResult {
+    fn parse(&mut self) -> ParseResult<AST> {
         let r = self.expr();
-        expect!(Token::Separator, self);
-        expect!(Token::EOF, self);
+        try!(self.expect(Token::Separator));
+        try!(self.expect(Token::EOF));
         r
     }
 
-    fn expr(&mut self) -> ParseResult {
+    fn expr(&mut self) -> ParseResult<AST> {
         self.tokens.next();
         return Ok(AST::Number(5.0));
     }
 }
 
-pub fn parse(input: Vec<Token>) -> ParseResult {
+pub fn parse(input: Vec<Token>) -> ParseResult<AST> {
     let mut iter = input.iter().peekable();
     let mut parser = Parser { tokens: iter };
     return parser.parse();
