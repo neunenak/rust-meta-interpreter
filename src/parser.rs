@@ -1,5 +1,4 @@
 use std::iter::Peekable;
-use std::slice::Iter;
 use std::vec::IntoIter;
 
 use tokenizer::Token;
@@ -80,7 +79,7 @@ impl Parser {
                 let err = format!("Expected NumLiteral, but got {:?}", t);
                 Err(ParseError { err: err })
             },
-            Nome => {
+            None => {
                 let err = format!("Expected NumLiteral but got end of input");
                 Err(ParseError { err: err })
             }
@@ -141,7 +140,7 @@ impl Parser {
 }
 
 pub fn parse(input: Vec<Token>) -> ParseResult<AST> {
-    let mut iter = input.into_iter().peekable();
+    let iter = input.into_iter().peekable();
     let mut parser = Parser { tokens: iter };
     return parser.parse();
 }
