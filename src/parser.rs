@@ -35,8 +35,9 @@ impl Parser {
         self.tokens.next()
     }
 
-    fn lookahead(&mut self) -> Option<&Token> {
-        self.tokens.peek()
+    //TODO see if I can get rid of the need for this move
+    fn lookahead(&mut self) -> Option<Token> {
+        self.tokens.peek().map(|x| x.clone())
     }
 }
 
@@ -71,6 +72,21 @@ impl Parser {
         }
     }
 
+    fn expect_num_literal(&mut self) -> ParseResult<f64> {
+        use tokenizer::Token::*;
+        match self.next() {
+            Some(NumLiteral(f)) => Ok(f),
+            Some(t) => {
+                let err = format!("Expected NumLiteral, but got {:?}", t);
+                Err(ParseError { err: err })
+            },
+            Nome => {
+                let err = format!("Expected NumLiteral but got end of input");
+                Err(ParseError { err: err })
+            }
+        }
+    }
+
     fn parse(&mut self) -> ParseResult<AST> {
         let r = self.expr();
         try!(self.expect(Token::Separator));
@@ -79,8 +95,48 @@ impl Parser {
     }
 
     fn expr(&mut self) -> ParseResult<AST> {
-        self.next();
-        return Ok(AST::Number(5.0));
+        use tokenizer::Token::*;
+        let mut lhs = try!(self.term());
+        loop {
+            match self.lookahead() {
+                Some(Identifier(ref s)) if s == "+" || s == "-" => {
+                    let op_token = self.next().unwrap();
+                    let op = AST::Name(match op_token { Identifier(s) => s, _ => panic!("lol") });
+                    let rhs = try!(self.term());
+                    lhs = AST::BinOp(
+                        Box::new(lhs),
+                        Box::new(op),
+                        Box::new(rhs));
+                },
+                _ => break
+            }
+        }
+        Ok(lhs)
+    }
+
+    fn term(&mut self) -> ParseResult<AST> {
+        use tokenizer::Token::*;
+        let mut lhs = try!(self.factor());
+        loop {
+            match self.lookahead() {
+                Some(Identifier(ref s)) if s == "*" || s == "/" => {
+                    let op_token = self.next().unwrap();
+                    let op = AST::Name(match op_token { Identifier(s) => s, _ => panic!("lol") });
+                    let rhs = try!(self.factor());
+                    lhs = AST::BinOp(
+                        Box::new(lhs),
+                        Box::new(op),
+                        Box::new(rhs));
+                },
+                _ => break
+            }
+        }
+        Ok(lhs)
+    }
+
+    fn factor(&mut self) -> ParseResult<AST> {
+        let n = try!(self.expect_num_literal());
+        Ok(AST::Number(n))
     }
 }
 
