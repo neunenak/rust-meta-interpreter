@@ -56,6 +56,21 @@ impl Parser {
         }
     }
 
+    fn expect_identifier(&mut self, identifier_str: &str) -> ParseResult<()> {
+        use tokenizer::Token::*;
+        match self.next() {
+            Some(Identifier(ref s)) if s == identifier_str => Ok(()),
+            Some(next) => {
+                let err = format!("Expected identifier `{}` but got {:?}", identifier_str, next);
+                Err(ParseError { err: err })
+            }
+            None => {
+                let err = format!("Expected identifier `{}` but got end of input", identifier_str);
+                Err(ParseError { err: err })
+            }
+        }
+    }
+
     fn parse(&mut self) -> ParseResult<AST> {
         let r = self.expr();
         try!(self.expect(Token::Separator));
