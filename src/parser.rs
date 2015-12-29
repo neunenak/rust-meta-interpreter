@@ -1,5 +1,6 @@
 use std::iter::Peekable;
 use std::slice::Iter;
+use std::vec::IntoIter;
 
 use tokenizer::Token;
 
@@ -25,15 +26,25 @@ pub type ParseResult<T> = Result<T, ParseError>;
 
 */
 
-struct Parser<'a> {
-    tokens: Peekable<Iter<'a, Token>>
+struct Parser {
+    tokens: Peekable<IntoIter<Token>>
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
+    fn next(&mut self) -> Option<Token> {
+        self.tokens.next()
+    }
+
+    fn lookahead(&mut self) -> Option<&Token> {
+        self.tokens.peek()
+    }
+}
+
+impl Parser {
 
     fn expect(&mut self, expected: Token) -> ParseResult<()> {
-        match self.tokens.next() {
-            Some(next) if *next == expected => Ok(()),
+        match self.next() {
+            Some(ref next) if *next == expected => Ok(()),
             Some(next) => {
                 let err = format!("Expected {:?} but got {:?}", expected, next);
                 return Err(ParseError { err: err });
@@ -53,13 +64,13 @@ impl<'a> Parser<'a> {
     }
 
     fn expr(&mut self) -> ParseResult<AST> {
-        self.tokens.next();
+        self.next();
         return Ok(AST::Number(5.0));
     }
 }
 
 pub fn parse(input: Vec<Token>) -> ParseResult<AST> {
-    let mut iter = input.iter().peekable();
+    let mut iter = input.into_iter().peekable();
     let mut parser = Parser { tokens: iter };
     return parser.parse();
 }
