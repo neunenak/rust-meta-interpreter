@@ -14,6 +14,9 @@ mod tokenizer;
 use parser::{ParseResult, parse};
 mod parser;
 
+use evaluator::{evaluate};
+mod evaluator;
+
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -63,5 +66,14 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
     if state.show_parse {
         println!("Parse: {:?}", parse(tokenize(input)))
     }
-    format!("{:?}", parse(tokenize(input)))
+
+    let parse_result = parse(tokenize(input));
+    match parse_result {
+        Ok(ast) => {
+            format!("{}", evaluate(ast))
+        },
+        Err(err) => {
+            format!("Parse error: {:?}", err)
+        }
+    }
 }

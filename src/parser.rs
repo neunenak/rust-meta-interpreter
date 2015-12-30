@@ -1,5 +1,6 @@
 use std::iter::Peekable;
 use std::vec::IntoIter;
+use std::fmt;
 
 use tokenizer::Token;
 
@@ -8,6 +9,12 @@ pub enum AST {
     BinOp(Box<AST>, Box<AST>, Box<AST>),
     Number(f64),
     Name(String),
+}
+
+impl fmt::Display for AST {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", "GENERIC DISPLAY")
+    }
 }
 
 #[derive(Debug)]
