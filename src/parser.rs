@@ -145,8 +145,20 @@ impl Parser {
     }
 
     fn factor(&mut self) -> ParseResult<AST> {
-        let n = try!(self.expect_num_literal());
-        Ok(AST::Number(n))
+        use tokenizer::Token::*;
+        match self.lookahead() {
+            Some(LParen) => {
+                self.next();
+                let expr = try!(self.expr());
+                try!(self.expect(RParen));
+                Ok(expr)
+            },
+            Some(NumLiteral(n)) => {
+                self.next();
+                Ok(AST::Number(n))
+            },
+            _ => Err(ParseError { err: format!("Expected LParen or NumLiteral") })
+        }
     }
 }
 
