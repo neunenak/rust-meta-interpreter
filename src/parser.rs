@@ -13,7 +13,11 @@ pub enum AST {
 
 impl fmt::Display for AST {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", "GENERIC DISPLAY")
+        match self {
+            &AST::Number(ref n) => write!(f, "{}", n),
+            &AST::Name(ref s) => write!(f, "{}", s),
+            astnode => write!(f, "UNEXPANDED AST NODE: {:?}", astnode)
+        }
     }
 }
 
