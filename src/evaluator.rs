@@ -73,8 +73,21 @@ fn reduce_step(ast: AST) -> EvaluatorResult<AST> {
     }
 }
 
-
 pub fn evaluate(ast: AST) -> String {
     let ev = Evaluator { ast: ast };
     ev.run()
+}
+
+#[cfg(test)]
+mod tests {
+    use tokenizer::tokenize;
+    use parser::{parse, AST};
+    use super::evaluate;
+
+    #[test]
+    fn test_basic_evaluation() {
+        let input = "1 + 2\n";
+        let output = evaluate(parse(tokenize(input)).unwrap());
+        assert_eq!(output, "3");
+    }
 }
