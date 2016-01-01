@@ -1,7 +1,8 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     EOF,
-    Separator,
+    Newline,
+    Semicolon,
     LParen,
     RParen,
     Comma,
@@ -62,12 +63,10 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     break;
                 }
             }
-        } else if c == ';' || c == '\n' {
-            if let Some(&Token::Separator) = tokens.last() {
-                //skip past multiple separators
-            } else {
-                tokens.push(Token::Separator);
-            }
+        } else if c == ';' {
+            tokens.push(Token::Semicolon);
+        } else if c == '\n' {
+            tokens.push(Token::Newline);
         } else if c == '(' {
             tokens.push(Token::LParen);
         } else if c == ')' {
@@ -123,12 +122,12 @@ mod tests {
     fn tokeniziation_tests() {
         let t1 = "let a = 3\n";
         assert_eq!(format!("{:?}", tokenize(t1)),
-            "[Keyword(Let), Identifier(\"a\"), Keyword(Assign), NumLiteral(3), Separator, EOF]");
+            "[Keyword(Let), Identifier(\"a\"), Keyword(Assign), NumLiteral(3), Newline, EOF]");
 
         // this is intentional
         let t2 = "a + b*c\n";
         assert_eq!(format!("{:?}", tokenize(t2)),
-            "[Identifier(\"a\"), Identifier(\"+\"), Identifier(\"b*c\"), Separator, EOF]");
+            "[Identifier(\"a\"), Identifier(\"+\"), Identifier(\"b*c\"), Newline, EOF]");
 
     }
 }

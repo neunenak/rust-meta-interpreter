@@ -99,7 +99,7 @@ impl Parser {
 
     fn parse(&mut self) -> ParseResult<AST> {
         let r = self.expr();
-        try!(self.expect(Token::Separator));
+        try!(self.expect(Token::Newline));
         try!(self.expect(Token::EOF));
         r
     }
