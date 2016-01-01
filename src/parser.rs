@@ -40,6 +40,12 @@ struct Parser {
     tokens: Peekable<IntoIter<Token>>
 }
 
+macro_rules! parse_error {
+    ($($text:tt)*) => {
+        Err(ParseError { err: format!($($text)*) })
+    }
+}
+
 impl Parser {
     fn next(&mut self) -> Option<Token> {
         self.tokens.next()
@@ -57,12 +63,10 @@ impl Parser {
         match self.next() {
             Some(ref next) if *next == expected => Ok(()),
             Some(next) => {
-                let err = format!("Expected {:?} but got {:?}", expected, next);
-                return Err(ParseError { err: err });
+                return parse_error!("Expected {:?} but got {:?}", expected, next);
             },
             None => {
-                let err = format!("Expected {:?} but got end of input", expected);
-                return Err(ParseError { err: err });
+                return parse_error!("Expected {:?} but got end of input", expected);
             }
         }
     }
@@ -72,12 +76,10 @@ impl Parser {
         match self.next() {
             Some(Identifier(ref s)) if s == identifier_str => Ok(()),
             Some(next) => {
-                let err = format!("Expected identifier `{}` but got {:?}", identifier_str, next);
-                Err(ParseError { err: err })
+                return parse_error!("Expected identifier `{}` but got {:?}", identifier_str, next);
             }
             None => {
-                let err = format!("Expected identifier `{}` but got end of input", identifier_str);
-                Err(ParseError { err: err })
+                return parse_error!("Expected identifier `{}` but got end of input", identifier_str);
             }
         }
     }
@@ -87,12 +89,10 @@ impl Parser {
         match self.next() {
             Some(NumLiteral(f)) => Ok(f),
             Some(t) => {
-                let err = format!("Expected NumLiteral, but got {:?}", t);
-                Err(ParseError { err: err })
+                return parse_error!("Expected NumLiteral, but got {:?}", t);
             },
             None => {
-                let err = format!("Expected NumLiteral but got end of input");
-                Err(ParseError { err: err })
+                return parse_error!("Expected NumLiteral but got end of input");
             }
         }
     }
@@ -157,7 +157,7 @@ impl Parser {
                 self.next();
                 Ok(AST::Number(n))
             },
-            _ => Err(ParseError { err: format!("Expected LParen or NumLiteral") })
+            _ => parse_error!("Expected LParen or NumLiteral")
         }
     }
 }
