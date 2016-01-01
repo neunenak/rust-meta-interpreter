@@ -42,6 +42,12 @@ fn reduce_full(ast: AST) -> EvaluatorResult<AST> {
 fn reduce_step(ast: AST) -> EvaluatorResult<AST> {
     use parser::AST::*;
     match ast {
+        Block(mut block_nodes) => {
+            match block_nodes.pop() {
+                None => Err(EvaluatorError { err: format!("Block with no statements") }),
+                Some(node) => reduce_full(node),
+            }
+        },
         BinOp(left, op, right) => {
             let left = try!(reduce_full(*left));
             let op = try!(reduce_full(*op));

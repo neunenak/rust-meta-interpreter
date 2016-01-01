@@ -9,6 +9,7 @@ pub enum AST {
     BinOp(Box<AST>, Box<AST>, Box<AST>),
     Number(f64),
     Name(String),
+    Block(Vec<AST>),
 }
 
 impl fmt::Display for AST {
@@ -30,6 +31,10 @@ pub type ParseResult<T> = Result<T, ParseError>;
 
 /* grammar
 
+   program : block EOF
+   block : (statement sep)+
+   sep : NEWLINE | SEMICOLON
+   statement: expr
    expr : term ((PLUS|MIMUS) term)*
    term : factor ((MUL | DIV) factor)*
    factor  : NUM | LPAREN expr RPAREN
@@ -98,10 +103,34 @@ impl Parser {
     }
 
     fn parse(&mut self) -> ParseResult<AST> {
-        let r = self.expr();
-        try!(self.expect(Token::Newline));
+        let r = self.block();
         try!(self.expect(Token::EOF));
         r
+    }
+
+    fn block(&mut self) -> ParseResult<AST> {
+        use tokenizer::Token::*;
+        let mut block_nodes: Vec<AST> = Vec::new();
+        loop {
+            let s: AST = try!(self.statement());
+            block_nodes.push(s);
+            match self.lookahead() {
+                Some(Semicolon) | Some(Newline) => {
+                    self.next();
+                    if let Some(EOF) = self.lookahead() {
+                        break
+                    }
+                },
+                _ => break
+            }
+        }
+
+        Ok(AST::Block(block_nodes))
+    }
+
+    fn statement(&mut self) -> ParseResult<AST> {
+        let r = try!(self.expr());
+        Ok(r)
     }
 
     fn expr(&mut self) -> ParseResult<AST> {
@@ -157,7 +186,7 @@ impl Parser {
                 self.next();
                 Ok(AST::Number(n))
             },
-            _ => parse_error!("Expected LParen or NumLiteral")
+            x => parse_error!("Expected LParen or NumLiteral, got {:?}", x )
         }
     }
 }
