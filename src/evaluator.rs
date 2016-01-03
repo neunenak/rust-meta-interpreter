@@ -42,6 +42,9 @@ fn reduce_full(ast: AST) -> EvaluatorResult<AST> {
 fn reduce_step(ast: AST) -> EvaluatorResult<AST> {
     use parser::AST::*;
     match ast {
+        Definition(name, value) => {
+            Ok(*value)
+        },
         Block(mut block_nodes) => {
             match block_nodes.pop() {
                 None => Err(EvaluatorError { err: format!("Block with no statements") }),

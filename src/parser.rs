@@ -10,6 +10,7 @@ pub enum AST {
     Number(f64),
     Name(String),
     Block(Vec<AST>),
+    Definition(String, Box<AST>),
 }
 
 impl fmt::Display for AST {
@@ -34,7 +35,8 @@ pub type ParseResult<T> = Result<T, ParseError>;
    program : block EOF
    block : (statement sep)+
    sep : NEWLINE | SEMICOLON
-   statement: expr
+   statement: expr | definition
+   definition: 'let' NAME '=' expr
    expr : term ((PLUS|MIMUS) term)*
    term : factor ((MUL | DIV) factor)*
    factor  : NUM | LPAREN expr RPAREN
@@ -76,15 +78,16 @@ impl Parser {
         }
     }
 
-    fn expect_identifier(&mut self, identifier_str: &str) -> ParseResult<()> {
+
+    fn expect_identifier(&mut self) -> ParseResult<String> {
         use tokenizer::Token::*;
         match self.next() {
-            Some(Identifier(ref s)) if s == identifier_str => Ok(()),
+            Some(Identifier(ref s)) => Ok(s.to_string()),
             Some(next) => {
-                return parse_error!("Expected identifier `{}` but got {:?}", identifier_str, next);
+                return parse_error!("Expected identifier but got {:?}", next);
             }
             None => {
-                return parse_error!("Expected identifier `{}` but got end of input", identifier_str);
+                return parse_error!("Expected identifier but got end of input");
             }
         }
     }
@@ -129,8 +132,28 @@ impl Parser {
     }
 
     fn statement(&mut self) -> ParseResult<AST> {
-        let r = try!(self.expr());
+        use tokenizer::Token::*;
+        use tokenizer::Kw;
+        let r = match self.lookahead() {
+            Some(Keyword(Kw::Let)) => try!(self.definition()),
+            _ => try!(self.expr())
+        };
         Ok(r)
+    }
+
+    fn definition(&mut self) -> ParseResult<AST> {
+        use tokenizer::Token::*;
+        use tokenizer::Kw;
+        try!(self.expect(Keyword(Kw::Let)));
+        let name = try!(self.expect_identifier());
+        match self.lookahead() {
+            Some(Identifier(ref s)) if s == "=" => { self.next(); },
+            _ => return parse_error!("Expected `=`"),
+        }
+
+        let expr = try!(self.expr());
+
+        Ok(AST::Definition(name, Box::new(expr)))
     }
 
     fn expr(&mut self) -> ParseResult<AST> {
