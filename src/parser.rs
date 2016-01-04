@@ -147,7 +147,7 @@ impl Parser {
         try!(self.expect(Keyword(Kw::Let)));
         let name = try!(self.expect_identifier());
         match self.lookahead() {
-            Some(Identifier(ref s)) if s == "=" => { self.next(); },
+            Some(Keyword(Kw::Assign)) => { self.next(); },
             _ => return parse_error!("Expected `=`"),
         }
 
