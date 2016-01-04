@@ -1,3 +1,4 @@
+/*
 use parser::AST;
 
 struct Evaluator {
@@ -100,3 +101,4 @@ mod tests {
         assert_eq!(output, "3");
     }
 }
+*/

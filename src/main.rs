@@ -11,12 +11,8 @@ use simplerepl::{REPL, ReplState};
 use tokenizer::tokenize;
 mod tokenizer;
 
-use parser::{ParseResult, parse};
+use parser::parse;
 mod parser;
-
-use evaluator::{evaluate};
-mod evaluator;
-
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -60,20 +56,14 @@ impl ReplState for InterpreterState {
 
 fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
     if state.show_tokens {
-        println!("Tokens: {:?}", tokenize(input))
+        println!("Not implemented")
     }
 
     if state.show_parse {
-        println!("Parse: {:?}", parse(tokenize(input)))
+        println!("not implemented")
     }
 
-    let parse_result = parse(tokenize(input));
-    match parse_result {
-        Ok(ast) => {
-            format!("{}", evaluate(ast))
-        },
-        Err(err) => {
-            format!("Parse error: {:?}", err)
-        }
-    }
+    let tokens = tokenize(input);
+    let ast = parse(&tokens);
+    format!("Changing how parsing works again")
 }
