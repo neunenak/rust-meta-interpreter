@@ -31,6 +31,18 @@ fn is_digit(c: &char) -> bool {
     c.is_digit(10)
 }
 
+fn ends_identifier(c: &char) -> bool {
+    let c = *c;
+    char::is_whitespace(c) ||
+    is_digit(&c) ||
+    c == ';' ||
+    c == '(' ||
+    c == ')' ||
+    c == ',' ||
+    c == '.' ||
+    c == ':'
+}
+
 pub fn tokenize(input: &str) -> Option<Vec<Token>> {
     use self::Token::*;
     let mut tokens = Vec::new();
@@ -67,7 +79,9 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
                 }
             }
             StrLiteral(buffer)
-        } else if is_digit(&c) {
+        } else if c == '.' && !iter.peek().map_or(false, |x| is_digit(x)) {
+            Period
+        } else if is_digit(&c) || c == '.' {
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
             loop {
@@ -83,7 +97,21 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
                 Err(_) => return None
             }
         } else {
-            Identifier("DUMMY".to_string())
+            let mut buffer = String::with_capacity(20);
+            buffer.push(c);
+            loop {
+                if iter.peek().map_or(false, |x| ends_identifier(x)) {
+                    break;
+                } else {
+                    buffer.push(iter.next().unwrap());
+                }
+            }
+
+            match &buffer[..] {
+                "if" => Keyword(Kw::If),
+                "then" => Keyword(Kw::Then),
+                b => Identifier(b.to_string())
+            }
         };
 
         tokens.push(cur_tok);
