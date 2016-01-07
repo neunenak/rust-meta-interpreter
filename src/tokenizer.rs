@@ -68,7 +68,20 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
             }
             StrLiteral(buffer)
         } else if is_digit(&c) {
-            NumLiteral(45.0)
+            let mut buffer = String::with_capacity(20);
+            buffer.push(c);
+            loop {
+                if iter.peek().map_or(false, |x| is_digit(x) || *x == '.') {
+                    let n = iter.next().unwrap();
+                    buffer.push(n);
+                } else {
+                    break;
+                }
+            }
+            match buffer.parse::<f64>() {
+                Ok(f) => NumLiteral(f),
+                Err(_) => return None
+            }
         } else {
             Identifier("DUMMY".to_string())
         };
