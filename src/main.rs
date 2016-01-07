@@ -56,7 +56,7 @@ impl ReplState for InterpreterState {
 
 fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
     if state.show_tokens {
-        println!("Not implemented")
+        println!("Tokens: {:?}", tokenize(input));
     }
 
     if state.show_parse {
@@ -65,5 +65,5 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
 
     let tokens = tokenize(input);
     let ast = parse(&tokens);
-    format!("Changing how parsing works again")
+    format!("{:?}", tokens)
 }
