@@ -31,7 +31,7 @@ fn is_digit(c: &char) -> bool {
     c.is_digit(10)
 }
 
-pub fn tokenize(input: &str) -> Vec<Token> {
+pub fn tokenize(input: &str) -> Option<Vec<Token>> {
     use self::Token::*;
     let mut tokens = Vec::new();
     let mut iter = input.chars().peekable();
@@ -63,18 +63,20 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 match iter.next() {
                     Some(x) if x == '"' => break,
                     Some(x) => buffer.push(x),
-                    None => return tokens,
+                    None => return None,
                 }
             }
             StrLiteral(buffer)
+        } else if is_digit(&c) {
+            NumLiteral(45.0)
         } else {
-            StrLiteral("DUMMY".to_string())
+            Identifier("DUMMY".to_string())
         };
 
         tokens.push(cur_tok);
     }
 
-    tokens
+    Some(tokens)
 }
 
 #[cfg(test)]

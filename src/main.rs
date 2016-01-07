@@ -55,15 +55,19 @@ impl ReplState for InterpreterState {
 }
 
 fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
+    let tokens = match tokenize(input) {
+        None => return format!("Failure to tokenize"),
+        Some(t) => t
+    };
+
     if state.show_tokens {
-        println!("Tokens: {:?}", tokenize(input));
+        println!("Tokens: {:?}", tokens);
     }
 
     if state.show_parse {
         println!("not implemented")
     }
 
-    let tokens = tokenize(input);
     let ast = parse(&tokens);
     format!("{:?}", tokens)
 }
