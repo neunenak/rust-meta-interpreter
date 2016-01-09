@@ -151,6 +151,14 @@ mod tests {
             "[NumLiteral(2.3), Identifier(\"*\"), NumLiteral(49.2), EOF]");
 
         assert_eq!(tokenize("2.4.5"), None);
+    }
+
+    #[test]
+    #[ignore]
+    fn more_tokenization() {
+        //it would be nice to support complicated operators in a nice, haskell-ish way
+        tokentest!("a *> b",
+            "[Identifier(\"a\"), Identifier(\"*>\"), Identifier(\"b\"), EOF]");
 
     }
 }
