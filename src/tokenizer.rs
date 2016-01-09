@@ -147,5 +147,10 @@ mod tests {
         tokentest!("2 + 1",
             "[NumLiteral(2), Identifier(\"+\"), NumLiteral(1), EOF]");
 
+        tokentest!("2.3*49.2",
+            "[NumLiteral(2.3), Identifier(\"*\"), NumLiteral(49.2), EOF]");
+
+        assert_eq!(tokenize("2.4.5"), None);
+
     }
 }
