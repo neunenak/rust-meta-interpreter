@@ -124,13 +124,28 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
 
 #[cfg(test)]
 mod tests {
+
+    macro_rules! tokentest {
+        ($input:expr, $output:expr) => {
+            {
+            let tokens = tokenize($input).unwrap();
+            assert_eq!(format!("{:?}", tokens), $output);
+            }
+        }
+    }
+
     use super::*;
 
     #[test]
     fn tokeniziation_tests() {
-        let input1 = "let a = 3\n";
-        let token1 = tokenize(input1).unwrap();
-        assert_eq!(format!("{:?}", token1),
+        tokentest!("let a = 3\n",
             "[Identifier(\"let\"), Identifier(\"a\"), Identifier(\"=\"), NumLiteral(3), Newline, EOF]");
+
+        tokentest!("2+1",
+            "[NumLiteral(2), Identifier(\"+\"), NumLiteral(1), EOF]");
+
+        tokentest!("2 + 1",
+            "[NumLiteral(2), Identifier(\"+\"), NumLiteral(1), EOF]");
+
     }
 }
