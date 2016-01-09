@@ -24,7 +24,6 @@ pub enum Kw {
     Let,
     Fn,
     Null,
-    Assign
 }
 
 fn is_digit(c: &char) -> bool {
@@ -110,6 +109,12 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
             match &buffer[..] {
                 "if" => Keyword(Kw::If),
                 "then" => Keyword(Kw::Then),
+                "else" => Keyword(Kw::Else),
+                "while" => Keyword(Kw::While),
+                "end" => Keyword(Kw::End),
+                "let" => Keyword(Kw::Let),
+                "fn" => Keyword(Kw::Fn),
+                "null" => Keyword(Kw::Null),
                 b => Identifier(b.to_string())
             }
         };
