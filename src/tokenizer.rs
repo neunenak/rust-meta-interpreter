@@ -117,6 +117,8 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
         tokens.push(cur_tok);
     }
 
+    tokens.push(EOF);
+
     Some(tokens)
 }
 
@@ -126,6 +128,9 @@ mod tests {
 
     #[test]
     fn tokeniziation_tests() {
-        let t1 = "let a = 3\n";
+        let input1 = "let a = 3\n";
+        let token1 = tokenize(input1).unwrap();
+        assert_eq!(format!("{:?}", token1),
+            "[Identifier(\"let\"), Identifier(\"a\"), Identifier(\"=\"), NumLiteral(3), Newline, EOF]");
     }
 }
