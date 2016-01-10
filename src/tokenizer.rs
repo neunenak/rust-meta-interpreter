@@ -39,6 +39,7 @@ fn ends_identifier(c: &char) -> bool {
     c == ')' ||
     c == ',' ||
     c == '.' ||
+    c == ',' ||
     c == ':'
 }
 
@@ -67,6 +68,8 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
             RParen
         } else if c == ':' {
             Colon
+        else if  c == ',' {
+            Comma
         } else if c == '"' {
             let mut buffer = String::with_capacity(20);
             loop {
