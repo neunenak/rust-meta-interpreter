@@ -11,7 +11,7 @@ use simplerepl::{REPL, ReplState};
 use tokenizer::tokenize;
 mod tokenizer;
 
-use parser::parse;
+use parser::{parse, ParseResult};
 mod parser;
 
 fn main() {
@@ -64,10 +64,14 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
         println!("Tokens: {:?}", tokens);
     }
 
+    let ast = match parse(&tokens, &[]) {
+        Ok(ast) => ast,
+        Err(err) => return err.msg
+    };
+
     if state.show_parse {
-        println!("not implemented")
+        println!("AST: {:?}", ast);
     }
 
-    let ast = parse(&tokens);
-    format!("{:?}", tokens)
+    format!("{:?}", ast)
 }
