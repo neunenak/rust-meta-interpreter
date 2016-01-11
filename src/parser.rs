@@ -42,6 +42,19 @@ impl ParseError {
     }
 }
 
+/* Grammar
+   program := (statement delimiter ?)*
+   delimiter := Newline | Semicolon
+   statement := declaration | expression
+   declaraion :=  Fn prototype expression
+   prototype := identifier LParen (Ident Comma?)* RParen
+   expression := primary_expression (op primary_expression)*
+   primary_expression :=  Identifier | Number | call_expr | paren_expr
+   paren_expr := LParen expression RParen
+   call_expr := identifier LParen (expression Comma ?)* RParen
+   op := '+', '-', etc.
+ */
+
 pub fn parse(tokens: &[Token], parsed_tree: &[ASTNode]) -> ParseResult<AST> {
 
     let rest = tokens.to_vec().reverse();
