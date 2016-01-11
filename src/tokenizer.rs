@@ -1,6 +1,5 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
-    EOF,
     Newline,
     Semicolon,
     LParen,
@@ -124,8 +123,6 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
 
         tokens.push(cur_tok);
     }
-
-    tokens.push(EOF);
 
     Some(tokens)
 }
