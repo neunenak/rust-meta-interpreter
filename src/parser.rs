@@ -10,7 +10,7 @@ pub enum ASTNode {
 #[derive(Debug, Clone)]
 pub struct Function {
     pub prototype: Prototype,
-    pub body: Vec<ASTNode>,
+    pub body: Vec<Expression>,
 }
 
 #[derive(Debug, Clone)]
@@ -127,9 +127,9 @@ impl Parser {
         use tokenizer::Token::*;
         expect!(self, Fn, "Expected 'fn'");
         let prototype = try!(self.prototype());
-        let body = try!(self.body());
+        let body: Vec<Expression> = try!(self.body());
         expect!(self, Keyword(Kw::End), "Expected 'end'");
-        Ok(ASTNode::FuncNode(Function { prototype: prototype, body: vec!(ASTNode::ExprNode(body))} ))
+        Ok(ASTNode::FuncNode(Function { prototype: prototype, body: body } ))
     }
 
     fn prototype(&mut self) -> ParseResult<Prototype> {
@@ -166,10 +166,10 @@ impl Parser {
         Ok(args)
     }
 
-    fn body(&mut self) -> ParseResult<Expression> {
+    fn body(&mut self) -> ParseResult<Vec<Expression>> {
         use tokenizer::Token::*;
         self.next();
-        Ok(Expression::Number(101.01))
+        Ok(vec!(Expression::Number(101.01)))
     }
 
     fn expression(&mut self) -> ParseResult<ASTNode> {
