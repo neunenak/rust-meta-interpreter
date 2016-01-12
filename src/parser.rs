@@ -88,6 +88,14 @@ macro_rules! expect {
     }
 }
 
+fn is_delimiter(token: &Token) -> bool {
+    use tokenizer::Token::*;
+    match *token {
+        Newline | Semicolon => true,
+        _ => false
+    }
+}
+
 impl Parser {
     fn program(&mut self) -> ParseResult<AST> {
         use tokenizer::Token::*;
@@ -99,7 +107,7 @@ impl Parser {
             };
 
             let result: ParseResult<ASTNode> = match cur_tok {
-                Newline | Semicolon => { self.next(); continue},
+                ref t if is_delimiter(&t) => { self.next(); continue},
                 _ => self.statement()
             };
 
@@ -117,7 +125,7 @@ impl Parser {
         let cur_tok: Token = self.peek().unwrap().clone();
         let node: ASTNode = match cur_tok {
             Keyword(Kw::Fn) => try!(self.declaration()),
-            _ => try!(self.expression())
+            _ => ASTNode::ExprNode(try!(self.expression())),
         };
 
         Ok(node)
@@ -168,18 +176,27 @@ impl Parser {
 
     fn body(&mut self) -> ParseResult<Vec<Expression>> {
         use tokenizer::Token::*;
-        self.next();
-        Ok(vec!(Expression::Number(101.01)))
+        let mut exprs = Vec::new();
+        loop {
+            match self.peek() {
+                Some(ref t) if is_delimiter(t) => { self.next(); continue},
+                Some(Keyword(Kw::End)) => break,
+                _ => {
+                    let expr = try!(self.expression());
+                    exprs.push(expr);
+                }
+            }
+        }
+        Ok(exprs)
     }
 
-    fn expression(&mut self) -> ParseResult<ASTNode> {
+    fn expression(&mut self) -> ParseResult<Expression> {
         use tokenizer::Token::*;
         let expr: Expression = match self.next() {
             Some(Identifier(s)) => Expression::StringLiteral(s),
-            Some(x) => panic!("lol tryinna parse {:?}", x),
-            None => panic!("FUCK")
+            _ => panic!("bad expression parse"),
         };
-        Ok(ASTNode::ExprNode(expr))
+        Ok(expr)
     }
 }
 
