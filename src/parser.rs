@@ -1,6 +1,21 @@
 use tokenizer::Token;
 use tokenizer::Kw;
 
+/* Grammar
+   program := (statement delimiter ?)*
+   delimiter := Newline | Semicolon
+   statement := declaration | expression
+   declaraion :=  Fn prototype (statement)* End
+   prototype := identifier LParen identlist RParen
+   identlist := Ident (Comma Ident)* | e
+
+   expression := primary_expression (op primary_expression)*
+   primary_expression :=  Variable | Number | String | call_expr | paren_expr
+   paren_expr := LParen expression RParen
+   call_expr := identifier LParen identlist RParen
+   op := '+', '-', etc.
+ */
+
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     ExprNode(Expression),
@@ -43,21 +58,6 @@ impl ParseError {
         Err(ParseError { msg: msg.to_string() })
     }
 }
-
-/* Grammar
-   program := (statement delimiter ?)*
-   delimiter := Newline | Semicolon
-   statement := declaration | expression
-   declaraion :=  Fn prototype (statement)* End
-   prototype := identifier LParen identlist RParen
-   identlist := Ident (Comma Ident)* | e
-
-   expression := primary_expression (op primary_expression)*
-   primary_expression :=  Variable | Number | String | call_expr | paren_expr
-   paren_expr := LParen expression RParen
-   call_expr := identifier LParen identlist RParen
-   op := '+', '-', etc.
- */
 
 struct Parser {
     tokens: Vec<Token>,
