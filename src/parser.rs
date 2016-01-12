@@ -10,7 +10,7 @@ pub enum ASTNode {
 #[derive(Debug, Clone)]
 pub struct Function {
     pub prototype: Prototype,
-    pub body: Expression
+    pub body: Vec<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -48,9 +48,10 @@ impl ParseError {
    program := (statement delimiter ?)*
    delimiter := Newline | Semicolon
    statement := declaration | expression
-   declaraion :=  Fn prototype expression
+   declaraion :=  Fn prototype (statement)* End
    prototype := identifier LParen identlist RParen
-   identlist := Ident (Comma Ident)*
+   identlist := Ident (Comma Ident)* | e
+
    expression := primary_expression (op primary_expression)*
    primary_expression :=  Variable | Number | String | call_expr | paren_expr
    paren_expr := LParen expression RParen
@@ -73,8 +74,8 @@ impl Parser {
         self.tokens.last().map(|x| x.clone())
     }
 
-    fn next(&mut self) {
-        self.tokens.pop();
+    fn next(&mut self) -> Option<Token>{
+        self.tokens.pop()
     }
 }
 
@@ -127,7 +128,8 @@ impl Parser {
         expect!(self, Fn, "Expected 'fn'");
         let prototype = try!(self.prototype());
         let body = try!(self.body());
-        Ok(ASTNode::FuncNode(Function { prototype: prototype, body: body}))
+        expect!(self, Keyword(Kw::End), "Expected 'end'");
+        Ok(ASTNode::FuncNode(Function { prototype: prototype, body: vec!(ASTNode::ExprNode(body))} ))
     }
 
     fn prototype(&mut self) -> ParseResult<Prototype> {
@@ -172,8 +174,12 @@ impl Parser {
 
     fn expression(&mut self) -> ParseResult<ASTNode> {
         use tokenizer::Token::*;
-        self.next();
-        Ok(ASTNode::ExprNode(Expression::StringLiteral("Expr".to_string())))
+        let expr: Expression = match self.next() {
+            Some(Identifier(s)) => Expression::StringLiteral(s),
+            Some(x) => panic!("lol tryinna parse {:?}", x),
+            None => panic!("FUCK")
+        };
+        Ok(ASTNode::ExprNode(expr))
     }
 }
 
