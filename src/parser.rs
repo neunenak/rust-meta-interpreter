@@ -192,10 +192,19 @@ impl Parser {
 
     fn expression(&mut self) -> ParseResult<Expression> {
         use tokenizer::Token::*;
-        let expr: Expression = match self.next() {
-            Some(Identifier(s)) => Expression::StringLiteral(s),
-            _ => panic!("bad expression parse"),
+        let mut lhr: Expression = try!(self.primary_expression());
+        Ok(lhr)
+    }
+
+    fn primary_expression(&mut self) -> ParseResult<Expression> {
+        use tokenizer::Token::*;
+        let expr = match self.peek() {
+            Some(NumLiteral(n)) => { self.next(); Expression::Number(n) },
+            Some(StrLiteral(s)) => { self.next(); Expression::StringLiteral(s) },
+            Some(Identifier(var)) => { self.next();  Expression::Variable(var) },
+            _ => unimplemented!()
         };
+
         Ok(expr)
     }
 }
@@ -204,4 +213,3 @@ pub fn parse(tokens: &[Token], _parsed_tree: &[ASTNode]) -> ParseResult<AST> {
     let mut parser = Parser::initialize(tokens);
     parser.program()
 }
-
