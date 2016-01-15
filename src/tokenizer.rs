@@ -10,6 +10,7 @@ pub enum Token {
     NumLiteral(f64),
     StrLiteral(String),
     Identifier(String),
+    Op(String),
     Keyword(Kw)
 }
 
@@ -97,6 +98,18 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
                 Ok(f) => NumLiteral(f),
                 Err(_) => return None
             }
+        } else if !char::is_alphanumeric(c) { //TODO see if this what I want
+            let mut buffer = String::with_capacity(20);
+            buffer.push(c);
+            loop {
+                if iter.peek().map_or(false, |x| is_digit(x) || *x == '.') {
+                    let n = iter.next().unwrap();
+                    buffer.push(n);
+                } else {
+                    break;
+                }
+            }
+            Op(buffer)
         } else {
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
