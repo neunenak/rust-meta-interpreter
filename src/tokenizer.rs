@@ -102,7 +102,7 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
             loop {
-                if iter.peek().map_or(false, |x| !char::is_alphanumeric(*x)) {
+                if iter.peek().map_or(false, |x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x)) {
                     let n = iter.next().unwrap();
                     buffer.push(n);
                 } else {
