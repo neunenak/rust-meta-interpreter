@@ -10,8 +10,13 @@ pub enum Token {
     NumLiteral(f64),
     StrLiteral(String),
     Identifier(String),
-    Op(String),
+    Operator(Op),
     Keyword(Kw)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Op {
+    pub repr: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -109,7 +114,7 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
                     break;
                 }
             }
-            Op(buffer)
+            Operator(Op {repr: buffer })
         } else {
             let mut buffer = String::with_capacity(20);
             buffer.push(c);

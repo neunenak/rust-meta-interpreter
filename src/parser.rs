@@ -1,5 +1,4 @@
-use tokenizer::Token;
-use tokenizer::Kw;
+use tokenizer::{Token, Kw, Op};
 
 /* Grammar
    program := (statement delimiter ?)*
@@ -45,6 +44,8 @@ pub enum Expression {
 
 pub type AST = Vec<ASTNode>;
 
+type Precedence = u8;
+
 //TODO make this support incomplete parses
 pub type ParseResult<T> = Result<T, ParseError>;
 
@@ -76,6 +77,17 @@ impl Parser {
 
     fn next(&mut self) -> Option<Token>{
         self.tokens.pop()
+    }
+
+    fn get_precedence(op: Op) -> Precedence {
+        match &op.repr[..] {
+            "+" => 10,
+            "-" => 10,
+            "*" => 20,
+            "/" => 20,
+            "%" => 20,
+            _ => 255,
+        }
     }
 }
 
@@ -192,8 +204,13 @@ impl Parser {
 
     fn expression(&mut self) -> ParseResult<Expression> {
         use tokenizer::Token::*;
-        let mut lhr: Expression = try!(self.primary_expression());
-        Ok(lhr)
+        let lhs: Expression = try!(self.primary_expression());
+        self.precedence_expr(lhs, 0)
+    }
+
+    fn precedence_expr(&mut self, lhs: Expression, min_precedence: u8) -> ParseResult<Expression> {
+        use tokenizer::Token::*;
+        Ok(lhs)
     }
 
     fn primary_expression(&mut self) -> ParseResult<Expression> {
