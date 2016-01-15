@@ -221,8 +221,10 @@ impl Parser {
     }
 
     fn paren_expr(&mut self) -> ParseResult<Expression> {
-
-        unimplemented!()
+        expect!(self, LParen, "Expected LParen");
+        let expr = try!(self.expression());
+        expect!(self, RParen, "Expected LParen");
+        Ok(expr)
     }
 }
 
