@@ -98,11 +98,11 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
                 Ok(f) => NumLiteral(f),
                 Err(_) => return None
             }
-        } else if !char::is_alphanumeric(c) { //TODO see if this what I want
+        } else if !char::is_alphanumeric(c) {
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
             loop {
-                if iter.peek().map_or(false, |x| is_digit(x) || *x == '.') {
+                if iter.peek().map_or(false, |x| !char::is_alphanumeric(*x)) {
                     let n = iter.next().unwrap();
                     buffer.push(n);
                 } else {
