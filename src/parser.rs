@@ -201,11 +201,28 @@ impl Parser {
         let expr = match self.peek() {
             Some(NumLiteral(n)) => { self.next(); Expression::Number(n) },
             Some(StrLiteral(s)) => { self.next(); Expression::StringLiteral(s) },
-            Some(Identifier(var)) => { self.next();  Expression::Variable(var) },
-            _ => unimplemented!()
+            Some(Identifier(var)) => {
+                self.next();
+                match self.peek() {
+                    Some(LParen) => try!(self.call_expr()),
+                    _ => Expression::Variable(var)
+                }
+            },
+            Some(LParen) => { try!(self.paren_expr()) }
+            Some(x) => return ParseError::result_from_str("Expected primary expression"),
+            None => return ParseError::result_from_str("Expected primary expression received EoI")
         };
 
         Ok(expr)
+    }
+
+    fn call_expr(&mut self) -> ParseResult<Expression> {
+        unimplemented!()
+    }
+
+    fn paren_expr(&mut self) -> ParseResult<Expression> {
+
+        unimplemented!()
     }
 }
 
