@@ -71,7 +71,7 @@ impl Parser {
         Parser { tokens: tokens }
     }
 
-    fn peek(&mut self) -> Option<Token> {
+    fn peek(&self) -> Option<Token> {
         self.tokens.last().map(|x| x.clone())
     }
 
@@ -79,7 +79,7 @@ impl Parser {
         self.tokens.pop()
     }
 
-    fn get_precedence(op: Op) -> Precedence {
+    fn get_precedence(&self, op: &Op) -> Precedence {
         match &op.repr[..] {
             "+" => 10,
             "-" => 10,
@@ -208,8 +208,28 @@ impl Parser {
         self.precedence_expr(lhs, 0)
     }
 
-    fn precedence_expr(&mut self, lhs: Expression, min_precedence: u8) -> ParseResult<Expression> {
+    fn precedence_expr(&mut self, mut lhs: Expression, min_precedence: u8) -> ParseResult<Expression> {
         use tokenizer::Token::*;
+        while let Some(Operator(op)) = self.peek() {
+            let precedence = self.get_precedence(&op);
+            if precedence < min_precedence {
+                break;
+            }
+            self.next();
+            let mut rhs = try!(self.primary_expression());
+            while let Some(Operator(ref op)) = self.peek() {
+                if self.get_precedence(op) > precedence {
+                    let new_prec = self.get_precedence(op);
+                    rhs = try!(self.precedence_expr(rhs, new_prec));
+
+                } else {
+                    break;
+                }
+            }
+
+            lhs = Expression::BinExp(op.repr, Box::new(lhs), Box::new(rhs));
+        }
+
         Ok(lhs)
     }
 
@@ -221,11 +241,11 @@ impl Parser {
             Some(Identifier(var)) => {
                 self.next();
                 match self.peek() {
-                    Some(LParen) => try!(self.call_expr()),
+                    Some(Token::LParen) => try!(self.call_expr()),
                     _ => Expression::Variable(var)
                 }
             },
-            Some(LParen) => { try!(self.paren_expr()) }
+            Some(Token::LParen) => { try!(self.paren_expr()) }
             Some(x) => return ParseError::result_from_str("Expected primary expression"),
             None => return ParseError::result_from_str("Expected primary expression received EoI")
         };
@@ -238,9 +258,9 @@ impl Parser {
     }
 
     fn paren_expr(&mut self) -> ParseResult<Expression> {
-        expect!(self, LParen, "Expected LParen");
+        expect!(self, Token::LParen, "Expected LParen");
         let expr = try!(self.expression());
-        expect!(self, RParen, "Expected LParen");
+        expect!(self, Token::RParen, "Expected LParen");
         Ok(expr)
     }
 }
@@ -248,4 +268,29 @@ impl Parser {
 pub fn parse(tokens: &[Token], _parsed_tree: &[ASTNode]) -> ParseResult<AST> {
     let mut parser = Parser::initialize(tokens);
     parser.program()
+}
+
+#[cfg(test)]
+mod tests {
+    use tokenizer;
+    use super::*;
+
+    macro_rules! parsetest {
+        ($input:expr, $output:pat) => {
+            {
+            let tokens = tokenizer::tokenize($input).unwrap();
+            let ast = parse(&tokens, &[]).unwrap();
+            match &ast[..] {
+                $output => (),
+                x => panic!("Error in parse test, got {:?} instead", x)
+            }
+            }
+        }
+    }
+
+    #[test]
+    fn parse_test() {
+        parsetest!("a", [ASTNode::ExprNode(Expression::Variable("a"))]);
+    }
+
 }
