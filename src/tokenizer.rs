@@ -162,16 +162,16 @@ mod tests {
     #[test]
     fn tokeniziation_tests() {
         tokentest!("let a = 3\n",
-            "[Identifier(\"let\"), Identifier(\"a\"), Identifier(\"=\"), NumLiteral(3), Newline, EOF]");
+            "[Keyword(Let), Identifier(\"a\"), Operator(Op { repr: \"=\" }), NumLiteral(3), Newline]");
 
         tokentest!("2+1",
-            "[NumLiteral(2), Identifier(\"+\"), NumLiteral(1), EOF]");
+            "[NumLiteral(2), Operator(Op { repr: \"+\" }), NumLiteral(1)]");
 
         tokentest!("2 + 1",
-            "[NumLiteral(2), Identifier(\"+\"), NumLiteral(1), EOF]");
+            "[NumLiteral(2), Operator(Op { repr: \"+\" }), NumLiteral(1)]");
 
         tokentest!("2.3*49.2",
-            "[NumLiteral(2.3), Identifier(\"*\"), NumLiteral(49.2), EOF]");
+            "[NumLiteral(2.3), Operator(Op { repr: \"*\" }), NumLiteral(49.2)]");
 
         assert_eq!(tokenize("2.4.5"), None);
     }
