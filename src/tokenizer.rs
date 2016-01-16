@@ -119,7 +119,7 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
             loop {
-                if iter.peek().map_or(false, |x| ends_identifier(x)) {
+                if iter.peek().map_or(true, |x| ends_identifier(x)) {
                     break;
                 } else {
                     buffer.push(iter.next().unwrap());
