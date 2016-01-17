@@ -7,11 +7,12 @@ use tokenizer::{Token, Kw, Op};
    declaraion :=  Fn prototype (statement)* End
    prototype := identifier LParen identlist RParen
    identlist := Ident (Comma Ident)* | e
+   exprlist  := Expression (Comma Expression)* | e
 
    expression := primary_expression (op primary_expression)*
    primary_expression :=  Variable | Number | String | call_expr | paren_expr
    paren_expr := LParen expression RParen
-   call_expr := identifier LParen identlist RParen
+   call_expr := identifier LParen exprlist RParen
    op := '+', '-', etc.
  */
 
@@ -254,6 +255,7 @@ impl Parser {
     }
 
     fn call_expr(&mut self) -> ParseResult<Expression> {
+        use tokenizer::Token::*;
         unimplemented!()
     }
 
@@ -301,6 +303,9 @@ mod tests {
             plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
         parsetest!("a * b + c",
             [ExprNode(BinExp(ref plus, box BinExp(ref mul, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
+            plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
+        parsetest!("(a + b) * c",
+            [ExprNode(BinExp(ref mul, box BinExp(ref plus, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
             plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
     }
 }
