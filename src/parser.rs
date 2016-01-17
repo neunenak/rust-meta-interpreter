@@ -29,7 +29,7 @@ pub struct Function {
     pub body: Vec<Expression>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Prototype {
     pub name: String,
     pub args: Vec<String>
@@ -328,10 +328,31 @@ mod tests {
     }
 
     #[test]
+    fn call_parse_test() {
+        use super::ASTNode::*;
+        use super::Expression::*;
+        use super::Function;
+
+        parsetest!(
+        "fn a() 1 + 2 end",
+        [FuncNode(Function {prototype: Prototype { name: ref name, args: ref args }, body: ref body})],
+        match &body[..] { [BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
+            && name == "a" && match &args[..] { [] => true, _ => false }
+        );
+
+        parsetest!(
+        "fn a(x,y) 1 + 2 end",
+        [FuncNode(Function {prototype: Prototype { name: ref name, args: ref args }, body: ref body})],
+        match &body[..] { [BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
+            && name == "a" && *args == ["x","y"]
+        );
+    }
+
+    #[test]
     fn expression_parse_test() {
         use super::ASTNode::*;
         use super::Expression::*;
-        parsetest!("a", [ASTNode::ExprNode(Expression::Variable(ref s))], s == "a");
+        parsetest!("a", [ExprNode(Variable(ref s))], s == "a");
         parsetest!("a + b",
             [ExprNode(BinExp(ref plus, box Variable(ref a), box Variable(ref b)))],
             plus == "+" && a == "a" && b == "b");
