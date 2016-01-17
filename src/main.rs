@@ -1,4 +1,4 @@
-#![feature(advanced_slice_patterns, slice_patterns, box_attributes, box_patterns)]
+#![feature(advanced_slice_patterns, slice_patterns, box_patterns)]
 
 extern crate simplerepl;
 
@@ -11,7 +11,7 @@ use simplerepl::{REPL, ReplState};
 use tokenizer::tokenize;
 mod tokenizer;
 
-use parser::{parse, ParseResult};
+use parser::{parse};
 mod parser;
 
 fn main() {

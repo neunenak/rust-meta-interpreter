@@ -122,7 +122,6 @@ fn is_delimiter(token: &Token) -> bool {
 
 impl Parser {
     fn program(&mut self) -> ParseResult<AST> {
-        use tokenizer::Token::*;
         let mut ast = Vec::new(); //TODO have this come from previously-parsed tree
         loop {
             let cur_tok = match self.peek() {
@@ -168,7 +167,7 @@ impl Parser {
         use tokenizer::Token::*;
         let name: String = expect_identifier!(self);
         expect!(self, LParen, "Expected '('");
-        let mut args: Vec<String> = try!(self.identlist());
+        let args: Vec<String> = try!(self.identlist());
         expect!(self, RParen, "Expected ')'");
         Ok(Prototype {name: name, args: args})
     }
@@ -230,7 +229,6 @@ impl Parser {
     }
 
     fn expression(&mut self) -> ParseResult<Expression> {
-        use tokenizer::Token::*;
         let lhs: Expression = try!(self.primary_expression());
         self.precedence_expr(lhs, 0)
     }
@@ -265,9 +263,9 @@ impl Parser {
         let expr = match self.peek() {
             Some(NumLiteral(n)) => { self.next(); Expression::Number(n) },
             Some(StrLiteral(s)) => { self.next(); Expression::StringLiteral(s) },
-            Some(Identifier(var)) => { try!(self.identifier_expr()) },
+            Some(Identifier(_)) => { try!(self.identifier_expr()) },
             Some(Token::LParen) => { try!(self.paren_expr()) }
-            Some(x) => return ParseError::result_from_str("Expected primary expression"),
+            Some(_) => return ParseError::result_from_str("Expected primary expression"),
             None => return ParseError::result_from_str("Expected primary expression received EoI")
         };
 
@@ -291,7 +289,7 @@ impl Parser {
     fn call_expr(&mut self) -> ParseResult<Vec<Expression>> {
         use tokenizer::Token::*;
         expect!(self, LParen, "Expected '('");
-        let mut args: Vec<Expression> = try!(self.exprlist());
+        let args: Vec<Expression> = try!(self.exprlist());
         expect!(self, RParen, "Expected ')'");
         Ok(args)
     }
