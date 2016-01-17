@@ -289,11 +289,14 @@ mod tests {
     }
 
     #[test]
-    fn parse_test() {
+    fn expression_parse_test() {
+        use super::ASTNode::*;
+        use super::Expression::*;
         parsetest!("a", [ASTNode::ExprNode(Expression::Variable(ref s))], s == "a");
         parsetest!("a + b",
-            [ASTNode::ExprNode(Expression::BinExp(ref plus, box Expression::Variable(ref a), box Expression::Variable(ref b)))],
+            [ExprNode(BinExp(ref plus, box Variable(ref a), box Variable(ref b)))],
             plus == "+" && a == "a" && b == "b");
+
     }
 
 }
