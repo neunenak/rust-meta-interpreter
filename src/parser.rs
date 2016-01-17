@@ -276,12 +276,12 @@ mod tests {
     use super::*;
 
     macro_rules! parsetest {
-        ($input:expr, $output:pat) => {
+        ($input:expr, $output:pat, $ifexpr:expr) => {
             {
             let tokens = tokenizer::tokenize($input).unwrap();
             let ast = parse(&tokens, &[]).unwrap();
             match &ast[..] {
-                $output => (),
+                $output if $ifexpr => (),
                 x => panic!("Error in parse test, got {:?} instead", x)
             }
             }
@@ -290,7 +290,7 @@ mod tests {
 
     #[test]
     fn parse_test() {
-        parsetest!("a", [ASTNode::ExprNode(Expression::Variable("a"))]);
+        parsetest!("a", [ASTNode::ExprNode(Expression::Variable(ref s))], s == "a");
     }
 
 }
