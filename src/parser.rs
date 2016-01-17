@@ -124,14 +124,10 @@ impl Parser {
     fn program(&mut self) -> ParseResult<AST> {
         let mut ast = Vec::new(); //TODO have this come from previously-parsed tree
         loop {
-            let cur_tok = match self.peek() {
-                Some(t) => t.clone(),
-                None => break
-            };
-
-            let result: ParseResult<ASTNode> = match cur_tok {
-                ref t if is_delimiter(&t) => { self.next(); continue},
-                _ => self.statement()
+            let result: ParseResult<ASTNode> = match self.peek() {
+                Some(ref t) if is_delimiter(&t) => { self.next(); continue},
+                Some(_) => self.statement(),
+                None => break,
             };
 
             match result {
@@ -145,10 +141,10 @@ impl Parser {
 
     fn statement(&mut self) -> ParseResult<ASTNode> {
         use tokenizer::Token::*;
-        let cur_tok: Token = self.peek().unwrap().clone();
-        let node: ASTNode = match cur_tok {
-            Keyword(Kw::Fn) => try!(self.declaration()),
-            _ => ASTNode::ExprNode(try!(self.expression())),
+        let node: ASTNode = match self.peek() {
+            Some(Keyword(Kw::Fn)) => try!(self.declaration()),
+            Some(_) => ASTNode::ExprNode(try!(self.expression())),
+            None => panic!("unexpected end of tokens"),
         };
 
         Ok(node)
@@ -260,16 +256,14 @@ impl Parser {
 
     fn primary_expression(&mut self) -> ParseResult<Expression> {
         use tokenizer::Token::*;
-        let expr = match self.peek() {
+        Ok(match self.peek() {
             Some(NumLiteral(n)) => { self.next(); Expression::Number(n) },
             Some(StrLiteral(s)) => { self.next(); Expression::StringLiteral(s) },
             Some(Identifier(_)) => { try!(self.identifier_expr()) },
             Some(Token::LParen) => { try!(self.paren_expr()) }
             Some(_) => return ParseError::result_from_str("Expected primary expression"),
             None => return ParseError::result_from_str("Expected primary expression received EoI")
-        };
-
-        Ok(expr)
+        })
     }
 
     fn identifier_expr(&mut self) -> ParseResult<Expression> {
