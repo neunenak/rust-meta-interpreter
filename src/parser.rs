@@ -296,7 +296,11 @@ mod tests {
         parsetest!("a + b",
             [ExprNode(BinExp(ref plus, box Variable(ref a), box Variable(ref b)))],
             plus == "+" && a == "a" && b == "b");
-
+        parsetest!("a + b * c",
+            [ExprNode(BinExp(ref plus, box Variable(ref a), box BinExp(ref mul, box Variable(ref b), box Variable(ref c))))],
+            plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
+        parsetest!("a * b + c",
+            [ExprNode(BinExp(ref plus, box BinExp(ref mul, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
+            plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
     }
-
 }
