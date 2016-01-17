@@ -1,4 +1,4 @@
-#![feature(advanced_slice_patterns, slice_patterns)]
+#![feature(advanced_slice_patterns, slice_patterns, box_attributes, box_patterns)]
 
 extern crate simplerepl;
 
