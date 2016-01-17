@@ -10,9 +10,10 @@ use tokenizer::{Token, Kw, Op};
    exprlist  := Expression (Comma Expression)* | e
 
    expression := primary_expression (op primary_expression)*
-   primary_expression :=  Variable | Number | String | call_expr | paren_expr
+   primary_expression :=  Number | String | identifier_expr | paren_expr
+   identifier_expr := call_expression | Variable
    paren_expr := LParen expression RParen
-   call_expr := identifier LParen exprlist RParen
+   call_expr := Identifier LParen exprlist RParen
    op := '+', '-', etc.
  */
 
@@ -101,6 +102,16 @@ macro_rules! expect {
     }
 }
 
+macro_rules! expect_identifier {
+    ($self_:expr) => {
+        match $self_.peek() {
+            Some(Identifier(s)) => {$self_.next(); s},
+            _ => return ParseError::result_from_str("Expected Identifier")
+        }
+    }
+}
+
+
 fn is_delimiter(token: &Token) -> bool {
     use tokenizer::Token::*;
     match *token {
@@ -155,10 +166,7 @@ impl Parser {
 
     fn prototype(&mut self) -> ParseResult<Prototype> {
         use tokenizer::Token::*;
-        let name: String = match self.peek() {
-            Some(Identifier(name)) => {self.next(); name},
-            _ => return ParseError::result_from_str("Expected identifier")
-        };
+        let name: String = expect_identifier!(self);
         expect!(self, LParen, "Expected '('");
         let mut args: Vec<String> = try!(self.identlist());
         expect!(self, RParen, "Expected ')'");
@@ -184,6 +192,24 @@ impl Parser {
             }
         }
 
+        Ok(args)
+    }
+
+    fn exprlist(&mut self) -> ParseResult<Vec<Expression>> {
+        use tokenizer::Token::*;
+        let mut args: Vec<Expression> = Vec::new();
+        loop {
+            if let Some(RParen) = self.peek() {
+                break;
+            }
+            let exp = try!(self.expression());
+            args.push(exp);
+            if let Some(Comma) = self.peek() {
+                self.next();
+            } else {
+                break;
+            }
+        }
         Ok(args)
     }
 
@@ -239,13 +265,7 @@ impl Parser {
         let expr = match self.peek() {
             Some(NumLiteral(n)) => { self.next(); Expression::Number(n) },
             Some(StrLiteral(s)) => { self.next(); Expression::StringLiteral(s) },
-            Some(Identifier(var)) => {
-                self.next();
-                match self.peek() {
-                    Some(Token::LParen) => try!(self.call_expr()),
-                    _ => Expression::Variable(var)
-                }
-            },
+            Some(Identifier(var)) => { try!(self.identifier_expr()) },
             Some(Token::LParen) => { try!(self.paren_expr()) }
             Some(x) => return ParseError::result_from_str("Expected primary expression"),
             None => return ParseError::result_from_str("Expected primary expression received EoI")
@@ -254,9 +274,26 @@ impl Parser {
         Ok(expr)
     }
 
-    fn call_expr(&mut self) -> ParseResult<Expression> {
+    fn identifier_expr(&mut self) -> ParseResult<Expression> {
         use tokenizer::Token::*;
-        unimplemented!()
+        let name = expect_identifier!(self);
+        let expr = match self.peek() {
+            Some(LParen) => {
+                let args = try!(self.call_expr());
+                Expression::Call(name, args)
+            },
+            __ => Expression::Variable(name)
+        };
+
+        Ok(expr)
+    }
+
+    fn call_expr(&mut self) -> ParseResult<Vec<Expression>> {
+        use tokenizer::Token::*;
+        expect!(self, LParen, "Expected '('");
+        let mut args: Vec<Expression> = try!(self.exprlist());
+        expect!(self, RParen, "Expected ')'");
+        Ok(args)
     }
 
     fn paren_expr(&mut self) -> ParseResult<Expression> {
