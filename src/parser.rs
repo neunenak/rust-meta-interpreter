@@ -94,10 +94,18 @@ impl Parser {
 }
 
 macro_rules! expect {
-    ($self_:expr, $token:pat, $error:expr) => {
+    ($self_:expr, $token:pat) => {
         match $self_.peek() {
             Some($token) => {$self_.next();},
-            _ => return ParseError::result_from_str($error)
+            Some(x) => {
+                let err = format!("Expected `{:?}` but got `{:?}`", stringify!($token), x); //TODO implement Display for token
+                return ParseError::result_from_str(&err)
+            },
+            None => {
+                let err = format!("Expected `{:?}` but got end of input", stringify!($token));
+                return ParseError::result_from_str(&err) //TODO make this not require 2 stringifications
+            }
+
         }
     }
 }
@@ -152,19 +160,19 @@ impl Parser {
 
     fn declaration(&mut self) -> ParseResult<ASTNode> {
         use tokenizer::Token::*;
-        expect!(self, Keyword(Kw::Fn), "Expected 'fn'");
+        expect!(self, Keyword(Kw::Fn));
         let prototype = try!(self.prototype());
         let body: Vec<Expression> = try!(self.body());
-        expect!(self, Keyword(Kw::End), "Expected 'end'");
+        expect!(self, Keyword(Kw::End));
         Ok(ASTNode::FuncNode(Function { prototype: prototype, body: body } ))
     }
 
     fn prototype(&mut self) -> ParseResult<Prototype> {
         use tokenizer::Token::*;
         let name: String = expect_identifier!(self);
-        expect!(self, LParen, "Expected '('");
+        expect!(self, LParen);
         let args: Vec<String> = try!(self.identlist());
-        expect!(self, RParen, "Expected ')'");
+        expect!(self, RParen);
         Ok(Prototype {name: name, args: args})
     }
 
@@ -282,16 +290,16 @@ impl Parser {
 
     fn call_expr(&mut self) -> ParseResult<Vec<Expression>> {
         use tokenizer::Token::*;
-        expect!(self, LParen, "Expected '('");
+        expect!(self, LParen);
         let args: Vec<Expression> = try!(self.exprlist());
-        expect!(self, RParen, "Expected ')'");
+        expect!(self, RParen);
         Ok(args)
     }
 
     fn paren_expr(&mut self) -> ParseResult<Expression> {
-        expect!(self, Token::LParen, "Expected LParen");
+        expect!(self, Token::LParen);
         let expr = try!(self.expression());
-        expect!(self, Token::RParen, "Expected LParen");
+        expect!(self, Token::RParen);
         Ok(expr)
     }
 }
