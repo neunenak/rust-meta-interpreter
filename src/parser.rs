@@ -157,7 +157,7 @@ impl Parser {
 
     fn declaration(&mut self) -> ParseResult<ASTNode> {
         use tokenizer::Token::*;
-        expect!(self, Fn, "Expected 'fn'");
+        expect!(self, Keyword(Kw::Fn), "Expected 'fn'");
         let prototype = try!(self.prototype());
         let body: Vec<Expression> = try!(self.body());
         expect!(self, Keyword(Kw::End), "Expected 'end'");
