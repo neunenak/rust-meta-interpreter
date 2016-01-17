@@ -119,7 +119,6 @@ macro_rules! expect_identifier {
     }
 }
 
-
 fn is_delimiter(token: &Token) -> bool {
     use tokenizer::Token::*;
     match *token {
@@ -179,22 +178,15 @@ impl Parser {
     fn identlist(&mut self) -> ParseResult<Vec<String>> {
         use tokenizer::Token::*;
         let mut args: Vec<String> = Vec::new();
-        loop {
-            match self.peek() {
-                Some(Identifier(name)) => {
-                    args.push(name);
-                    self.next();
-                    if let Some(Comma) = self.peek() {
-                        self.next();
-                    } else {
-                        break;
-                    }
-                },
-
-                _ => break
+        while let Some(Identifier(name)) = self.peek() {
+            args.push(name);
+            self.next();
+            if let Some(Comma) = self.peek() {
+                self.next();
+            } else {
+                break;
             }
         }
-
         Ok(args)
     }
 
