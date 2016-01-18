@@ -14,6 +14,9 @@ mod tokenizer;
 use parser::{parse};
 mod parser;
 
+use eval::{Evaluator};
+mod eval;
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     println!("Schala v 0.02");
@@ -73,5 +76,9 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
         println!("AST: {:?}", ast);
     }
 
-    format!("{:?}", ast)
+    let mut evaluator = Evaluator::new();
+    let mut output: Vec<String> = evaluator.run(ast);
+
+    //for now only handle last output
+    output.pop().unwrap_or("".to_string())
 }
