@@ -17,6 +17,12 @@ impl Evaluator {
     }
 }
 
+trait Evaluable {
+    type Output;
+    fn is_reducible(&self) -> bool;
+    fn reduce(self) -> Self::Output;
+}
+
 impl Evaluator {
     fn reduce_node(&mut self, mut node: ASTNode) -> String {
         loop {
