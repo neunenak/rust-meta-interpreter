@@ -1,13 +1,32 @@
+use std::collections::HashMap;
 use parser::{AST, ASTNode, Expression};
 
+struct Varmap {
+    map: HashMap<String, Expression>
+}
+
+impl Varmap {
+    fn new() -> Varmap {
+        Varmap { map: HashMap::new() }
+    }
+
+    fn add_binding(&mut self, var: String, value: Expression) {
+        self.map.insert(var, value);
+    }
+
+    fn lookup_binding(&mut self, var: String) -> Option<&Expression> {
+        self.map.get(&var)
+    }
+}
+
 pub struct Evaluator {
-    data: bool,
+    varmap: Varmap
 }
 
 impl Evaluator {
 
     pub fn new() -> Evaluator {
-        Evaluator { data: false }
+        Evaluator { varmap: Varmap::new() }
     }
 
     pub fn run(&mut self, ast: AST) -> Vec<String> {
