@@ -7,7 +7,9 @@ struct Varmap {
 
 impl Varmap {
     fn new() -> Varmap {
-        Varmap { map: HashMap::new() }
+        let mut map = HashMap::new();
+        map.insert("a".to_string(), Expression::Number(10.0));
+        Varmap { map: map }
     }
 
     fn add_binding(&mut self, var: String, value: Expression) {
@@ -97,7 +99,10 @@ impl Evaluator {
         match expression {
             e@StringLiteral(_) => e,
             e@Number(_) => e,
-            Variable(var) => Number(20.0),
+            Variable(var) => {
+                let expr = self.varmap.lookup_binding(var).unwrap();
+                expr.clone()
+            },
             _ => unimplemented!(),
         }
 
