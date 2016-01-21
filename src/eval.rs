@@ -37,14 +37,10 @@ impl Evaluator {
 }
 
 trait Evaluable {
-    type Output;
     fn is_reducible(&self) -> bool;
-    fn reduce(self) -> Self::Output;
 }
 
 impl Evaluable for ASTNode {
-    type Output = ASTNode;
-
     fn is_reducible(&self) -> bool {
         use parser::ASTNode::*;
         match self {
@@ -52,41 +48,15 @@ impl Evaluable for ASTNode {
             _ => unimplemented!(),
         }
     }
-
-    fn reduce(self) -> Self::Output {
-        use parser::ASTNode::*;
-        match self {
-            ExprNode(expr) => {
-                if expr.is_reducible() {
-                    ExprNode(expr.reduce())
-                } else {
-                    ExprNode(expr)
-                }
-            },
-            _ => unimplemented!(),
-        }
-    }
 }
 
 impl Evaluable for Expression {
-    type Output = Expression;
-
     fn is_reducible(&self) -> bool {
         use parser::Expression::*;
         match *self {
             StringLiteral(_) => false,
             Number(_) => false,
             _ => true,
-        }
-    }
-
-    fn reduce(self) -> Self::Output {
-        use parser::Expression::*;
-        match self {
-            e@StringLiteral(_) => e,
-            e@Number(_) => e,
-            Variable(var) => Number(20.0),
-            _ => unimplemented!(),
         }
     }
 }
@@ -105,6 +75,32 @@ impl Evaluator {
 
     fn step(&mut self, node: ASTNode) -> ASTNode {
         println!("Doing one step, current node is {:?}", node);
-        node.reduce()
+        self.reduce(node)
+    }
+
+    fn reduce(&mut self, node: ASTNode) -> ASTNode {
+        use parser::ASTNode::*;
+        match node {
+            ExprNode(expr) => {
+                if expr.is_reducible() {
+                    ExprNode(self.reduce_expr(expr))
+                } else {
+                    ExprNode(expr)
+                }
+            },
+            _ => unimplemented!(),
+        }
+    }
+
+    fn reduce_expr(&mut self, expression: Expression) -> Expression {
+        use parser::Expression::*;
+        match expression {
+            e@StringLiteral(_) => e,
+            e@Number(_) => e,
+            Variable(var) => Number(20.0),
+            _ => unimplemented!(),
+        }
+
+
     }
 }
