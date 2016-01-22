@@ -73,7 +73,7 @@ impl Evaluator {
             }
         }
 
-        format!("{:?}", node) //TODO make better
+        format!("{}", node) //TODO make better
     }
 
     fn step(&mut self, node: ASTNode) -> ASTNode {

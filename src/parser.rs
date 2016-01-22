@@ -1,3 +1,4 @@
+use std::fmt;
 use tokenizer::{Token, Kw, Op};
 
 /* Grammar
@@ -43,6 +44,28 @@ pub enum Expression {
     Variable(String),
     BinExp(String, Box<Expression>, Box<Expression>),
     Call(String, Vec<Expression>),
+}
+
+impl fmt::Display for ASTNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ASTNode::*;
+        match self {
+            &ExprNode(ref expr) => write!(f, "{}", expr),
+            &FuncNode(_) => write!(f, "UNIMPLEMENTED"),
+        }
+    }
+}
+
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Expression::*;
+        match self {
+            &Null => write!(f, "null"),
+            &StringLiteral(ref s) => write!(f, "\"{}\"", s),
+            &Number(n) => write!(f, "{}", n),
+            _ => write!(f, "UNIMPLEMENTED"),
+        }
+    }
 }
 
 pub type AST = Vec<ASTNode>;
