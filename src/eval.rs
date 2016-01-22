@@ -81,7 +81,7 @@ impl Evaluator {
         self.reduce(node)
     }
 
-    fn reduce(&mut self, node: ASTNode) -> ASTNode {
+    fn reduce(&mut self, node: ASTNode) -> ASTNode { //TODO swap the names of this and reduce_node
         use parser::ASTNode::*;
         match node {
             ExprNode(expr) => {
@@ -105,14 +105,27 @@ impl Evaluator {
                 expr.clone()
             },
             BinExp(op, box left, box right) => {
+                if right.is_reducible() {
+                    let new = self.reduce_expr(right);
+                    return BinExp(op, Box::new(left), Box::new(new));
+                }
+
+                //special case for variable assignment
+                if op == "=" {
+                    match left {
+                        Variable(var) => {
+                            self.varmap.add_binding(var, right);
+                            return Null;
+                        },
+                        _ => ()
+                    }
+                }
+
                 if left.is_reducible() {
                     let new = self.reduce_expr(left);
                     BinExp(op, Box::new(new), Box::new(right))
-                } else if right.is_reducible() {
-                    let new = self.reduce_expr(right);
-                    BinExp(op, Box::new(left), Box::new(new))
                 } else {
-                    self.reduce_binop(op, left, right)
+                    self.reduce_binop(op, left, right) //can assume both arguments are maximally reduced
                 }
             },
             _ => unimplemented!(),
@@ -131,7 +144,11 @@ impl Evaluator {
                 _ => Null,
             },
             "=" => match (left, right) {
-                _ => unimplemented!()
+                (Variable(var), right) => {
+                    self.varmap.add_binding(var, right);
+                    Null
+                },
+                _ => Null,
             },
             _ => unimplemented!(),
         }
