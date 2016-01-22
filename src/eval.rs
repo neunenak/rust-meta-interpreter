@@ -101,8 +101,10 @@ impl Evaluator {
             e@StringLiteral(_) => e,
             e@Number(_) => e,
             Variable(var) => {
-                let expr = self.varmap.lookup_binding(var).unwrap();
-                expr.clone()
+                match self.varmap.lookup_binding(var) {
+                    None => Null,
+                    Some(expr) => expr.clone()
+                }
             },
             BinExp(op, box left, box right) => {
                 if right.is_reducible() {
