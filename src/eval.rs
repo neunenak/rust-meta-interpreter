@@ -103,9 +103,36 @@ impl Evaluator {
                 let expr = self.varmap.lookup_binding(var).unwrap();
                 expr.clone()
             },
+            BinExp(op, box left, box right) => {
+                if left.is_reducible() {
+                    let new = self.reduce_expr(left);
+                    BinExp(op, Box::new(new), Box::new(right))
+                } else if right.is_reducible() {
+                    let new = self.reduce_expr(right);
+                    BinExp(op, Box::new(left), Box::new(new))
+                } else {
+                    self.reduce_binop(op, left, right)
+                }
+            },
             _ => unimplemented!(),
         }
+    }
 
-
+    fn reduce_binop(&mut self, op: String, left: Expression, right: Expression) -> Expression {
+        use parser::Expression::*;
+        match &op[..] {
+            "+" => match (left, right) {
+                (Number(l), Number(r)) => Number(l + r),
+                _ => unimplemented!(),
+            },
+            "-" => match (left, right) {
+                (Number(l), Number(r)) => Number(l - r),
+                _ => unimplemented!(),
+            },
+            "=" => match (left, right) {
+                _ => unimplemented!()
+            },
+            _ => unimplemented!(),
+        }
     }
 }
