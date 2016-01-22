@@ -8,7 +8,6 @@ struct Varmap {
 impl Varmap {
     fn new() -> Varmap {
         let mut map = HashMap::new();
-        map.insert("a".to_string(), Expression::Number(10.0));
         Varmap { map: map }
     }
 
