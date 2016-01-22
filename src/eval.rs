@@ -56,6 +56,7 @@ impl Evaluable for Expression {
     fn is_reducible(&self) -> bool {
         use parser::Expression::*;
         match *self {
+            Null => false,
             StringLiteral(_) => false,
             Number(_) => false,
             _ => true,
@@ -123,11 +124,11 @@ impl Evaluator {
         match &op[..] {
             "+" => match (left, right) {
                 (Number(l), Number(r)) => Number(l + r),
-                _ => unimplemented!(),
+                _ => Null,
             },
             "-" => match (left, right) {
                 (Number(l), Number(r)) => Number(l - r),
-                _ => unimplemented!(),
+                _ => Null,
             },
             "=" => match (left, right) {
                 _ => unimplemented!()
