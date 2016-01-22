@@ -37,6 +37,7 @@ pub struct Prototype {
 
 #[derive(Debug, Clone)]
 pub enum Expression {
+    Null,
     StringLiteral(String),
     Number(f64),
     Variable(String),
@@ -257,6 +258,7 @@ impl Parser {
     fn primary_expression(&mut self) -> ParseResult<Expression> {
         use tokenizer::Token::*;
         Ok(match self.peek() {
+            Some(Keyword(Kw::Null)) => { self.next(); Expression::Null },
             Some(NumLiteral(n)) => { self.next(); Expression::Number(n) },
             Some(StrLiteral(s)) => { self.next(); Expression::StringLiteral(s) },
             Some(Identifier(_)) => { try!(self.identifier_expr()) },
