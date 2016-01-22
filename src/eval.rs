@@ -76,7 +76,6 @@ impl Evaluator {
     }
 
     fn step(&mut self, node: ASTNode) -> ASTNode {
-        println!("Doing one step, current node is {:?}", node);
         self.reduce(node)
     }
 
