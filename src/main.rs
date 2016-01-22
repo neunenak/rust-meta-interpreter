@@ -26,7 +26,11 @@ fn main() {
         source_file.read_to_string(&mut buffer).unwrap();
         panic!("Not implemented yet");
     } else {
-        let initial_state = InterpreterState { show_tokens: false, show_parse: false };
+        let initial_state = InterpreterState {
+            show_tokens: false,
+            show_parse: false,
+            evaluator: Evaluator::new(),
+        };
         REPL::with_prompt_and_state(Box::new(repl_handler), ">> ", initial_state)
               .run();
     }
@@ -35,6 +39,7 @@ fn main() {
 struct InterpreterState {
     show_tokens: bool,
     show_parse: bool,
+    evaluator: Evaluator,
 }
 
 impl ReplState for InterpreterState {
@@ -76,8 +81,7 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
         println!("AST: {:?}", ast);
     }
 
-    let mut evaluator = Evaluator::new();
-    let mut output: Vec<String> = evaluator.run(ast);
+    let mut output: Vec<String> = state.evaluator.run(ast);
 
     //for now only handle last output
     output.pop().unwrap_or("".to_string())
