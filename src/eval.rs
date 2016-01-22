@@ -143,6 +143,18 @@ impl Evaluator {
                 (Number(l), Number(r)) => Number(l - r),
                 _ => Null,
             },
+            "*" => match (left, right) {
+                (Number(l), Number(r)) => Number(l * r),
+                _ => Null,
+            },
+            "/" => match (left, right) {
+                (Number(l), Number(r)) if r != 0.0 => Number(l / r),
+                _ => Null,
+            },
+            "%" => match (left, right) {
+                (Number(l), Number(r)) => Number(l % r),
+                _ => Null,
+            },
             "=" => match (left, right) {
                 (Variable(var), right) => {
                     self.varmap.add_binding(var, right);
