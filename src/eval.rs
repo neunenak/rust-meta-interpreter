@@ -139,6 +139,7 @@ impl Evaluator {
         match &op[..] {
             "+" => match (left, right) {
                 (Number(l), Number(r)) => Number(l + r),
+                (StringLiteral(s1), StringLiteral(s2)) => StringLiteral(format!("{}{}", s1, s2)),
                 _ => Null,
             },
             "-" => match (left, right) {
