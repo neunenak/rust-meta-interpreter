@@ -52,7 +52,7 @@ impl Evaluator {
 
     pub fn run(&mut self, ast: AST) -> Vec<String> {
         ast.into_iter().map(|astnode| {
-            self.reduce_node(astnode)
+            self.reduce(astnode)
         }).collect()
     }
 }
@@ -84,7 +84,7 @@ impl Evaluable for Expression {
 }
 
 impl Evaluator {
-    fn reduce_node(&mut self, mut node: ASTNode) -> String {
+    fn reduce(&mut self, mut node: ASTNode) -> String {
         loop {
             node = self.step(node);
             if !node.is_reducible() {
@@ -96,10 +96,10 @@ impl Evaluator {
     }
 
     fn step(&mut self, node: ASTNode) -> ASTNode {
-        self.reduce(node)
+        self.reduce_astnode(node)
     }
 
-    fn reduce(&mut self, node: ASTNode) -> ASTNode { //TODO swap the names of this and reduce_node
+    fn reduce_astnode(&mut self, node: ASTNode) -> ASTNode {
         use parser::ASTNode::*;
         match node {
             ExprNode(expr) => {
