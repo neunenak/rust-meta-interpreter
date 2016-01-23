@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use parser::{AST, ASTNode, Expression};
+use parser::{AST, ASTNode, Expression, Function};
 
 struct Varmap {
     map: HashMap<String, Expression>
@@ -20,14 +20,34 @@ impl Varmap {
     }
 }
 
+struct Funcmap {
+    map: HashMap<String, Function>,
+}
+
+impl Funcmap {
+    fn new() -> Funcmap {
+        let map = HashMap::new();
+        Funcmap { map: map }
+    }
+
+    fn add_function(&mut self, name: String, function: Function) {
+        self.map.insert(name, function);
+    }
+
+    fn lookup_function(&mut self, name: String) -> Option<&Function> {
+        self.map.get(&name)
+    }
+}
+
 pub struct Evaluator {
-    varmap: Varmap
+    varmap: Varmap,
+    funcmap: Funcmap,
 }
 
 impl Evaluator {
 
     pub fn new() -> Evaluator {
-        Evaluator { varmap: Varmap::new() }
+        Evaluator { varmap: Varmap::new(), funcmap: Funcmap::new() }
     }
 
     pub fn run(&mut self, ast: AST) -> Vec<String> {
@@ -46,7 +66,7 @@ impl Evaluable for ASTNode {
         use parser::ASTNode::*;
         match self {
             &ExprNode(ref expr) => expr.is_reducible(),
-            _ => unimplemented!(),
+            &FuncNode(ref function) =>  true,
         }
     }
 }
@@ -72,7 +92,7 @@ impl Evaluator {
             }
         }
 
-        format!("{}", node) //TODO make better
+        format!("{}", node)
     }
 
     fn step(&mut self, node: ASTNode) -> ASTNode {
@@ -89,7 +109,11 @@ impl Evaluator {
                     ExprNode(expr)
                 }
             },
-            _ => unimplemented!(),
+            FuncNode(func) => {
+                let fn_name = func.prototype.name.clone();
+                self.funcmap.add_function(fn_name, func);
+                ExprNode(Expression::Null)
+            },
         }
     }
 
