@@ -33,7 +33,7 @@ pub struct Function {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Prototype {
     pub name: String,
-    pub args: Vec<String>
+    pub parameters: Vec<String>
 }
 
 #[derive(Debug, Clone)]
@@ -194,9 +194,9 @@ impl Parser {
         use tokenizer::Token::*;
         let name: String = expect_identifier!(self);
         expect!(self, LParen);
-        let args: Vec<String> = try!(self.identlist());
+        let parameters: Vec<String> = try!(self.identlist());
         expect!(self, RParen);
-        Ok(Prototype {name: name, args: args})
+        Ok(Prototype {name: name, parameters: parameters})
     }
 
     fn identlist(&mut self) -> ParseResult<Vec<String>> {
