@@ -225,11 +225,12 @@ impl Evaluator {
         }
 
         self.frames.push(frame);
+        let mut retval = Null;
         for expr in function.body.iter() {
-            self.reduce_expr(expr.clone());
+            retval = self.reduce_expr(expr.clone());
         }
 
         self.frames.pop();
-        Null
+        retval
     }
 }
