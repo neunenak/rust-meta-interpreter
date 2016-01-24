@@ -21,10 +21,6 @@ impl Funcmap {
         let map = HashMap::new();
         Funcmap { map: map }
     }
-
-    fn lookup_function(&self, name: String) -> Option<Function> {
-        self.map.get(&name).map(|x| x.clone())
-    }
 }
 
 pub struct Evaluator {
@@ -70,6 +66,9 @@ impl Evaluator {
         self.funcmap.map.insert(name, function);
     }
 
+    fn lookup_function(&self, name: String) -> Option<Function> {
+        self.funcmap.map.get(&name).map(|x| x.clone())
+    }
 }
 
 trait Evaluable {
@@ -209,8 +208,7 @@ impl Evaluator {
 
     fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> Expression {
         use parser::Expression::*;
-        let x = self.funcmap.lookup_function(name);
-        let function = match x {
+        let function = match self.lookup_function(name) {
             Some(func) => func,
             None => return Null
         };
