@@ -26,12 +26,16 @@ impl Funcmap {
 pub struct Evaluator {
     varmap: Varmap,
     funcmap: Funcmap,
+    frames: Vec<Varmap>,
 }
 
 impl Evaluator {
 
     pub fn new() -> Evaluator {
-        Evaluator { varmap: Varmap::new(), funcmap: Funcmap::new() }
+        Evaluator { varmap: Varmap::new(),
+                    funcmap: Funcmap::new(),
+                    frames: Vec::new(),
+        }
     }
 
     pub fn run(&mut self, ast: AST) -> Vec<String> {
@@ -44,8 +48,18 @@ impl Evaluator {
         self.varmap.map.insert(var, value);
     }
 
-    fn lookup_binding(&mut self, var: String) -> Option<&Expression> {
-        self.varmap.map.get(&var)
+    fn lookup_binding(&mut self, var: String) -> Option<Expression> {
+        self.varmap.map.get(&var).map(|expr| expr.clone())
+            .or_else(|| {
+                for frame in self.frames.iter() {
+                    match frame.map.get(&var) {
+                        None => (),
+                        Some(expr) => return Some(expr.clone()),
+                    }
+                }
+
+                None
+            })
     }
 
     fn add_function(&mut self, name: String, function: Function) {
@@ -126,7 +140,7 @@ impl Evaluator {
             Variable(var) => {
                 match self.lookup_binding(var) {
                     None => Null,
-                    Some(expr) => expr.clone()
+                    Some(expr) => expr,
                 }
             },
             BinExp(op, box left, box right) => {
