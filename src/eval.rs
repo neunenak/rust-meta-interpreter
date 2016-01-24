@@ -10,14 +10,6 @@ impl Varmap {
         let mut map = HashMap::new();
         Varmap { map: map }
     }
-
-    fn add_binding(&mut self, var: String, value: Expression) {
-        self.map.insert(var, value);
-    }
-
-    fn lookup_binding(&mut self, var: String) -> Option<&Expression> {
-        self.map.get(&var)
-    }
 }
 
 struct Funcmap {
@@ -28,14 +20,6 @@ impl Funcmap {
     fn new() -> Funcmap {
         let map = HashMap::new();
         Funcmap { map: map }
-    }
-
-    fn add_function(&mut self, name: String, function: Function) {
-        self.map.insert(name, function);
-    }
-
-    fn lookup_function(&mut self, name: String) -> Option<&Function> {
-        self.map.get(&name)
     }
 }
 
@@ -54,6 +38,22 @@ impl Evaluator {
         ast.into_iter().map(|astnode| {
             self.reduce(astnode)
         }).collect()
+    }
+
+    fn add_binding(&mut self, var: String, value: Expression) {
+        self.varmap.map.insert(var, value);
+    }
+
+    fn lookup_binding(&mut self, var: String) -> Option<&Expression> {
+        self.varmap.map.get(&var)
+    }
+
+    fn add_function(&mut self, name: String, function: Function) {
+        self.funcmap.map.insert(name, function);
+    }
+
+    fn lookup_function(&mut self, name: String) -> Option<&Function> {
+        self.funcmap.map.get(&name)
     }
 }
 
@@ -111,7 +111,7 @@ impl Evaluator {
             },
             FuncNode(func) => {
                 let fn_name = func.prototype.name.clone();
-                self.funcmap.add_function(fn_name, func);
+                self.add_function(fn_name, func);
                 ExprNode(Expression::Null)
             },
         }
@@ -120,10 +120,11 @@ impl Evaluator {
     fn reduce_expr(&mut self, expression: Expression) -> Expression {
         use parser::Expression::*;
         match expression {
+            Null => Null,
             e@StringLiteral(_) => e,
             e@Number(_) => e,
             Variable(var) => {
-                match self.varmap.lookup_binding(var) {
+                match self.lookup_binding(var) {
                     None => Null,
                     Some(expr) => expr.clone()
                 }
@@ -138,7 +139,7 @@ impl Evaluator {
                 if op == "=" {
                     match left {
                         Variable(var) => {
-                            self.varmap.add_binding(var, right);
+                            self.add_binding(var, right);
                             return Null;
                         },
                         _ => ()
@@ -152,7 +153,7 @@ impl Evaluator {
                     self.reduce_binop(op, left, right) //can assume both arguments are maximally reduced
                 }
             },
-            _ => unimplemented!(),
+            Call(name, args) => self.reduce_call(name, args)
         }
     }
 
@@ -182,12 +183,22 @@ impl Evaluator {
             },
             "=" => match (left, right) {
                 (Variable(var), right) => {
-                    self.varmap.add_binding(var, right);
+                    self.add_binding(var, right);
                     Null
                 },
                 _ => Null,
             },
-            _ => unimplemented!(),
+            _ => Null,
         }
+    }
+
+    fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> Expression {
+        use parser::Expression::*;
+        let function = match self.lookup_function(name) {
+            Some(ref func) => func.clone(),
+            None => return Null
+        };
+
+        Null
     }
 }
