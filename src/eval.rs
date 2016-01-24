@@ -45,7 +45,10 @@ impl Evaluator {
     }
 
     fn add_binding(&mut self, var: String, value: Expression) {
-        self.varmap.map.insert(var, value);
+        match self.frames.last_mut() {
+            Some(frame) => frame.map.insert(var, value),
+            None => self.varmap.map.insert(var, value),
+        };
     }
 
     fn lookup_binding(&mut self, var: String) -> Option<Expression> {
@@ -225,7 +228,10 @@ impl Evaluator {
         self.frames.push(frame);
         let mut retval = Null;
         for expr in function.body.iter() {
-            retval = self.reduce_expr(expr.clone());
+            retval = expr.clone();
+            while retval.is_reducible() {
+                retval = self.reduce_expr(retval);
+            }
         }
 
         self.frames.pop();
