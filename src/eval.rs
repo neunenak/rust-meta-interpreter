@@ -52,17 +52,14 @@ impl Evaluator {
     }
 
     fn lookup_binding(&mut self, var: String) -> Option<Expression> {
-        self.varmap.map.get(&var).map(|expr| expr.clone())
-            .or_else(|| {
-                for frame in self.frames.iter() {
-                    match frame.map.get(&var) {
-                        None => (),
-                        Some(expr) => return Some(expr.clone()),
-                    }
-                }
+        for frame in self.frames.iter() {
+            match frame.map.get(&var) {
+                None => (),
+                Some(expr) => return Some(expr.clone()),
+            }
+        }
 
-                None
-            })
+        self.varmap.map.get(&var).map(|expr| expr.clone())
     }
 
     fn add_function(&mut self, name: String, function: Function) {
