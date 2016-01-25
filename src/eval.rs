@@ -7,8 +7,7 @@ struct Varmap {
 
 impl Varmap {
     fn new() -> Varmap {
-        let mut map = HashMap::new();
-        Varmap { map: map }
+        Varmap { map: HashMap::new()}
     }
 }
 
@@ -80,7 +79,7 @@ impl Evaluable for ASTNode {
         use parser::ASTNode::*;
         match self {
             &ExprNode(ref expr) => expr.is_reducible(),
-            &FuncNode(ref function) =>  true,
+            &FuncNode(_) =>  true,
         }
     }
 }
