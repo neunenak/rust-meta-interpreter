@@ -51,7 +51,7 @@ impl Evaluator {
     }
 
     fn lookup_binding(&mut self, var: String) -> Option<Expression> {
-        for frame in self.frames.iter() {
+        for frame in self.frames.iter().rev() {
             match frame.map.get(&var) {
                 None => (),
                 Some(expr) => return Some(expr.clone()),
