@@ -166,7 +166,8 @@ impl Evaluator {
                     self.reduce_binop(op, left, right) //can assume both arguments are maximally reduced
                 }
             },
-            Call(name, args) => self.reduce_call(name, args)
+            Call(name, args) => self.reduce_call(name, args),
+            Conditional(_,_,_) => unimplemented!(),
         }
     }
 

@@ -44,6 +44,7 @@ pub enum Expression {
     Variable(String),
     BinExp(String, Box<Expression>, Box<Expression>),
     Call(String, Vec<Expression>),
+    Conditional(Box<Expression>, Box<Expression>, Option<Box<Expression>>),
 }
 
 impl fmt::Display for ASTNode {
