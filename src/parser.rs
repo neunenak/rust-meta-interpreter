@@ -11,10 +11,11 @@ use tokenizer::{Token, Kw, Op};
    exprlist  := Expression (Comma Expression)* | e
 
    expression := primary_expression (op primary_expression)*
-   primary_expression :=  Number | String | identifier_expr | paren_expr
+   primary_expression :=  Number | String | identifier_expr | paren_expr | conditional_expr
    identifier_expr := call_expression | Variable
    paren_expr := LParen expression RParen
    call_expr := Identifier LParen exprlist RParen
+   conditional_expr := IF expression THEN (expression delimiter?)* ELSE (expresion delimiter?)* END
    op := '+', '-', etc.
  */
 
