@@ -2,11 +2,13 @@ extern crate llvm_sys;
 extern crate iron_llvm;
 
 use std::collections::HashMap;
-use llvm_sys::prelude::LLVMValueRef;
+use self::llvm_sys::prelude::LLVMValueRef;
 
-use iron_llvm::core;
-use iron_llvm::core::types::{RealTypeCtor, RealTypeRef};
-use iron_llvm::{LLVMRef, LLVMCtor};
+use self::iron_llvm::core;
+use self::iron_llvm::core::types::{RealTypeCtor, RealTypeRef};
+use self::iron_llvm::{LLVMRef, LLVMRefCtor};
+
+use parser::{ParseResult, AST, ASTNode};
 
 pub struct Context {
     context: core::Context,
@@ -59,14 +61,14 @@ impl ModuleProvider for SimpleModuleProvider {
     }
 
     fn get_function(&mut self, name: &str) -> Option<(FunctionRef, bool)> {
-        match.self.module.get_function_by_name(name) {
+        match self.module.get_function_by_name(name) {
             Some(f) => Some((f, f.count_basic_block() > 0)),
             None => None
         }
     }
 }
 
-pub type IRBuildingResult = Result<LLVMValueRef, bool), String>;
+pub type IRBuildingResult = Result<(LLVMValueRef, bool), String>;
 
 fn error(msg: &str) -> IRBuildingResult {
     Err(msg.to_string())
@@ -74,4 +76,23 @@ fn error(msg: &str) -> IRBuildingResult {
 
 pub trait IRBuilder {
     fn codegen(&self, context: &mut Context, module_provider: &mut ModuleProvider) -> IRBuildingResult;
+}
+
+impl IRBuilder for ParseResult<AST> {
+    fn codegen(&self, context: &mut Context, module_provider: &mut ModuleProvider) -> IRBuildingResult {
+        match self {
+            &Ok(ast) => ast.codegen(context, module_provider),
+            &Err(err) => Err(err.msg.clone())
+        }
+    }
+}
+
+impl IRBuilder for AST {
+    fn codegen(&self, context: &mut Context, module_provider: &mut ModuleProvider) -> IRBuildingResult {
+        let mut result = error("empty AST");
+        for node in self.iter() {
+            result = Ok(try!(node.codegen(context, module_provider)));
+        }
+        result
+    }
 }
