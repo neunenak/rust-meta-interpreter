@@ -8,7 +8,7 @@ use self::iron_llvm::core;
 use self::iron_llvm::core::types::{RealTypeCtor, RealTypeRef};
 use self::iron_llvm::{LLVMRef, LLVMRefCtor};
 
-use parser::{ParseResult, AST, ASTNode};
+use parser::{ParseResult, AST, ASTNode, Prototype, Expression};
 
 pub struct Context {
     context: core::Context,
@@ -94,5 +94,21 @@ impl IRBuilder for AST {
             result = Ok(try!(node.codegen(context, module_provider)));
         }
         result
+    }
+}
+
+impl IRBuilder for ASTNode {
+    fn codegen(&self, context: &mut Context, module_provider: &mut ModuleProvider) -> IRBuildingResult {
+        match self {
+            &ASTNode::ExprNode(ref expression) => expression.codegen(context, module_provider),
+            &ASTNode::FuncNode(ref function) => function.codegen(context, module_provider),
+        }
+    }
+}
+
+impl IRBuilder for Function {
+    fn codegen(&self, context: &mut Context, module_provider: &mut ModuleProvider) -> IRBuildingResult {
+
+
     }
 }
