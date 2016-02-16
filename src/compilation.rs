@@ -8,7 +8,7 @@ use self::iron_llvm::core;
 use self::iron_llvm::core::types::{RealTypeCtor, RealTypeRef};
 use self::iron_llvm::{LLVMRef, LLVMRefCtor};
 
-use parser::{ParseResult, AST, ASTNode, Prototype, Expression};
+use parser::{ParseResult, AST, ASTNode, Prototype, Function, Expression};
 
 pub struct Context {
     context: core::Context,
@@ -112,3 +112,5 @@ impl IRBuilder for Function {
 
     }
 }
+
+
