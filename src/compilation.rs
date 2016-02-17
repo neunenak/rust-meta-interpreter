@@ -108,8 +108,13 @@ impl IRBuilder for ASTNode {
 
 impl IRBuilder for Function {
     fn codegen(&self, context: &mut Context, module_provider: &mut ModuleProvider) -> IRBuildingResult {
+        unimplemented!()
+    }
+}
 
-
+impl IRBuilder for Expression {
+    fn codegen(&self, context: &mut Context, module_provider: &mut ModuleProvider) -> IRBuildingResult {
+        unimplemented!()
     }
 }
 
