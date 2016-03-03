@@ -91,7 +91,7 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
 
     let ast = match parse(&tokens, &[]) {
         Ok(ast) => ast,
-        Err(err) => return err.msg
+        Err(err) => return format!("Parse error: {}", err.msg),
     };
 
     if state.show_parse {
