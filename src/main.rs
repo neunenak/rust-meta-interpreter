@@ -21,36 +21,43 @@ mod eval;
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if let Some(filename) = args.get(1) {
-        let mut source_file = File::open(&Path::new(filename)).unwrap();
-        let mut buffer = String::new();
-        source_file.read_to_string(&mut buffer).unwrap();
-
-        let tokens = match tokenize(&buffer) {
-            Some(t) => t,
-            None => { println!("Tokenization error"); return; }
-        };
-
-        let ast = match parse(&tokens, &[]) {
-            Ok(ast) => ast,
-            Err(err) => { println!("Parse error: {:?}", err); return; }
-        };
-
-        let mut evaluator = Evaluator::new();
-        let results = evaluator.run(ast);
-        for result in results.iter() {
-            println!("{}", result);
-        }
-
+        run_noninteractive(filename);
     } else {
-        println!("Schala v 0.02");
-        let initial_state = InterpreterState {
-            show_tokens: false,
-            show_parse: false,
-            evaluator: Evaluator::new(),
-        };
-        REPL::with_prompt_and_state(Box::new(repl_handler), ">> ", initial_state)
-              .run();
+        run_repl();
     }
+}
+
+fn run_noninteractive(filename: &String) {
+    let mut source_file = File::open(&Path::new(filename)).unwrap();
+    let mut buffer = String::new();
+    source_file.read_to_string(&mut buffer).unwrap();
+
+    let tokens = match tokenize(&buffer) {
+        Some(t) => t,
+        None => { println!("Tokenization error"); return; }
+    };
+
+    let ast = match parse(&tokens, &[]) {
+        Ok(ast) => ast,
+        Err(err) => { println!("Parse error: {:?}", err); return; }
+    };
+
+    let mut evaluator = Evaluator::new();
+    let results = evaluator.run(ast);
+    for result in results.iter() {
+        println!("{}", result);
+    }
+}
+
+fn run_repl() {
+    println!("Schala v 0.02");
+    let initial_state = InterpreterState {
+        show_tokens: false,
+        show_parse: false,
+        evaluator: Evaluator::new(),
+    };
+    REPL::with_prompt_and_state(Box::new(repl_handler), ">> ", initial_state)
+        .run();
 }
 
 struct InterpreterState {
