@@ -17,6 +17,8 @@ mod parser;
 use eval::{Evaluator};
 mod eval;
 
+use compilation::{compile_ast};
+mod compilation;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -42,10 +44,16 @@ fn run_noninteractive(filename: &String) {
         Err(err) => { println!("Parse error: {:?}", err); return; }
     };
 
-    let mut evaluator = Evaluator::new();
-    let results = evaluator.run(ast);
-    for result in results.iter() {
-        println!("{}", result);
+    let compile = true;
+
+    if compile {
+        compile_ast(ast);
+    } else {
+        let mut evaluator = Evaluator::new();
+        let results = evaluator.run(ast);
+        for result in results.iter() {
+            println!("{}", result);
+        }
     }
 }
 

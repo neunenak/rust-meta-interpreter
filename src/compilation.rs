@@ -10,6 +10,12 @@ use self::iron_llvm::{LLVMRef, LLVMRefCtor};
 
 use parser::{ParseResult, AST, ASTNode, Prototype, Function, Expression};
 
+pub fn compile_ast(ast: AST) {
+    println!("Compiling!");
+
+}
+
+/*
 pub struct Context {
     context: core::Context,
     builder: core::Builder,
@@ -117,5 +123,4 @@ impl IRBuilder for Expression {
         unimplemented!()
     }
 }
-
-
+*/
