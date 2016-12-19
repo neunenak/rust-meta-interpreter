@@ -76,7 +76,7 @@ struct InterpreterState {
 
 impl ReplState for InterpreterState {
     fn update_state(&mut self, input: &Vec<&str>) {
-        match &input[..] {
+        match input[..] {
             ["set", "show", "tokens", "true"] => {
                 self.show_tokens = true;
             },
