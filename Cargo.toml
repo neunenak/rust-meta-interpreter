@@ -8,5 +8,3 @@ authors = ["greg <greg.shuflin@protonmail.com>"]
 simplerepl = { path = "../simplerepl" }
 llvm-sys = "*"
 
-[dependencies.iron_llvm]
-git = "https://github.com/jauhien/iron-llvm.git"
