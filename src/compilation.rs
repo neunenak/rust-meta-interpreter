@@ -7,11 +7,31 @@ use std::ptr;
 
 use parser::{ParseResult, AST, ASTNode, Prototype, Function, Expression};
 
+mod LLVMWrap {
+    extern crate llvm_sys;
+    use self::llvm_sys::prelude::*;
+    use self::llvm_sys::core;
+    use std::ptr;
+
+    pub fn ContextCreate() -> LLVMContextRef {
+        unsafe {
+            core::LLVMContextCreate()
+        }
+    }
+
+    pub fn ModuleCreateWithName(name: &str) -> LLVMModuleRef {
+        unsafe {
+            let n = name.as_ptr() as *const _;
+            core::LLVMModuleCreateWithName(n)
+        }
+    }
+}
+
 pub fn compile_ast(ast: AST) {
     println!("Compiling!");
+    let context = LLVMWrap::ContextCreate();
+    let module = LLVMWrap::ModuleCreateWithName("schala");
     unsafe {
-        let context = core::LLVMContextCreate();
-        let module = core::LLVMModuleCreateWithName(b"schala\0".as_ptr() as *const _);
         let builder = core::LLVMCreateBuilderInContext(context);
 
         let void = core::LLVMVoidTypeInContext(context);
