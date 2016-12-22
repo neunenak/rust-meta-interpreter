@@ -12,17 +12,20 @@ mod LLVMWrap {
     use self::llvm_sys::prelude::*;
     use self::llvm_sys::core;
     use std::ptr;
-
     pub fn ContextCreate() -> LLVMContextRef {
         unsafe {
             core::LLVMContextCreate()
         }
     }
-
     pub fn ModuleCreateWithName(name: &str) -> LLVMModuleRef {
         unsafe {
             let n = name.as_ptr() as *const _;
             core::LLVMModuleCreateWithName(n)
+        }
+    }
+    pub fn CreateBuilderInContext(context: LLVMContextRef) -> LLVMBuilderRef {
+        unsafe {
+            core::LLVMCreateBuilderInContext(context)
         }
     }
 }
@@ -31,8 +34,8 @@ pub fn compile_ast(ast: AST) {
     println!("Compiling!");
     let context = LLVMWrap::ContextCreate();
     let module = LLVMWrap::ModuleCreateWithName("schala");
+    let builder = LLVMWrap::CreateBuilderInContext(context);
     unsafe {
-        let builder = core::LLVMCreateBuilderInContext(context);
 
         let void = core::LLVMVoidTypeInContext(context);
         let function_type = core::LLVMFunctionType(void, ptr::null_mut(), 0, 0);
