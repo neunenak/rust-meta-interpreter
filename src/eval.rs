@@ -123,7 +123,15 @@ impl Evaluator {
     }
 
     fn perform_side_effect(&mut self, side_effect: SideEffect) {
-        println!("lol doin' a side effect {:?}", side_effect);
+        use self::SideEffect::*;
+        match side_effect {
+            Print(s) => println!("{}", s),
+            Bundle(l) => {
+                for side_effect in l {
+                    self.perform_side_effect(side_effect);
+                }
+            },
+        }
     }
 
     fn reduce_astnode(&mut self, node: ASTNode) -> (ASTNode, Option<SideEffect>) {
@@ -181,7 +189,12 @@ impl Evaluator {
                     (self.reduce_binop(op, left, right), None) //can assume both arguments are maximally reduced
                 }
             },
-            Call(name, args) => self.reduce_call(name, args),
+            Call(name, args) => {
+                let reduced_args: Vec<Expression> = args.into_iter().map(|arg| {
+                    self.reduce_expr(arg).0
+                }).collect();
+                self.reduce_call(name, reduced_args)
+            },
             Conditional(_,_,_) => unimplemented!(),
         }
     }
@@ -223,6 +236,17 @@ impl Evaluator {
 
     fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> (Expression, Option<SideEffect>) {
         use parser::Expression::*;
+
+        //ugly hack for now
+        if name == "print" {
+            let mut s = String::new();
+            for arg in arguments {
+                s.push_str(&format!("{}\n", arg));
+            }
+            return (Null, Some(SideEffect::Print(s)));
+        }
+
+
         let function = match self.lookup_function(name) {
             Some(func) => func,
             None => return (Null, None)
