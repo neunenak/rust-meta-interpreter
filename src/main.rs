@@ -95,13 +95,15 @@ impl ReplState for InterpreterState {
 }
 
 fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
+    let mut result = String::new();
+
     let tokens = match tokenize(input) {
         None => return format!("Tokenization error"),
         Some(t) => t
     };
 
     if state.show_tokens {
-        println!("Tokens: {:?}", tokens);
+        result.push_str(&format!("Tokens: {:?}\n", tokens));
     }
 
     let ast = match parse(&tokens, &[]) {
@@ -110,11 +112,13 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
     };
 
     if state.show_parse {
-        println!("AST: {:?}", ast);
+        result.push_str(&format!("AST: {:?}\n", ast));
     }
 
     let mut output: Vec<String> = state.evaluator.run(ast);
 
     //for now only handle last output
-    output.pop().unwrap_or("".to_string())
+    let interpreter_result = output.pop().unwrap_or("".to_string());
+    result.push_str(&interpreter_result);
+    result
 }
