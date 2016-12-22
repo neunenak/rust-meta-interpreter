@@ -1,6 +1,12 @@
 use std::collections::HashMap;
 use parser::{AST, ASTNode, Expression, Function};
 
+#[derive(Debug)]
+enum SideEffect {
+    Print(String),
+    Bundle(Vec<SideEffect>),
+}
+
 struct Varmap {
     map: HashMap<String, Expression>
 }
@@ -109,43 +115,52 @@ impl Evaluator {
     }
 
     fn step(&mut self, node: ASTNode) -> ASTNode {
-        self.reduce_astnode(node)
+        let (new_node, side_effect) = self.reduce_astnode(node);
+        if let Some(s) = side_effect {
+            self.perform_side_effect(s);
+        }
+        new_node
     }
 
-    fn reduce_astnode(&mut self, node: ASTNode) -> ASTNode {
+    fn perform_side_effect(&mut self, side_effect: SideEffect) {
+        println!("lol doin' a side effect {:?}", side_effect);
+    }
+
+    fn reduce_astnode(&mut self, node: ASTNode) -> (ASTNode, Option<SideEffect>) {
         use parser::ASTNode::*;
         match node {
             ExprNode(expr) => {
                 if expr.is_reducible() {
-                    ExprNode(self.reduce_expr(expr))
+                    let (new_expr, side_effect) = self.reduce_expr(expr);
+                    (ExprNode(new_expr), side_effect)
                 } else {
-                    ExprNode(expr)
+                    (ExprNode(expr), None)
                 }
             },
             FuncNode(func) => {
                 let fn_name = func.prototype.name.clone();
                 self.add_function(fn_name, func);
-                ExprNode(Expression::Null)
+                (ExprNode(Expression::Null), None)
             },
         }
     }
 
-    fn reduce_expr(&mut self, expression: Expression) -> Expression {
+    fn reduce_expr(&mut self, expression: Expression) -> (Expression, Option<SideEffect>) {
         use parser::Expression::*;
         match expression {
-            Null => Null,
-            e@StringLiteral(_) => e,
-            e@Number(_) => e,
+            Null => (Null, None),
+            e@StringLiteral(_) => (e, None),
+            e@Number(_) => (e, None),
             Variable(var) => {
                 match self.lookup_binding(var) {
-                    None => Null,
-                    Some(expr) => expr,
+                    None => (Null, None),
+                    Some(expr) => (expr, None),
                 }
             },
             BinExp(op, box left, box right) => {
                 if right.is_reducible() {
                     let new = self.reduce_expr(right);
-                    return BinExp(op, Box::new(left), Box::new(new));
+                    return (BinExp(op, Box::new(left), Box::new(new.0)), new.1);
                 }
 
                 //special case for variable assignment
@@ -153,7 +168,7 @@ impl Evaluator {
                     match left {
                         Variable(var) => {
                             self.add_binding(var, right);
-                            return Null;
+                            return (Null, None);
                         },
                         _ => ()
                     }
@@ -161,9 +176,9 @@ impl Evaluator {
 
                 if left.is_reducible() {
                     let new = self.reduce_expr(left);
-                    BinExp(op, Box::new(new), Box::new(right))
+                    (BinExp(op, Box::new(new.0), Box::new(right)), new.1)
                 } else {
-                    self.reduce_binop(op, left, right) //can assume both arguments are maximally reduced
+                    (self.reduce_binop(op, left, right), None) //can assume both arguments are maximally reduced
                 }
             },
             Call(name, args) => self.reduce_call(name, args),
@@ -206,15 +221,15 @@ impl Evaluator {
         }
     }
 
-    fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> Expression {
+    fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> (Expression, Option<SideEffect>) {
         use parser::Expression::*;
         let function = match self.lookup_function(name) {
             Some(func) => func,
-            None => return Null
+            None => return (Null, None)
         };
 
         if function.prototype.parameters.len() != arguments.len() {
-            return Null
+            return (Null, None)
         }
 
         let mut frame: Varmap = Varmap::new();
@@ -224,14 +239,19 @@ impl Evaluator {
 
         self.frames.push(frame);
         let mut retval = Null;
+        let mut side_effects = Vec::new();
         for expr in function.body.iter() {
             retval = expr.clone();
             while retval.is_reducible() {
-                retval = self.reduce_expr(retval);
+                let r = self.reduce_expr(retval);
+                retval = r.0;
+                if let Some(s) = r.1 {
+                    side_effects.push(s);
+                }
             }
         }
 
         self.frames.pop();
-        retval
+        (retval, Some(SideEffect::Bundle(side_effects)))
     }
 }
