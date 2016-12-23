@@ -12,12 +12,12 @@ mod LLVMWrap {
     use self::llvm_sys::prelude::*;
     use self::llvm_sys::core;
     use std::ptr;
-    pub fn ContextCreate() -> LLVMContextRef {
+    pub fn create_context() -> LLVMContextRef {
         unsafe {
             core::LLVMContextCreate()
         }
     }
-    pub fn ModuleCreateWithName(name: &str) -> LLVMModuleRef {
+    pub fn module_create_with_name(name: &str) -> LLVMModuleRef {
         unsafe {
             let n = name.as_ptr() as *const _;
             core::LLVMModuleCreateWithName(n)
@@ -32,8 +32,8 @@ mod LLVMWrap {
 
 pub fn compile_ast(ast: AST) {
     println!("Compiling!");
-    let context = LLVMWrap::ContextCreate();
-    let module = LLVMWrap::ModuleCreateWithName("schala");
+    let context = LLVMWrap::create_context();
+    let module = LLVMWrap::module_create_with_name("schala");
     let builder = LLVMWrap::CreateBuilderInContext(context);
     unsafe {
 
@@ -63,7 +63,6 @@ trait CodeGen {
     fn codegen(&self, LLVMContextRef) ->  LLVMValueRef;
 }
 
-
 impl CodeGen for ASTNode {
     fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
         use self::ASTNode::*;
@@ -78,6 +77,9 @@ impl CodeGen for Expression {
     fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
         use self::Expression::*;
         match self {
+            &BinExp(ref op, ref left, ref right) => {
+                unimplemented!()
+            },
             &Number(ref n) => {
                 unimplemented!()
             },
