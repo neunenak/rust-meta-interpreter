@@ -7,4 +7,5 @@ authors = ["greg <greg.shuflin@protonmail.com>"]
 
 simplerepl = { path = "../simplerepl" }
 llvm-sys = "*"
+take_mut = "0.1.3"
 

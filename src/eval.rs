@@ -1,3 +1,5 @@
+extern crate take_mut;
+
 use std::collections::HashMap;
 use parser::{AST, ASTNode, Expression, Function};
 
@@ -189,11 +191,22 @@ impl Evaluator {
                     (self.reduce_binop(op, left, right), None) //can assume both arguments are maximally reduced
                 }
             },
-            Call(name, args) => {
-                let reduced_args: Vec<Expression> = args.into_iter().map(|arg| {
-                    self.reduce_expr(arg).0
-                }).collect();
-                self.reduce_call(name, reduced_args)
+            Call(name, mut args) => {
+                let mut f = true;
+                for arg in args.iter_mut() {
+                    if arg.is_reducible() {
+                        take_mut::take(arg, |arg| {
+                            self.reduce_expr(arg).0
+                        });
+                        f = false;
+                        break;
+                    }
+                }
+                if f {
+                    self.reduce_call(name, args)
+                } else {
+                    (Call(name, args), None)
+                }
             },
             Conditional(_,_,_) => unimplemented!(),
         }
