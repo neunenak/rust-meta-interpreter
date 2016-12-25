@@ -4,7 +4,6 @@ use self::llvm_sys::prelude::*;
 use self::llvm_sys::core;
 use std::ptr;
 
-
 use parser::{ParseResult, AST, ASTNode, Prototype, Function, Expression};
 
 mod LLVMWrap {
@@ -12,6 +11,8 @@ mod LLVMWrap {
     use self::llvm_sys::prelude::*;
     use self::llvm_sys::core;
     use std::ptr;
+    use std::ffi::CString;
+
     pub fn create_context() -> LLVMContextRef {
         unsafe {
             core::LLVMContextCreate()
@@ -28,6 +29,20 @@ mod LLVMWrap {
             core::LLVMCreateBuilderInContext(context)
         }
     }
+
+    pub fn AppendBasicBlockInContext(context: LLVMContextRef, function: LLVMValueRef, name: &str) -> LLVMBasicBlockRef {
+        let c_name = CString::new(name).unwrap();
+        unsafe {
+            core::LLVMAppendBasicBlockInContext(context, function, c_name.as_ptr())
+        }
+    }
+
+    pub fn AddFunction(module: LLVMModuleRef, name: &str, function_type: LLVMTypeRef) ->  LLVMValueRef {
+        let c_name = CString::new(name).unwrap();
+        unsafe {
+            core::LLVMAddFunction(module, c_name.as_ptr(), function_type)
+        }
+    }
 }
 
 pub fn compile_ast(ast: AST) {
@@ -39,11 +54,10 @@ pub fn compile_ast(ast: AST) {
 
         let void = core::LLVMVoidTypeInContext(context);
         let function_type = core::LLVMFunctionType(void, ptr::null_mut(), 0, 0);
-        let function = core::LLVMAddFunction(module, b"nop\0".as_ptr() as *const _,
-                                                   function_type);
+        let function = LLVMWrap::AddFunction(module, "nop", function_type);
 
-        let bb = core::LLVMAppendBasicBlockInContext(context, function,
-                                                           b"entry\0".as_ptr() as *const _);
+        let bb = LLVMWrap::AppendBasicBlockInContext(context, function, "entry");
+
         core::LLVMPositionBuilderAtEnd(builder, bb);
 
         // Emit a `ret void` into the function
