@@ -46,8 +46,9 @@ mod LLVMWrap {
 
     //NOTE this is incomplete
     pub fn FunctionType(return_type: LLVMTypeRef, param_types: &[LLVMTypeRef], is_var_rag: bool) -> LLVMTypeRef {
+        let len = param_types.len();
         unsafe {
-            core::LLVMFunctionType(return_type, ptr::null_mut(), 0, 0)
+            core::LLVMFunctionType(return_type, ptr::null_mut(), len as u32, if is_var_rag { 1 } else { 0 })
         }
     }
 
@@ -56,36 +57,70 @@ mod LLVMWrap {
             core::LLVMVoidTypeInContext(context)
         }
     }
-}
 
+    pub fn DisposeBuilder(builder: LLVMBuilderRef) {
+        unsafe {
+            core::LLVMDisposeBuilder(builder)
+        }
+    }
+
+    pub fn DisposeModule(module: LLVMModuleRef) {
+        unsafe {
+            core::LLVMDisposeModule(module)
+        }
+    }
+
+    pub fn ContextDispose(context: LLVMContextRef) {
+        unsafe {
+            core::LLVMContextDispose(context)
+        }
+    }
+
+    pub fn PositionBuilderAtEnd(builder: LLVMBuilderRef, basic_block: LLVMBasicBlockRef) {
+        unsafe {
+            core::LLVMPositionBuilderAtEnd(builder, basic_block)
+        }
+    }
+
+    pub fn BuildRetVoid(builder: LLVMBuilderRef) -> LLVMValueRef {
+        unsafe {
+            core::LLVMBuildRetVoid(builder)
+        }
+    }
+
+    pub fn DumpModule(module: LLVMModuleRef) {
+        unsafe {
+            core::LLVMDumpModule(module)
+        }
+    }
+}
 
 pub fn compile_ast(ast: AST) {
     println!("Compiling!");
+
+    let name = "nop";
     let context = LLVMWrap::create_context();
-    let module = LLVMWrap::module_create_with_name("schala");
+    let module = LLVMWrap::module_create_with_name(name);
     let builder = LLVMWrap::CreateBuilderInContext(context);
 
     let void = LLVMWrap::VoidTypeInContext(context);
     let function_type = LLVMWrap::FunctionType(void, &Vec::new(), false);
-    let function = LLVMWrap::AddFunction(module, "nop", function_type);
+    let function = LLVMWrap::AddFunction(module, name, function_type);
 
     let bb = LLVMWrap::AppendBasicBlockInContext(context, function, "entry");
 
-    unsafe {
+    LLVMWrap::PositionBuilderAtEnd(builder, bb);
 
-        core::LLVMPositionBuilderAtEnd(builder, bb);
+    // Emit a `ret void` into the function
+    LLVMWrap::BuildRetVoid(builder);
 
-        // Emit a `ret void` into the function
-        core::LLVMBuildRetVoid(builder);
+    // Dump the module as IR to stdout.
+    LLVMWrap::DumpModule(module);
 
-        // Dump the module as IR to stdout.
-        core::LLVMDumpModule(module);
-
-        // Clean up. Values created in the context mostly get cleaned up there.
-        core::LLVMDisposeBuilder(builder);
-        core::LLVMDisposeModule(module);
-        core::LLVMContextDispose(context);
-    }
+    // Clean up. Values created in the context mostly get cleaned up there.
+    LLVMWrap::DisposeBuilder(builder);
+    LLVMWrap::DisposeModule(module);
+    LLVMWrap::ContextDispose(context);
 }
 
 trait CodeGen {
