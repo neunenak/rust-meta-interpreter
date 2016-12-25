@@ -43,20 +43,35 @@ mod LLVMWrap {
             core::LLVMAddFunction(module, c_name.as_ptr(), function_type)
         }
     }
+
+    //NOTE this is incomplete
+    pub fn FunctionType(return_type: LLVMTypeRef, param_types: &[LLVMTypeRef], is_var_rag: bool) -> LLVMTypeRef {
+        unsafe {
+            core::LLVMFunctionType(return_type, ptr::null_mut(), 0, 0)
+        }
+    }
+
+    pub fn VoidTypeInContext(context: LLVMContextRef) -> LLVMTypeRef {
+        unsafe {
+            core::LLVMVoidTypeInContext(context)
+        }
+    }
 }
+
 
 pub fn compile_ast(ast: AST) {
     println!("Compiling!");
     let context = LLVMWrap::create_context();
     let module = LLVMWrap::module_create_with_name("schala");
     let builder = LLVMWrap::CreateBuilderInContext(context);
+
+    let void = LLVMWrap::VoidTypeInContext(context);
+    let function_type = LLVMWrap::FunctionType(void, &Vec::new(), false);
+    let function = LLVMWrap::AddFunction(module, "nop", function_type);
+
+    let bb = LLVMWrap::AppendBasicBlockInContext(context, function, "entry");
+
     unsafe {
-
-        let void = core::LLVMVoidTypeInContext(context);
-        let function_type = core::LLVMFunctionType(void, ptr::null_mut(), 0, 0);
-        let function = LLVMWrap::AddFunction(module, "nop", function_type);
-
-        let bb = LLVMWrap::AppendBasicBlockInContext(context, function, "entry");
 
         core::LLVMPositionBuilderAtEnd(builder, bb);
 
