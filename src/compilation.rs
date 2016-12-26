@@ -3,6 +3,7 @@ extern crate llvm_sys;
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::core;
 use std::ptr;
+use std::ffi::CString;
 
 use parser::{ParseResult, AST, ASTNode, Prototype, Function, Expression};
 
@@ -82,6 +83,12 @@ mod LLVMWrap {
         }
     }
 
+    pub fn BuildRet(builder: LLVMBuilderRef, val: LLVMValueRef) -> LLVMValueRef {
+        unsafe {
+            core::LLVMBuildRet(builder, val)
+        }
+    }
+
     pub fn BuildRetVoid(builder: LLVMBuilderRef) -> LLVMValueRef {
         unsafe {
             core::LLVMBuildRetVoid(builder)
@@ -93,29 +100,45 @@ mod LLVMWrap {
             core::LLVMDumpModule(module)
         }
     }
+
+    pub fn Int64TypeInContext(context: LLVMContextRef) -> LLVMTypeRef {
+        unsafe {
+            core::LLVMInt64TypeInContext(context)
+        }
+    }
+
+    pub fn ConstInt(int_type: LLVMTypeRef, n: u64, sign_extend: bool) -> LLVMValueRef {
+        unsafe {
+            core::LLVMConstInt(int_type, n, if sign_extend { 1 } else { 0 })
+        }
+    }
 }
 
 pub fn compile_ast(ast: AST) {
     println!("Compiling!");
 
-    let name = "nop";
     let context = LLVMWrap::create_context();
-    let module = LLVMWrap::module_create_with_name(name);
+    let module = LLVMWrap::module_create_with_name("example module");
     let builder = LLVMWrap::CreateBuilderInContext(context);
 
-    let void = LLVMWrap::VoidTypeInContext(context);
-    let function_type = LLVMWrap::FunctionType(void, &Vec::new(), false);
-    let function = LLVMWrap::AddFunction(module, name, function_type);
+    //let void = LLVMWrap::VoidTypeInContext(context);
+
+    let int_type = LLVMWrap::Int64TypeInContext(context);
+    let function_type = LLVMWrap::FunctionType(int_type, &Vec::new(), false);
+    let function = LLVMWrap::AddFunction(module, "main", function_type);
 
     let bb = LLVMWrap::AppendBasicBlockInContext(context, function, "entry");
-
     LLVMWrap::PositionBuilderAtEnd(builder, bb);
 
-    // Emit a `ret void` into the function
-    LLVMWrap::BuildRetVoid(builder);
+    let int_value: u64 = 84;
+    let int_value = LLVMWrap::ConstInt(int_type, int_value, false);
 
-    // Dump the module as IR to stdout.
-    LLVMWrap::DumpModule(module);
+    LLVMWrap::BuildRet(builder, int_value);
+
+    unsafe {
+        let out_file = CString::new("out.ll").unwrap();
+        core::LLVMPrintModuleToFile(module, out_file.as_ptr(), ptr::null_mut());
+    }
 
     // Clean up. Values created in the context mostly get cleaned up there.
     LLVMWrap::DisposeBuilder(builder);
