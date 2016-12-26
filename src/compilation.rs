@@ -112,6 +112,41 @@ mod LLVMWrap {
             core::LLVMConstInt(int_type, n, if sign_extend { 1 } else { 0 })
         }
     }
+
+    pub fn BuildAdd(builder: LLVMBuilderRef, lhs: LLVMValueRef, rhs: LLVMValueRef, reg_name: &str) -> LLVMValueRef {
+        let name = CString::new(reg_name).unwrap();
+        unsafe {
+            core::LLVMBuildAdd(builder, lhs, rhs, name.as_ptr())
+        }
+    }
+
+    pub fn BuildSub(builder: LLVMBuilderRef, lhs: LLVMValueRef, rhs: LLVMValueRef, reg_name: &str) -> LLVMValueRef {
+        let name = CString::new(reg_name).unwrap();
+        unsafe {
+            core::LLVMBuildSub(builder, lhs, rhs, name.as_ptr())
+        }
+    }
+
+    pub fn BuildMul(builder: LLVMBuilderRef, lhs: LLVMValueRef, rhs: LLVMValueRef, reg_name: &str) -> LLVMValueRef {
+        let name = CString::new(reg_name).unwrap();
+        unsafe {
+            core::LLVMBuildMul(builder, lhs, rhs, name.as_ptr())
+        }
+    }
+
+    pub fn BuildUDiv(builder: LLVMBuilderRef, lhs: LLVMValueRef, rhs: LLVMValueRef, reg_name: &str) -> LLVMValueRef {
+        let name = CString::new(reg_name).unwrap();
+        unsafe {
+            core::LLVMBuildUDiv(builder, lhs, rhs, name.as_ptr())
+        }
+    }
+
+    pub fn BuildSRem(builder: LLVMBuilderRef, lhs: LLVMValueRef, rhs: LLVMValueRef, reg_name: &str) -> LLVMValueRef {
+        let name = CString::new(reg_name).unwrap();
+        unsafe {
+            core::LLVMBuildSRem(builder, lhs, rhs, name.as_ptr())
+        }
+    }
 }
 
 pub fn compilation_sequence(ast: AST, sourcefile: &str) {
@@ -222,20 +257,16 @@ impl CodeGen for Expression {
             &BinExp(ref op, ref left, ref right) => {
                 let lhs = left.codegen(context, builder);
                 let rhs = right.codegen(context, builder);
-                unsafe {
-                    let generator = match op.as_ref() {
-                        "+" => core::LLVMBuildAdd,
-                        "-" => core::LLVMBuildSub,
-                        "*" => core::LLVMBuildMul,
-                        "/" => core::LLVMBuildUDiv,
-                        "%" => core::LLVMBuildSRem,
-                        _ => panic!("Bad operator {}", op),
+                let generator = match op.as_ref() {
+                    "+" => LLVMWrap::BuildAdd,
+                    "-" => LLVMWrap::BuildSub,
+                    "*" => LLVMWrap::BuildMul,
+                    "/" => LLVMWrap::BuildUDiv,
+                    "%" => LLVMWrap::BuildSRem,
+                    _ => panic!("Bad operator {}", op),
+                };
 
-                    };
-
-                    let reg_name = CString::new("temporary").unwrap();
-                    generator(builder, lhs, rhs, reg_name.as_ptr())
-                }
+                generator(builder, lhs, rhs, "temp")
             },
             &Number(ref n) => {
                 let native_val = *n as u64;
