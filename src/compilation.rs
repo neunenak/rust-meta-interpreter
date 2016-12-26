@@ -212,7 +212,6 @@ impl CodeGen for Function {
     }
 }
 
-
 impl CodeGen for Expression {
     fn codegen(&self, context: LLVMContextRef, builder: LLVMBuilderRef) -> LLVMValueRef {
         use self::Expression::*;
@@ -221,7 +220,22 @@ impl CodeGen for Expression {
 
         match self {
             &BinExp(ref op, ref left, ref right) => {
-                unimplemented!()
+                let lhs = left.codegen(context, builder);
+                let rhs = right.codegen(context, builder);
+                unsafe {
+                    let generator = match op.as_ref() {
+                        "+" => core::LLVMBuildAdd,
+                        "-" => core::LLVMBuildSub,
+                        "*" => core::LLVMBuildMul,
+                        "/" => core::LLVMBuildUDiv,
+                        "%" => core::LLVMBuildSRem,
+                        _ => panic!("Bad operator {}", op),
+
+                    };
+
+                    let reg_name = CString::new("temporary").unwrap();
+                    generator(builder, lhs, rhs, reg_name.as_ptr())
+                }
             },
             &Number(ref n) => {
                 let native_val = *n as u64;
