@@ -114,7 +114,39 @@ mod LLVMWrap {
     }
 }
 
-pub fn compile_ast(ast: AST) {
+pub fn compilation_sequence(ast: AST, sourcefile: &str) {
+    use std::process::Command;
+
+    let ll_filename = "out.ll";
+    let obj_filename = "out.o";
+    let q: Vec<&str>  = sourcefile.split('.').collect();
+    let bin_filename = match &q[..] {
+        &[name, "schala"] => name,
+        _ => panic!("Bad filename {}", sourcefile),
+    };
+
+    compile_ast(ast, ll_filename);
+    Command::new("llc")
+        .arg("-filetype=obj")
+        .arg(ll_filename)
+        .output()
+        .expect("Failed to run llc");
+
+    Command::new("gcc")
+        .arg(format!("-o{}", bin_filename))
+        .arg(obj_filename)
+        .output()
+        .expect("failed to run gcc");
+
+    for filename in [ll_filename, obj_filename].iter() {
+        Command::new("rm")
+            .arg(ll_filename)
+            .output()
+            .expect(&format!("failed to run rm {}", filename));
+    }
+}
+
+fn compile_ast(ast: AST, filename: &str) {
     println!("Compiling!");
     println!("AST is {:?}", ast);
 
@@ -136,12 +168,12 @@ pub fn compile_ast(ast: AST) {
     let int_value = LLVMWrap::ConstInt(int_type, int_value, false);
     */
 
-    let value = ast.codegen(context);
+    let value = ast.codegen(context, builder);
 
     LLVMWrap::BuildRet(builder, value);
 
     unsafe {
-        let out_file = CString::new("out.ll").unwrap();
+        let out_file = CString::new(filename).unwrap();
         core::LLVMPrintModuleToFile(module, out_file.as_ptr(), ptr::null_mut());
     }
 
@@ -152,37 +184,37 @@ pub fn compile_ast(ast: AST) {
 }
 
 trait CodeGen {
-    fn codegen(&self, LLVMContextRef) ->  LLVMValueRef;
+    fn codegen(&self, LLVMContextRef, LLVMBuilderRef) ->  LLVMValueRef;
 }
 
 impl CodeGen for AST {
-    fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
+    fn codegen(&self, context: LLVMContextRef, builder: LLVMBuilderRef) -> LLVMValueRef {
         let first = self.get(0).unwrap();
-        first.codegen(context)
+        first.codegen(context, builder)
     }
 }
 
 impl CodeGen for ASTNode {
-    fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
+    fn codegen(&self, context: LLVMContextRef, builder: LLVMBuilderRef) -> LLVMValueRef {
         use self::ASTNode::*;
         match self {
-            &ExprNode(ref expr) => expr.codegen(context),
-            &FuncNode(ref func) => func.codegen(context),
+            &ExprNode(ref expr) => expr.codegen(context, builder),
+            &FuncNode(ref func) => func.codegen(context, builder),
         }
     }
 }
 
 impl CodeGen for Function {
-    fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
+    fn codegen(&self, context: LLVMContextRef, builder: LLVMBuilderRef) -> LLVMValueRef {
         let ref body = self.body;
         let first = body.get(0).unwrap();
-        first.codegen(context)
+        first.codegen(context, builder)
     }
 }
 
 
 impl CodeGen for Expression {
-    fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
+    fn codegen(&self, context: LLVMContextRef, builder: LLVMBuilderRef) -> LLVMValueRef {
         use self::Expression::*;
 
         let int_type = LLVMWrap::Int64TypeInContext(context);

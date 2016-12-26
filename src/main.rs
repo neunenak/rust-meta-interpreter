@@ -17,7 +17,7 @@ mod parser;
 use eval::{Evaluator};
 mod eval;
 
-use compilation::{compile_ast};
+use compilation::{compilation_sequence};
 mod compilation;
 
 fn main() {
@@ -47,7 +47,7 @@ fn run_noninteractive(filename: &String) {
     let compile = true;
 
     if compile {
-        compile_ast(ast);
+        compilation_sequence(ast, filename);
     } else {
         let mut evaluator = Evaluator::new();
         let results = evaluator.run(ast);
