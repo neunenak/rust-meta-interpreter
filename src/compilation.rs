@@ -138,9 +138,9 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         .output()
         .expect("failed to run gcc");
 
-    for filename in [ll_filename, obj_filename].iter() {
+    for filename in [obj_filename].iter() {
         Command::new("rm")
-            .arg(ll_filename)
+            .arg(filename)
             .output()
             .expect(&format!("failed to run rm {}", filename));
     }
