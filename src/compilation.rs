@@ -116,6 +116,7 @@ mod LLVMWrap {
 
 pub fn compile_ast(ast: AST) {
     println!("Compiling!");
+    println!("AST is {:?}", ast);
 
     let context = LLVMWrap::create_context();
     let module = LLVMWrap::module_create_with_name("example module");
@@ -130,10 +131,14 @@ pub fn compile_ast(ast: AST) {
     let bb = LLVMWrap::AppendBasicBlockInContext(context, function, "entry");
     LLVMWrap::PositionBuilderAtEnd(builder, bb);
 
+    /*
     let int_value: u64 = 84;
     let int_value = LLVMWrap::ConstInt(int_type, int_value, false);
+    */
 
-    LLVMWrap::BuildRet(builder, int_value);
+    let value = ast.codegen(context);
+
+    LLVMWrap::BuildRet(builder, value);
 
     unsafe {
         let out_file = CString::new("out.ll").unwrap();
@@ -150,25 +155,46 @@ trait CodeGen {
     fn codegen(&self, LLVMContextRef) ->  LLVMValueRef;
 }
 
+impl CodeGen for AST {
+    fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
+        let first = self.get(0).unwrap();
+        first.codegen(context)
+    }
+}
+
 impl CodeGen for ASTNode {
     fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
         use self::ASTNode::*;
         match self {
             &ExprNode(ref expr) => expr.codegen(context),
-            &FuncNode(ref func) => unimplemented!(),
+            &FuncNode(ref func) => func.codegen(context),
         }
     }
 }
 
+impl CodeGen for Function {
+    fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
+        let ref body = self.body;
+        let first = body.get(0).unwrap();
+        first.codegen(context)
+    }
+}
+
+
 impl CodeGen for Expression {
     fn codegen(&self, context: LLVMContextRef) -> LLVMValueRef {
         use self::Expression::*;
+
+        let int_type = LLVMWrap::Int64TypeInContext(context);
+
         match self {
             &BinExp(ref op, ref left, ref right) => {
                 unimplemented!()
             },
             &Number(ref n) => {
-                unimplemented!()
+                let native_val = *n as u64;
+                let int_value: LLVMValueRef = LLVMWrap::ConstInt(int_type, native_val, false);
+                int_value
             },
             _ => unimplemented!(),
         }
