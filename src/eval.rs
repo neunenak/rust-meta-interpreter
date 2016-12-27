@@ -178,7 +178,7 @@ impl Evaluator {
                     match left {
                         Variable(var) => {
                             self.add_binding(var, right);
-                            return (Null, None);
+                            return (Null, None); //TODO variable binding should be an effect
                         },
                         _ => ()
                     }

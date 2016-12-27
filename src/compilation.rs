@@ -1,5 +1,7 @@
 extern crate llvm_sys;
 
+use std::collections::HashMap;
+
 use self::llvm_sys::prelude::*;
 use parser::{ParseResult, AST, ASTNode, Prototype, Function, Expression};
 
@@ -38,29 +40,40 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
     }
 }
 
+type VariableMap = HashMap<String, LLVMValueRef>;
+
+struct CompilationData {
+    context: LLVMContextRef,
+    module: LLVMModuleRef,
+    builder: LLVMBuilderRef,
+    variables: VariableMap,
+}
+
 fn compile_ast(ast: AST, filename: &str) {
     println!("Compiling!");
     println!("AST is {:?}", ast);
+
+    let names: VariableMap = HashMap::new();
 
     let context = LLVMWrap::create_context();
     let module = LLVMWrap::module_create_with_name("example module");
     let builder = LLVMWrap::CreateBuilderInContext(context);
 
-    //let void = LLVMWrap::VoidTypeInContext(context);
+    let mut data = CompilationData {
+        context: context,
+        module: module,
+        builder: builder,
+        variables: names,
+    };
 
-    let int_type = LLVMWrap::Int64TypeInContext(context);
+    let int_type = LLVMWrap::Int64TypeInContext(data.context);
     let function_type = LLVMWrap::FunctionType(int_type, &Vec::new(), false);
-    let function = LLVMWrap::AddFunction(module, "main", function_type);
+    let function = LLVMWrap::AddFunction(data.module, "main", function_type);
 
-    let bb = LLVMWrap::AppendBasicBlockInContext(context, function, "entry");
+    let bb = LLVMWrap::AppendBasicBlockInContext(data.context, function, "entry");
     LLVMWrap::PositionBuilderAtEnd(builder, bb);
 
-    /*
-    let int_value: u64 = 84;
-    let int_value = LLVMWrap::ConstInt(int_type, int_value, false);
-    */
-
-    let value = ast.codegen(context, builder);
+    let value = ast.codegen(&mut data);
 
     LLVMWrap::BuildRet(builder, value);
 
@@ -73,44 +86,44 @@ fn compile_ast(ast: AST, filename: &str) {
 }
 
 trait CodeGen {
-    fn codegen(&self, LLVMContextRef, LLVMBuilderRef) ->  LLVMValueRef;
+    fn codegen(&self, &mut CompilationData) ->  LLVMValueRef;
 }
 
 impl CodeGen for AST {
-    fn codegen(&self, context: LLVMContextRef, builder: LLVMBuilderRef) -> LLVMValueRef {
+    fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
         let first = self.get(0).unwrap();
-        first.codegen(context, builder)
+        first.codegen(data)
     }
 }
 
 impl CodeGen for ASTNode {
-    fn codegen(&self, context: LLVMContextRef, builder: LLVMBuilderRef) -> LLVMValueRef {
+    fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
         use self::ASTNode::*;
         match self {
-            &ExprNode(ref expr) => expr.codegen(context, builder),
-            &FuncNode(ref func) => func.codegen(context, builder),
+            &ExprNode(ref expr) => expr.codegen(data),
+            &FuncNode(ref func) => func.codegen(data),
         }
     }
 }
 
 impl CodeGen for Function {
-    fn codegen(&self, context: LLVMContextRef, builder: LLVMBuilderRef) -> LLVMValueRef {
+    fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
         let ref body = self.body;
         let first = body.get(0).unwrap();
-        first.codegen(context, builder)
+        first.codegen(data)
     }
 }
 
 impl CodeGen for Expression {
-    fn codegen(&self, context: LLVMContextRef, builder: LLVMBuilderRef) -> LLVMValueRef {
+    fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
         use self::Expression::*;
 
-        let int_type = LLVMWrap::Int64TypeInContext(context);
+        let int_type = LLVMWrap::Int64TypeInContext(data.context);
 
         match self {
             &BinExp(ref op, ref left, ref right) => {
-                let lhs = left.codegen(context, builder);
-                let rhs = right.codegen(context, builder);
+                let lhs = left.codegen(data);
+                let rhs = right.codegen(data);
                 let generator = match op.as_ref() {
                     "+" => LLVMWrap::BuildAdd,
                     "-" => LLVMWrap::BuildSub,
@@ -120,7 +133,7 @@ impl CodeGen for Expression {
                     _ => panic!("Bad operator {}", op),
                 };
 
-                generator(builder, lhs, rhs, "temp")
+                generator(data.builder, lhs, rhs, "temp")
             },
             &Number(ref n) => {
                 let native_val = *n as u64;
