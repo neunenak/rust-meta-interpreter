@@ -19,6 +19,7 @@ mod eval;
 
 use compilation::{compilation_sequence};
 mod compilation;
+mod llvm_wrap;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
