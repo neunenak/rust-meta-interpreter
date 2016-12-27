@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+#![allow(dead_code)]
 extern crate llvm_sys;
 
 use self::llvm_sys::prelude::*;
@@ -136,5 +138,12 @@ pub fn BuildSRem(builder: LLVMBuilderRef, lhs: LLVMValueRef, rhs: LLVMValueRef, 
     let name = CString::new(reg_name).unwrap();
     unsafe {
         core::LLVMBuildSRem(builder, lhs, rhs, name.as_ptr())
+    }
+}
+
+pub fn PrintModuleToFile(module: LLVMModuleRef, filename: &str) -> LLVMBool {
+    let out_file = CString::new(filename).unwrap();
+    unsafe {
+        core::LLVMPrintModuleToFile(module, out_file.as_ptr(), ptr::null_mut())
     }
 }

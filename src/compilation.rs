@@ -1,10 +1,6 @@
 extern crate llvm_sys;
 
 use self::llvm_sys::prelude::*;
-use self::llvm_sys::core;
-use std::ptr;
-use std::ffi::CString;
-
 use parser::{ParseResult, AST, ASTNode, Prototype, Function, Expression};
 
 use llvm_wrap as LLVMWrap;
@@ -19,6 +15,7 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         &[name, "schala"] => name,
         _ => panic!("Bad filename {}", sourcefile),
     };
+
 
     compile_ast(ast, ll_filename);
     Command::new("llc")
@@ -67,10 +64,7 @@ fn compile_ast(ast: AST, filename: &str) {
 
     LLVMWrap::BuildRet(builder, value);
 
-    unsafe {
-        let out_file = CString::new(filename).unwrap();
-        core::LLVMPrintModuleToFile(module, out_file.as_ptr(), ptr::null_mut());
-    }
+    LLVMWrap::PrintModuleToFile(module, filename);
 
     // Clean up. Values created in the context mostly get cleaned up there.
     LLVMWrap::DisposeBuilder(builder);
