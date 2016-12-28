@@ -109,8 +109,12 @@ impl CodeGen for ASTNode {
 impl CodeGen for Function {
     fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
         let ref body = self.body;
-        let first = body.get(0).unwrap();
-        first.codegen(data)
+        let int_type = LLVMWrap::Int64TypeInContext(data.context);
+        let mut ret = LLVMWrap::ConstInt(int_type, 0, false);
+        for expr in body {
+            ret = expr.codegen(data);
+        }
+        ret
     }
 }
 
@@ -121,6 +125,18 @@ impl CodeGen for Expression {
         let int_type = LLVMWrap::Int64TypeInContext(data.context);
 
         match self {
+            &Variable(ref name) => {
+                *data.variables.get(name).unwrap()
+            },
+            &BinExp(ref op, ref left, ref right) if op == "=" => {
+                if let Variable(ref name) = **left {
+                    let new_value = right.codegen(data);
+                    data.variables.insert(name.clone(), new_value);
+                    new_value
+                } else {
+                    panic!("Bad variable assignment")
+                }
+            },
             &BinExp(ref op, ref left, ref right) => {
                 let lhs = left.codegen(data);
                 let rhs = right.codegen(data);
