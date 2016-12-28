@@ -1,6 +1,6 @@
 #![feature(advanced_slice_patterns, slice_patterns, box_patterns)]
-
 extern crate simplerepl;
+extern crate getopts;
 
 use std::path::Path;
 use std::fs::File;
@@ -22,12 +22,21 @@ mod compilation;
 mod llvm_wrap;
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    if let Some(filename) = args.get(1) {
-        run_noninteractive(filename);
-    } else {
-        run_repl();
-    }
+    let option_matches = program_options().parse(std::env::args()).expect("Could not parse options"); 
+    match option_matches.free[..] {
+        [] | [_] => {
+            run_repl();
+        },
+        [_, ref filename, ..] => {
+            run_noninteractive(filename);
+        }
+    };
+}
+
+fn program_options() -> getopts::Options {
+    let mut options = getopts::Options::new();
+    options.optflag("i", "interpret", "Interpret source file instead of compiling");
+    options
 }
 
 fn run_noninteractive(filename: &String) {
