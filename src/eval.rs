@@ -3,6 +3,8 @@ extern crate take_mut;
 use std::collections::HashMap;
 use parser::{AST, ASTNode, Expression, Function};
 
+type Reduction<T> = (T, Option<SideEffect>);
+
 #[derive(Debug)]
 enum SideEffect {
     Print(String),
@@ -136,7 +138,7 @@ impl Evaluator {
         }
     }
 
-    fn reduce_astnode(&mut self, node: ASTNode) -> (ASTNode, Option<SideEffect>) {
+    fn reduce_astnode(&mut self, node: ASTNode) -> Reduction<ASTNode> {
         use parser::ASTNode::*;
         match node {
             ExprNode(expr) => {
@@ -155,7 +157,7 @@ impl Evaluator {
         }
     }
 
-    fn reduce_expr(&mut self, expression: Expression) -> (Expression, Option<SideEffect>) {
+    fn reduce_expr(&mut self, expression: Expression) -> Reduction<Expression> {
         use parser::Expression::*;
         match expression {
             Null => (Null, None),
@@ -262,7 +264,7 @@ impl Evaluator {
     fn reduce_call(&mut self,
                    name: String,
                    arguments: Vec<Expression>)
-                   -> (Expression, Option<SideEffect>) {
+                   -> Reduction<Expression> {
         use parser::Expression::*;
 
         // ugly hack for now
