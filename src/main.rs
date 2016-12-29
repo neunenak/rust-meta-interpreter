@@ -47,14 +47,17 @@ fn run_noninteractive(filename: &str, compile: bool) {
     let tokens = match tokenize(&buffer) {
         Ok(t) => t,
         Err(e) => {
-            println!("Tokenization error");
-            return;
+            println!("Tokenization error: {}", e.msg);
+            std::process::exit(1)
         }
     };
 
     let ast = match parse(&tokens, &[]) {
         Ok(ast) => ast,
-        Err(err) => { println!("Parse error: {:?}", err); return; }
+        Err(err) => {
+            println!("Parse error: {:?}", err);
+            std::process::exit(1)
+        }
     };
 
     if compile {
