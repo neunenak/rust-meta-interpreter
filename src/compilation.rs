@@ -3,7 +3,7 @@ extern crate llvm_sys;
 use std::collections::HashMap;
 
 use self::llvm_sys::prelude::*;
-use parser::{ParseResult, AST, ASTNode, Prototype, Function, Expression};
+use parser::{AST, ASTNode, Function, Expression};
 
 use llvm_wrap as LLVMWrap;
 

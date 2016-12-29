@@ -114,7 +114,7 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
     let mut result = String::new();
 
     let tokens = match tokenize(input) {
-        Err(e) => return format!("Tokenization error"),
+        Err(e) => return format!("Tokenization error: {}", e.msg),
         Ok(t) => t,
     };
 
