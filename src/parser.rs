@@ -355,16 +355,16 @@ mod tests {
 
         parsetest!(
         "fn a() 1 + 2 end",
-        [FuncNode(Function {prototype: Prototype { name: ref name, args: ref args }, body: ref body})],
-        match &body[..] { [BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
-            && name == "a" && match &args[..] { [] => true, _ => false }
+        &[FuncNode(Function {prototype: Prototype { name: ref name, parameters: ref parameters }, body: ref body})],
+        match &body[..] { &[BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
+            && name == "a" && match &parameters[..] { &[] => true, _ => false }
         );
 
         parsetest!(
         "fn a(x,y) 1 + 2 end",
-        [FuncNode(Function {prototype: Prototype { name: ref name, args: ref args }, body: ref body})],
-        match &body[..] { [BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
-            && name == "a" && *args == ["x","y"]
+        &[FuncNode(Function {prototype: Prototype { name: ref name, parameters: ref parameters }, body: ref body})],
+        match &body[..] { &[BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
+            && name == "a" && *parameters == ["x","y"]
         );
     }
 
@@ -372,18 +372,18 @@ mod tests {
     fn expression_parse_test() {
         use super::ASTNode::*;
         use super::Expression::*;
-        parsetest!("a", [ExprNode(Variable(ref s))], s == "a");
+        parsetest!("a", &[ExprNode(Variable(ref s))], s == "a");
         parsetest!("a + b",
-            [ExprNode(BinExp(ref plus, box Variable(ref a), box Variable(ref b)))],
+            &[ExprNode(BinExp(ref plus, box Variable(ref a), box Variable(ref b)))],
             plus == "+" && a == "a" && b == "b");
         parsetest!("a + b * c",
-            [ExprNode(BinExp(ref plus, box Variable(ref a), box BinExp(ref mul, box Variable(ref b), box Variable(ref c))))],
+            &[ExprNode(BinExp(ref plus, box Variable(ref a), box BinExp(ref mul, box Variable(ref b), box Variable(ref c))))],
             plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
         parsetest!("a * b + c",
-            [ExprNode(BinExp(ref plus, box BinExp(ref mul, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
+            &[ExprNode(BinExp(ref plus, box BinExp(ref mul, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
             plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
         parsetest!("(a + b) * c",
-            [ExprNode(BinExp(ref mul, box BinExp(ref plus, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
+            &[ExprNode(BinExp(ref mul, box BinExp(ref plus, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
             plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
     }
 }
