@@ -9,41 +9,31 @@ type Reduction<T> = (T, Option<SideEffect>);
 enum SideEffect {
     Print(String),
     Bundle(Vec<SideEffect>),
+    AddBinding(String, Expression),
 }
 
-struct Varmap {
-    map: HashMap<String, Expression>,
+struct EnvFrame {
+    functions: HashMap<String, Function>,
+    variables: HashMap<String, Expression>,
 }
 
-impl Varmap {
-    fn new() -> Varmap {
-        Varmap { map: HashMap::new() }
-    }
-}
-
-struct Funcmap {
-    map: HashMap<String, Function>,
-}
-
-impl Funcmap {
-    fn new() -> Funcmap {
-        let map = HashMap::new();
-        Funcmap { map: map }
+impl EnvFrame {
+    fn new() -> EnvFrame {
+        EnvFrame {
+            functions: HashMap::new(),
+            variables: HashMap::new(),
+        }
     }
 }
 
 pub struct Evaluator {
-    varmap: Varmap,
-    funcmap: Funcmap,
-    frames: Vec<Varmap>,
+    frames: Vec<EnvFrame>,
 }
 
 impl Evaluator {
     pub fn new() -> Evaluator {
         Evaluator {
-            varmap: Varmap::new(),
-            funcmap: Funcmap::new(),
-            frames: Vec::new(),
+            frames: vec!(EnvFrame::new()),
         }
     }
 
@@ -55,28 +45,36 @@ impl Evaluator {
 
     fn add_binding(&mut self, var: String, value: Expression) {
         match self.frames.last_mut() {
-            Some(frame) => frame.map.insert(var, value),
-            None => self.varmap.map.insert(var, value),
+            Some(frame) => frame.variables.insert(var, value),
+            None => panic!("Evaluator should ensure that frames always has at least one element"),
         };
     }
 
-    fn lookup_binding(&mut self, var: String) -> Option<Expression> {
+    fn lookup_binding(&self, var: String) -> Option<Expression> {
         for frame in self.frames.iter().rev() {
-            match frame.map.get(&var) {
+            match frame.variables.get(&var) {
                 None => (),
                 Some(expr) => return Some(expr.clone()),
             }
         }
-
-        self.varmap.map.get(&var).map(|expr| expr.clone())
+        None
     }
 
     fn add_function(&mut self, name: String, function: Function) {
-        self.funcmap.map.insert(name, function);
+        match self.frames.last_mut() {
+            Some(frame) => frame.functions.insert(name, function),
+            None => panic!("Evaluator should ensure that frames always has at least one element"),
+        };
     }
 
     fn lookup_function(&self, name: String) -> Option<Function> {
-        self.funcmap.map.get(&name).map(|x| x.clone())
+        for frame in self.frames.iter().rev() {
+            match frame.functions.get(&name) {
+                None => (),
+                Some(function) => return Some(function.clone()),
+            }
+        }
+        None
     }
 }
 
@@ -135,6 +133,9 @@ impl Evaluator {
                     self.perform_side_effect(side_effect);
                 }
             }
+            AddBinding(var, value) => {
+                self.add_binding(var, value);
+            }
         }
     }
 
@@ -179,10 +180,10 @@ impl Evaluator {
                 if op == "=" {
                     match left {
                         Variable(var) => {
-                            self.add_binding(var, right);
-                            return (Null, None); //TODO variable binding should be an effect
+                            let binding = SideEffect::AddBinding(var, right);
+                            return (Null, Some(binding));
                         }
-                        _ => (),
+                        _ => return (Null, None)
                     }
                 }
 
@@ -248,15 +249,6 @@ impl Evaluator {
                     _ => Null,
                 }
             }
-            "=" => {
-                match (left, right) {
-                    (Variable(var), right) => {
-                        self.add_binding(var, right);
-                        Null
-                    }
-                    _ => Null,
-                }
-            }
             _ => Null,
         }
     }
@@ -286,9 +278,9 @@ impl Evaluator {
             return (Null, None);
         }
 
-        let mut frame: Varmap = Varmap::new();
+        let mut frame = EnvFrame::new();
         for (binding, expr) in function.prototype.parameters.iter().zip(arguments.iter()) {
-            frame.map.insert(binding.clone(), expr.clone());
+            frame.variables.insert(binding.clone(), expr.clone());
         }
 
         self.frames.push(frame);
