@@ -8,7 +8,6 @@ type Reduction<T> = (T, Option<SideEffect>);
 #[derive(Debug)]
 enum SideEffect {
     Print(String),
-    Bundle(Vec<SideEffect>),
     AddBinding(String, Expression),
 }
 
@@ -128,11 +127,6 @@ impl Evaluator {
         use self::SideEffect::*;
         match side_effect {
             Print(s) => println!("{}", s),
-            Bundle(l) => {
-                for side_effect in l {
-                    self.perform_side_effect(side_effect);
-                }
-            }
             AddBinding(var, value) => {
                 self.add_binding(var, value);
             }
@@ -285,19 +279,18 @@ impl Evaluator {
 
         self.frames.push(frame);
         let mut retval = Null;
-        let mut side_effects = Vec::new();
         for expr in function.body.iter() {
             retval = expr.clone();
             while retval.is_reducible() {
                 let r = self.reduce_expr(retval);
                 retval = r.0;
                 if let Some(s) = r.1 {
-                    side_effects.push(s);
+                    self.perform_side_effect(s);
                 }
             }
         }
 
         self.frames.pop();
-        (retval, Some(SideEffect::Bundle(side_effects)))
+        (retval, None)
     }
 }
