@@ -45,8 +45,11 @@ fn run_noninteractive(filename: &str, compile: bool) {
     source_file.read_to_string(&mut buffer).unwrap();
 
     let tokens = match tokenize(&buffer) {
-        Some(t) => t,
-        None => { println!("Tokenization error"); return; }
+        Ok(t) => t,
+        Err(e) => {
+            println!("Tokenization error");
+            return;
+        }
     };
 
     let ast = match parse(&tokens, &[]) {
@@ -106,8 +109,8 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
     let mut result = String::new();
 
     let tokens = match tokenize(input) {
-        None => return format!("Tokenization error"),
-        Some(t) => t
+        Err(e) => return format!("Tokenization error"),
+        Ok(t) => t
     };
 
     if state.show_tokens {

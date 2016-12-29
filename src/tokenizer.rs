@@ -31,6 +31,19 @@ pub enum Kw {
     Null,
 }
 
+pub type TokenizeResult = Result<Vec<Token>, TokenizeError>;
+
+#[derive(Debug)]
+pub struct TokenizeError {
+    pub msg: String,
+}
+
+impl TokenizeError {
+    fn new(msg: &str) -> TokenizeError {
+       TokenizeError { msg: msg.to_string() }
+    }
+}
+
 fn is_digit(c: &char) -> bool {
     c.is_digit(10)
 }
@@ -48,7 +61,7 @@ fn ends_identifier(c: &char) -> bool {
     c == ':'
 }
 
-pub fn tokenize(input: &str) -> Option<Vec<Token>> {
+pub fn tokenize(input: &str) -> TokenizeResult {
     use self::Token::*;
     let mut tokens = Vec::new();
     let mut iter = input.chars().peekable();
@@ -82,7 +95,7 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
                 match iter.next() {
                     Some(x) if x == '"' => break,
                     Some(x) => buffer.push(x),
-                    None => return None,
+                    None => return Err(TokenizeError::new("Unclosed quote")),
                 }
             }
             StrLiteral(buffer)
@@ -101,7 +114,7 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
             }
             match buffer.parse::<f64>() {
                 Ok(f) => NumLiteral(f),
-                Err(_) => return None
+                Err(_) => return Err(TokenizeError::new("Failed to pase digit")),
             }
         } else if !char::is_alphanumeric(c) {
             let mut buffer = String::with_capacity(20);
@@ -142,7 +155,7 @@ pub fn tokenize(input: &str) -> Option<Vec<Token>> {
         tokens.push(cur_tok);
     }
 
-    Some(tokens)
+    Ok(tokens)
 }
 
 #[cfg(test)]
@@ -173,7 +186,7 @@ mod tests {
         tokentest!("2.3*49.2",
             "[NumLiteral(2.3), Operator(Op { repr: \"*\" }), NumLiteral(49.2)]");
 
-        assert_eq!(tokenize("2.4.5"), None);
+        assert!(tokenize("2.4.5").is_err());
     }
 
     #[test]
