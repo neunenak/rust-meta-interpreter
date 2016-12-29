@@ -1,23 +1,23 @@
 use std::fmt;
 use tokenizer::{Token, Kw, Op};
 
-/* Grammar
-   program := (statement delimiter ?)*
-   delimiter := Newline | Semicolon
-   statement := declaration | expression
-   declaraion :=  Fn prototype (statement)* End
-   prototype := identifier LParen identlist RParen
-   identlist := Ident (Comma Ident)* | e
-   exprlist  := Expression (Comma Expression)* | e
-
-   expression := primary_expression (op primary_expression)*
-   primary_expression :=  Number | String | identifier_expr | paren_expr | conditional_expr
-   identifier_expr := call_expression | Variable
-   paren_expr := LParen expression RParen
-   call_expr := Identifier LParen exprlist RParen
-   conditional_expr := IF expression THEN (expression delimiter?)* ELSE (expresion delimiter?)* END
-   op := '+', '-', etc.
- */
+// Grammar
+// program := (statement delimiter ?)*
+// delimiter := Newline | Semicolon
+// statement := declaration | expression
+// declaraion :=  Fn prototype (statement)* End
+// prototype := identifier LParen identlist RParen
+// identlist := Ident (Comma Ident)* | e
+// exprlist  := Expression (Comma Expression)* | e
+//
+// expression := primary_expression (op primary_expression)*
+// primary_expression :=  Number | String | identifier_expr | paren_expr | conditional_expr
+// identifier_expr := call_expression | Variable
+// paren_expr := LParen expression RParen
+// call_expr := Identifier LParen exprlist RParen
+// conditional_expr := IF expression THEN (expression delimiter?)* ELSE (expresion delimiter?)* END
+// op := '+', '-', etc.
+//
 
 #[derive(Debug, Clone)]
 pub enum ASTNode {
@@ -34,7 +34,7 @@ pub struct Function {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Prototype {
     pub name: String,
-    pub parameters: Vec<String>
+    pub parameters: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -74,12 +74,12 @@ pub type AST = Vec<ASTNode>;
 
 type Precedence = u8;
 
-//TODO make this support incomplete parses
+// TODO make this support incomplete parses
 pub type ParseResult<T> = Result<T, ParseError>;
 
 #[derive(Debug)]
 pub struct ParseError {
-    pub msg: String
+    pub msg: String,
 }
 
 impl ParseError {
@@ -103,7 +103,7 @@ impl Parser {
         self.tokens.last().map(|x| x.clone())
     }
 
-    fn next(&mut self) -> Option<Token>{
+    fn next(&mut self) -> Option<Token> {
         self.tokens.pop()
     }
 
@@ -150,7 +150,7 @@ fn is_delimiter(token: &Token) -> bool {
     use tokenizer::Token::*;
     match *token {
         Newline | Semicolon => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -159,14 +159,17 @@ impl Parser {
         let mut ast = Vec::new(); //TODO have this come from previously-parsed tree
         loop {
             let result: ParseResult<ASTNode> = match self.peek() {
-                Some(ref t) if is_delimiter(&t) => { self.next(); continue},
+                Some(ref t) if is_delimiter(&t) => {
+                    self.next();
+                    continue;
+                }
                 Some(_) => self.statement(),
                 None => break,
             };
 
             match result {
                 Ok(node) => ast.push(node),
-                Err(err) => return Err(err)
+                Err(err) => return Err(err),
             }
         }
 
@@ -190,7 +193,10 @@ impl Parser {
         let prototype = try!(self.prototype());
         let body: Vec<Expression> = try!(self.body());
         expect!(self, Keyword(Kw::End));
-        Ok(ASTNode::FuncNode(Function { prototype: prototype, body: body } ))
+        Ok(ASTNode::FuncNode(Function {
+            prototype: prototype,
+            body: body,
+        }))
     }
 
     fn prototype(&mut self) -> ParseResult<Prototype> {
@@ -199,7 +205,10 @@ impl Parser {
         expect!(self, LParen);
         let parameters: Vec<String> = try!(self.identlist());
         expect!(self, RParen);
-        Ok(Prototype {name: name, parameters: parameters})
+        Ok(Prototype {
+            name: name,
+            parameters: parameters,
+        })
     }
 
     fn identlist(&mut self) -> ParseResult<Vec<String>> {
@@ -240,7 +249,10 @@ impl Parser {
         let mut exprs = Vec::new();
         loop {
             match self.peek() {
-                Some(ref t) if is_delimiter(t) => { self.next(); continue},
+                Some(ref t) if is_delimiter(t) => {
+                    self.next();
+                    continue;
+                }
                 Some(Keyword(Kw::End)) => break,
                 _ => {
                     let expr = try!(self.expression());
@@ -256,7 +268,10 @@ impl Parser {
         self.precedence_expr(lhs, 0)
     }
 
-    fn precedence_expr(&mut self, mut lhs: Expression, min_precedence: u8) -> ParseResult<Expression> {
+    fn precedence_expr(&mut self,
+                       mut lhs: Expression,
+                       min_precedence: u8)
+                       -> ParseResult<Expression> {
         use tokenizer::Token::*;
         while let Some(Operator(op)) = self.peek() {
             let precedence = self.get_precedence(&op);
@@ -284,13 +299,22 @@ impl Parser {
     fn primary_expression(&mut self) -> ParseResult<Expression> {
         use tokenizer::Token::*;
         Ok(match self.peek() {
-            Some(Keyword(Kw::Null)) => { self.next(); Expression::Null },
-            Some(NumLiteral(n)) => { self.next(); Expression::Number(n) },
-            Some(StrLiteral(s)) => { self.next(); Expression::StringLiteral(s) },
-            Some(Identifier(_)) => { try!(self.identifier_expr()) },
-            Some(Token::LParen) => { try!(self.paren_expr()) }
+            Some(Keyword(Kw::Null)) => {
+                self.next();
+                Expression::Null
+            }
+            Some(NumLiteral(n)) => {
+                self.next();
+                Expression::Number(n)
+            }
+            Some(StrLiteral(s)) => {
+                self.next();
+                Expression::StringLiteral(s)
+            }
+            Some(Identifier(_)) => try!(self.identifier_expr()),
+            Some(Token::LParen) => try!(self.paren_expr()),
             Some(_) => return ParseError::result_from_str("Expected primary expression"),
-            None => return ParseError::result_from_str("Expected primary expression received EoI")
+            None => return ParseError::result_from_str("Expected primary expression received EoI"),
         })
     }
 
@@ -301,8 +325,8 @@ impl Parser {
             Some(LParen) => {
                 let args = try!(self.call_expr());
                 Expression::Call(name, args)
-            },
-            __ => Expression::Variable(name)
+            }
+            __ => Expression::Variable(name),
         };
 
         Ok(expr)

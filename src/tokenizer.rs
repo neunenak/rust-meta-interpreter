@@ -11,7 +11,7 @@ pub enum Token {
     StrLiteral(String),
     Identifier(String),
     Operator(Op),
-    Keyword(Kw)
+    Keyword(Kw),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -40,7 +40,7 @@ pub struct TokenizeError {
 
 impl TokenizeError {
     fn new(msg: &str) -> TokenizeError {
-       TokenizeError { msg: msg.to_string() }
+        TokenizeError { msg: msg.to_string() }
     }
 }
 
@@ -50,15 +50,8 @@ fn is_digit(c: &char) -> bool {
 
 fn ends_identifier(c: &char) -> bool {
     let c = *c;
-    char::is_whitespace(c) ||
-    is_digit(&c) ||
-    c == ';' ||
-    c == '(' ||
-    c == ')' ||
-    c == ',' ||
-    c == '.' ||
-    c == ',' ||
-    c == ':'
+    char::is_whitespace(c) || is_digit(&c) || c == ';' || c == '(' || c == ')' || c == ',' ||
+    c == '.' || c == ',' || c == ':'
 }
 
 pub fn tokenize(input: &str) -> TokenizeResult {
@@ -71,12 +64,13 @@ pub fn tokenize(input: &str) -> TokenizeResult {
             continue;
         } else if c == '#' {
             while let Some(c) = iter.next() {
-                if c == '\n' { break; }
+                if c == '\n' {
+                    break;
+                }
             }
         }
 
-        let cur_tok =
-        if c == '\n' {
+        let cur_tok = if c == '\n' {
             Newline
         } else if c == ';' {
             Semicolon
@@ -86,12 +80,12 @@ pub fn tokenize(input: &str) -> TokenizeResult {
             RParen
         } else if c == ':' {
             Colon
-        } else if  c == ',' {
+        } else if c == ',' {
             Comma
         } else if c == '"' {
             let mut buffer = String::with_capacity(20);
             loop {
-                //TODO handle string escapes, interpolation
+                // TODO handle string escapes, interpolation
                 match iter.next() {
                     Some(x) if x == '"' => break,
                     Some(x) => buffer.push(x),
@@ -120,14 +114,15 @@ pub fn tokenize(input: &str) -> TokenizeResult {
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
             loop {
-                if iter.peek().map_or(false, |x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x)) {
+                if iter.peek().map_or(false,
+                                      |x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x)) {
                     let n = iter.next().unwrap();
                     buffer.push(n);
                 } else {
                     break;
                 }
             }
-            Operator(Op {repr: buffer })
+            Operator(Op { repr: buffer })
         } else {
             let mut buffer = String::with_capacity(20);
             buffer.push(c);
@@ -148,7 +143,7 @@ pub fn tokenize(input: &str) -> TokenizeResult {
                 "let" => Keyword(Kw::Let),
                 "fn" => Keyword(Kw::Fn),
                 "null" => Keyword(Kw::Null),
-                b => Identifier(b.to_string())
+                b => Identifier(b.to_string()),
             }
         };
 
@@ -175,16 +170,17 @@ mod tests {
     #[test]
     fn tokeniziation_tests() {
         tokentest!("let a = 3\n",
-            "[Keyword(Let), Identifier(\"a\"), Operator(Op { repr: \"=\" }), NumLiteral(3), Newline]");
+                   "[Keyword(Let), Identifier(\"a\"), Operator(Op { repr: \"=\" }), \
+                    NumLiteral(3), Newline]");
 
         tokentest!("2+1",
-            "[NumLiteral(2), Operator(Op { repr: \"+\" }), NumLiteral(1)]");
+                   "[NumLiteral(2), Operator(Op { repr: \"+\" }), NumLiteral(1)]");
 
         tokentest!("2 + 1",
-            "[NumLiteral(2), Operator(Op { repr: \"+\" }), NumLiteral(1)]");
+                   "[NumLiteral(2), Operator(Op { repr: \"+\" }), NumLiteral(1)]");
 
         tokentest!("2.3*49.2",
-            "[NumLiteral(2.3), Operator(Op { repr: \"*\" }), NumLiteral(49.2)]");
+                   "[NumLiteral(2.3), Operator(Op { repr: \"*\" }), NumLiteral(49.2)]");
 
         assert!(tokenize("2.4.5").is_err());
     }
@@ -192,9 +188,9 @@ mod tests {
     #[test]
     #[ignore]
     fn more_tokenization() {
-        //it would be nice to support complicated operators in a nice, haskell-ish way
+        // it would be nice to support complicated operators in a nice, haskell-ish way
         tokentest!("a *> b",
-            "[Identifier(\"a\"), Identifier(\"*>\"), Identifier(\"b\"), EOF]");
+                   "[Identifier(\"a\"), Identifier(\"*>\"), Identifier(\"b\"), EOF]");
 
     }
 }

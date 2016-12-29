@@ -11,23 +11,24 @@ use simplerepl::{REPL, ReplState};
 use tokenizer::tokenize;
 mod tokenizer;
 
-use parser::{parse};
+use parser::parse;
 mod parser;
 
-use eval::{Evaluator};
+use eval::Evaluator;
 mod eval;
 
-use compilation::{compilation_sequence};
+use compilation::compilation_sequence;
 mod compilation;
 mod llvm_wrap;
 
 fn main() {
-    let option_matches = program_options().parse(std::env::args()).expect("Could not parse options");
+    let option_matches =
+        program_options().parse(std::env::args()).expect("Could not parse options");
     match option_matches.free[..] {
         [] | [_] => {
             run_repl();
-        },
-        [_, ref filename, ..] => {
+        }
+        [_, ref filename, _..] => {
             run_noninteractive(filename, !option_matches.opt_present("i"));
         }
     };
@@ -35,7 +36,9 @@ fn main() {
 
 fn program_options() -> getopts::Options {
     let mut options = getopts::Options::new();
-    options.optflag("i", "interpret", "Interpret source file instead of compiling");
+    options.optflag("i",
+                    "interpret",
+                    "Interpret source file instead of compiling");
     options
 }
 
@@ -78,8 +81,7 @@ fn run_repl() {
         show_parse: false,
         evaluator: Evaluator::new(),
     };
-    REPL::with_prompt_and_state(Box::new(repl_handler), ">> ", initial_state)
-        .run();
+    REPL::with_prompt_and_state(Box::new(repl_handler), ">> ", initial_state).run();
 }
 
 struct InterpreterState {
@@ -93,17 +95,17 @@ impl ReplState for InterpreterState {
         match input[..] {
             ["set", "show", "tokens", "true"] => {
                 self.show_tokens = true;
-            },
+            }
             ["set", "show", "tokens", "false"] => {
                 self.show_tokens = false;
-            },
+            }
             ["set", "show", "parse", "true"] => {
                 self.show_parse = true;
-            },
+            }
             ["set", "show", "parse", "false"] => {
                 self.show_parse = false;
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
 }
@@ -113,7 +115,7 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
 
     let tokens = match tokenize(input) {
         Err(e) => return format!("Tokenization error"),
-        Ok(t) => t
+        Ok(t) => t,
     };
 
     if state.show_tokens {
@@ -131,7 +133,7 @@ fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
 
     let mut output: Vec<String> = state.evaluator.run(ast);
 
-    //for now only handle last output
+    // for now only handle last output
     let interpreter_result = output.pop().unwrap_or("".to_string());
     result.push_str(&interpreter_result);
     result
