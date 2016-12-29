@@ -12,7 +12,7 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
 
     let ll_filename = "out.ll";
     let obj_filename = "out.o";
-    let q: Vec<&str>  = sourcefile.split('.').collect();
+    let q: Vec<&str> = sourcefile.split('.').collect();
     let bin_filename = match &q[..] {
         &[name, "schala"] => name,
         _ => panic!("Bad filename {}", sourcefile),
@@ -85,7 +85,7 @@ fn compile_ast(ast: AST, filename: &str) {
 }
 
 trait CodeGen {
-    fn codegen(&self, &mut CompilationData) ->  LLVMValueRef;
+    fn codegen(&self, &mut CompilationData) -> LLVMValueRef;
 }
 
 impl CodeGen for AST {
@@ -124,9 +124,7 @@ impl CodeGen for Expression {
         let int_type = LLVMWrap::Int64TypeInContext(data.context);
 
         match self {
-            &Variable(ref name) => {
-                *data.variables.get(name).unwrap()
-            },
+            &Variable(ref name) => *data.variables.get(name).unwrap(),
             &BinExp(ref op, ref left, ref right) if op == "=" => {
                 if let Variable(ref name) = **left {
                     let new_value = right.codegen(data);
@@ -135,7 +133,7 @@ impl CodeGen for Expression {
                 } else {
                     panic!("Bad variable assignment")
                 }
-            },
+            }
             &BinExp(ref op, ref left, ref right) => {
                 let lhs = left.codegen(data);
                 let rhs = right.codegen(data);
@@ -149,12 +147,12 @@ impl CodeGen for Expression {
                 };
 
                 generator(data.builder, lhs, rhs, "temp")
-            },
+            }
             &Number(ref n) => {
                 let native_val = *n as u64;
                 let int_value: LLVMValueRef = LLVMWrap::ConstInt(int_type, native_val, false);
                 int_value
-            },
+            }
             _ => unimplemented!(),
         }
     }

@@ -10,12 +10,12 @@ enum SideEffect {
 }
 
 struct Varmap {
-    map: HashMap<String, Expression>
+    map: HashMap<String, Expression>,
 }
 
 impl Varmap {
     fn new() -> Varmap {
-        Varmap { map: HashMap::new()}
+        Varmap { map: HashMap::new() }
     }
 }
 
@@ -37,18 +37,18 @@ pub struct Evaluator {
 }
 
 impl Evaluator {
-
     pub fn new() -> Evaluator {
-        Evaluator { varmap: Varmap::new(),
-                    funcmap: Funcmap::new(),
-                    frames: Vec::new(),
+        Evaluator {
+            varmap: Varmap::new(),
+            funcmap: Funcmap::new(),
+            frames: Vec::new(),
         }
     }
 
     pub fn run(&mut self, ast: AST) -> Vec<String> {
-        ast.into_iter().map(|astnode| {
-            self.reduce(astnode)
-        }).collect()
+        ast.into_iter()
+            .map(|astnode| self.reduce(astnode))
+            .collect()
     }
 
     fn add_binding(&mut self, var: String, value: Expression) {
@@ -87,7 +87,7 @@ impl Evaluable for ASTNode {
         use parser::ASTNode::*;
         match self {
             &ExprNode(ref expr) => expr.is_reducible(),
-            &FuncNode(_) =>  true,
+            &FuncNode(_) => true,
         }
     }
 }
@@ -109,7 +109,7 @@ impl Evaluator {
         loop {
             node = self.step(node);
             if !node.is_reducible() {
-                break
+                break;
             }
         }
 
@@ -132,7 +132,7 @@ impl Evaluator {
                 for side_effect in l {
                     self.perform_side_effect(side_effect);
                 }
-            },
+            }
         }
     }
 
@@ -146,12 +146,12 @@ impl Evaluator {
                 } else {
                     (ExprNode(expr), None)
                 }
-            },
+            }
             FuncNode(func) => {
                 let fn_name = func.prototype.name.clone();
                 self.add_function(fn_name, func);
                 (ExprNode(Expression::Null), None)
-            },
+            }
         }
     }
 
@@ -159,28 +159,28 @@ impl Evaluator {
         use parser::Expression::*;
         match expression {
             Null => (Null, None),
-            e@StringLiteral(_) => (e, None),
-            e@Number(_) => (e, None),
+            e @ StringLiteral(_) => (e, None),
+            e @ Number(_) => (e, None),
             Variable(var) => {
                 match self.lookup_binding(var) {
                     None => (Null, None),
                     Some(expr) => (expr, None),
                 }
-            },
+            }
             BinExp(op, box left, box right) => {
                 if right.is_reducible() {
                     let new = self.reduce_expr(right);
                     return (BinExp(op, Box::new(left), Box::new(new.0)), new.1);
                 }
 
-                //special case for variable assignment
+                // special case for variable assignment
                 if op == "=" {
                     match left {
                         Variable(var) => {
                             self.add_binding(var, right);
                             return (Null, None); //TODO variable binding should be an effect
-                        },
-                        _ => ()
+                        }
+                        _ => (),
                     }
                 }
 
@@ -190,14 +190,12 @@ impl Evaluator {
                 } else {
                     (self.reduce_binop(op, left, right), None) //can assume both arguments are maximally reduced
                 }
-            },
+            }
             Call(name, mut args) => {
                 let mut f = true;
                 for arg in args.iter_mut() {
                     if arg.is_reducible() {
-                        take_mut::take(arg, |arg| {
-                            self.reduce_expr(arg).0
-                        });
+                        take_mut::take(arg, |arg| self.reduce_expr(arg).0);
                         f = false;
                         break;
                     }
@@ -207,50 +205,67 @@ impl Evaluator {
                 } else {
                     (Call(name, args), None)
                 }
-            },
-            Conditional(_,_,_) => unimplemented!(),
+            }
+            Conditional(_, _, _) => unimplemented!(),
         }
     }
 
     fn reduce_binop(&mut self, op: String, left: Expression, right: Expression) -> Expression {
         use parser::Expression::*;
         match &op[..] {
-            "+" => match (left, right) {
-                (Number(l), Number(r)) => Number(l + r),
-                (StringLiteral(s1), StringLiteral(s2)) => StringLiteral(format!("{}{}", s1, s2)),
-                _ => Null,
-            },
-            "-" => match (left, right) {
-                (Number(l), Number(r)) => Number(l - r),
-                _ => Null,
-            },
-            "*" => match (left, right) {
-                (Number(l), Number(r)) => Number(l * r),
-                _ => Null,
-            },
-            "/" => match (left, right) {
-                (Number(l), Number(r)) if r != 0.0 => Number(l / r),
-                _ => Null,
-            },
-            "%" => match (left, right) {
-                (Number(l), Number(r)) => Number(l % r),
-                _ => Null,
-            },
-            "=" => match (left, right) {
-                (Variable(var), right) => {
-                    self.add_binding(var, right);
-                    Null
-                },
-                _ => Null,
-            },
+            "+" => {
+                match (left, right) {
+                    (Number(l), Number(r)) => Number(l + r),
+                    (StringLiteral(s1), StringLiteral(s2)) => {
+                        StringLiteral(format!("{}{}", s1, s2))
+                    }
+                    _ => Null,
+                }
+            }
+            "-" => {
+                match (left, right) {
+                    (Number(l), Number(r)) => Number(l - r),
+                    _ => Null,
+                }
+            }
+            "*" => {
+                match (left, right) {
+                    (Number(l), Number(r)) => Number(l * r),
+                    _ => Null,
+                }
+            }
+            "/" => {
+                match (left, right) {
+                    (Number(l), Number(r)) if r != 0.0 => Number(l / r),
+                    _ => Null,
+                }
+            }
+            "%" => {
+                match (left, right) {
+                    (Number(l), Number(r)) => Number(l % r),
+                    _ => Null,
+                }
+            }
+            "=" => {
+                match (left, right) {
+                    (Variable(var), right) => {
+                        self.add_binding(var, right);
+                        Null
+                    }
+                    _ => Null,
+                }
+            }
             _ => Null,
         }
     }
 
-    fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> (Expression, Option<SideEffect>) {
+    fn reduce_call(&mut self,
+                   name: String,
+                   arguments: Vec<Expression>)
+                   -> (Expression, Option<SideEffect>) {
         use parser::Expression::*;
 
-        //ugly hack for now
+        // ugly hack for now
         if name == "print" {
             let mut s = String::new();
             for arg in arguments {
@@ -262,11 +277,11 @@ impl Evaluator {
 
         let function = match self.lookup_function(name) {
             Some(func) => func,
-            None => return (Null, None)
+            None => return (Null, None),
         };
 
         if function.prototype.parameters.len() != arguments.len() {
-            return (Null, None)
+            return (Null, None);
         }
 
         let mut frame: Varmap = Varmap::new();
