@@ -22,7 +22,7 @@ mod compilation;
 mod llvm_wrap;
 
 fn main() {
-    let option_matches = program_options().parse(std::env::args()).expect("Could not parse options"); 
+    let option_matches = program_options().parse(std::env::args()).expect("Could not parse options");
     match option_matches.free[..] {
         [] | [_] => {
             run_repl();

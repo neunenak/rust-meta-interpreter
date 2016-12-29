@@ -18,7 +18,6 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         _ => panic!("Bad filename {}", sourcefile),
     };
 
-
     compile_ast(ast, ll_filename);
     Command::new("llc")
         .arg("-filetype=obj")
