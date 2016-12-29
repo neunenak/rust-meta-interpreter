@@ -28,7 +28,7 @@ fn main() {
             run_repl();
         },
         [_, ref filename, ..] => {
-            run_noninteractive(filename);
+            run_noninteractive(filename, !option_matches.opt_present("i"));
         }
     };
 }
@@ -39,7 +39,7 @@ fn program_options() -> getopts::Options {
     options
 }
 
-fn run_noninteractive(filename: &String) {
+fn run_noninteractive(filename: &str, compile: bool) {
     let mut source_file = File::open(&Path::new(filename)).unwrap();
     let mut buffer = String::new();
     source_file.read_to_string(&mut buffer).unwrap();
@@ -53,8 +53,6 @@ fn run_noninteractive(filename: &String) {
         Ok(ast) => ast,
         Err(err) => { println!("Parse error: {:?}", err); return; }
     };
-
-    let compile = true;
 
     if compile {
         compilation_sequence(ast, filename);
