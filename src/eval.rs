@@ -203,7 +203,18 @@ impl Evaluator {
                     (Call(name, args), None)
                 }
             }
-            Conditional(box test, then_block, else_block) => unimplemented!(),
+            Conditional(box test, then_block, else_block) => {
+                if test.is_reducible() {
+                    let (new_test, new_effect) = self.reduce_expr(test);
+                    (Conditional(Box::new(new_test), then_block, else_block), new_effect)
+                } else {
+                    if let Number(0.0) = test {
+                        unimplemented!()
+                    } else {
+                        unimplemented!()
+                    }
+                }
+            }
         }
     }
 
