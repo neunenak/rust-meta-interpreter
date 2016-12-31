@@ -103,6 +103,18 @@ impl Evaluable for Expression {
     }
 }
 
+impl Expression {
+    fn is_truthy(&self) -> bool {
+        use parser::Expression::*;
+        match *self {
+            Null => false,
+            StringLiteral(ref s) if s == "" => false,
+            Number(0.0) => false,
+            _ => true,
+        }
+    }
+}
+
 impl Evaluator {
     fn reduce(&mut self, mut node: ASTNode) -> String {
         loop {
@@ -208,10 +220,32 @@ impl Evaluator {
                     let (new_test, new_effect) = self.reduce_expr(test);
                     (Conditional(Box::new(new_test), then_block, else_block), new_effect)
                 } else {
-                    if let Number(0.0) = test {
-                        unimplemented!()
+                    if test.is_truthy() {
+                        (*then_block, None)
                     } else {
-                        unimplemented!()
+                        match else_block {
+                            Some(box expr) => (expr, None),
+                            None => (Null, None)
+                        }
+                    }
+                }
+            }
+            Block(mut exprs) => {
+                let first = exprs.pop_front();
+                match first {
+                    None => (Null, None),
+                    Some(expr) => {
+                        if exprs.len() == 0 {
+                            (expr, None)
+                        } else {
+                            if expr.is_reducible() {
+                                let (new, side_effect) = self.reduce_expr(expr);
+                                exprs.push_front(new);
+                                (Block(exprs), side_effect)
+                            } else {
+                                (Block(exprs), None)
+                            }
+                        }
                     }
                 }
             }

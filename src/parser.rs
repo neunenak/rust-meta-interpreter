@@ -1,5 +1,6 @@
 use std::fmt;
 use tokenizer::{Token, Kw, Op};
+use std::collections::VecDeque;
 
 // Grammar
 // program := (statement delimiter ?)*
@@ -45,7 +46,8 @@ pub enum Expression {
     Variable(String),
     BinExp(String, Box<Expression>, Box<Expression>),
     Call(String, Vec<Expression>),
-    Conditional(Box<Expression>, Vec<Expression>, Option<Vec<Expression>>),
+    Conditional(Box<Expression>, Box<Expression>, Option<Box<Expression>>),
+    Block(VecDeque<Expression>),
 }
 
 impl fmt::Display for ASTNode {
@@ -315,7 +317,6 @@ impl Parser {
             Some(Identifier(_)) => try!(self.identifier_expr()),
             Some(Token::LParen) => try!(self.paren_expr()),
             Some(e) => {
-                panic!();
                 return ParseError::result_from_str("Expected primary expression");
             }
             None => return ParseError::result_from_str("Expected primary expression received EoI"),
@@ -324,28 +325,29 @@ impl Parser {
 
     fn conditional_expr(&mut self) -> ParseResult<Expression> {
         use tokenizer::Token::*;
+        use self::Expression::*;
         expect!(self, Keyword(Kw::If));
         let test = try!(self.expression());
         expect!(self, Keyword(Kw::Then));
-        let mut then_block = Vec::new();
+        let mut then_block = VecDeque::new();
         loop {
             match self.peek() {
                 None | Some(Keyword(Kw::Else)) | Some(Keyword(Kw::End)) => break,
                 _ => {
                     let exp = try!(self.expression());
-                    then_block.push(exp);
+                    then_block.push_back(exp);
                 }
             }
         }
         let else_block = if let Some(Keyword(Kw::Else)) = self.peek() {
             self.next();
-            let mut else_exprs = Vec::new();
+            let mut else_exprs = VecDeque::new();
             loop {
                 match self.peek() {
                     None | Some(Keyword(Kw::End)) => break,
                     _ => {
                         let exp = try!(self.expression());
-                        else_exprs.push(exp);
+                        else_exprs.push_back(exp);
                     }
                 }
             }
@@ -355,7 +357,7 @@ impl Parser {
         };
 
         expect!(self, Keyword(Kw::End));
-        Ok(Expression::Conditional(Box::new(test), then_block, else_block))
+        Ok(Conditional(Box::new(test), Box::new(Block(then_block)), else_block.map(|list| Box::new(Block(list)))))
     }
 
     fn identifier_expr(&mut self) -> ParseResult<Expression> {
