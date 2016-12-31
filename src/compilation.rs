@@ -119,6 +119,7 @@ impl CodeGen for Function {
 
 impl CodeGen for Expression {
     fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
+        println!("Running codegen on: {:?}", self);
         use self::Expression::*;
 
         let int_type = LLVMWrap::Int64TypeInContext(data.context);

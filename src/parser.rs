@@ -45,7 +45,7 @@ pub enum Expression {
     Variable(String),
     BinExp(String, Box<Expression>, Box<Expression>),
     Call(String, Vec<Expression>),
-    Conditional(Box<Expression>, Box<Expression>, Option<Box<Expression>>),
+    Conditional(Box<Expression>, Box<Vec<Expression>>, Option<Box<Vec<Expression>>>),
 }
 
 impl fmt::Display for ASTNode {
@@ -311,11 +311,51 @@ impl Parser {
                 self.next();
                 Expression::StringLiteral(s)
             }
+            Some(Keyword(Kw::If)) => try!(self.conditional_expr()),
             Some(Identifier(_)) => try!(self.identifier_expr()),
             Some(Token::LParen) => try!(self.paren_expr()),
-            Some(_) => return ParseError::result_from_str("Expected primary expression"),
+            Some(e) => {
+                panic!();
+                return ParseError::result_from_str("Expected primary expression");
+            }
             None => return ParseError::result_from_str("Expected primary expression received EoI"),
         })
+    }
+
+    fn conditional_expr(&mut self) -> ParseResult<Expression> {
+        use tokenizer::Token::*;
+        expect!(self, Keyword(Kw::If));
+        let test = try!(self.expression());
+        expect!(self, Keyword(Kw::Then));
+        let mut then_block = Vec::new();
+        loop {
+            match self.peek() {
+                None | Some(Keyword(Kw::Else)) | Some(Keyword(Kw::End)) => break,
+                _ => {
+                    let exp = try!(self.expression());
+                    then_block.push(exp);
+                }
+            }
+        }
+        let else_block = if let Some(Keyword(Kw::Else)) = self.peek() {
+            self.next();
+            let mut else_exprs = Vec::new();
+            loop {
+                match self.peek() {
+                    None | Some(Keyword(Kw::End)) => break,
+                    _ => {
+                        let exp = try!(self.expression());
+                        else_exprs.push(exp);
+                    }
+                }
+            }
+            Some(Box::new(else_exprs))
+        } else {
+            None
+        };
+
+        expect!(self, Keyword(Kw::End));
+        Ok(Expression::Conditional(Box::new(test), Box::new(then_block), else_block))
     }
 
     fn identifier_expr(&mut self) -> ParseResult<Expression> {
