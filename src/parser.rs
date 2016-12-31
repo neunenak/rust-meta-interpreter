@@ -452,4 +452,21 @@ mod tests {
             &[ExprNode(BinExp(ref mul, box BinExp(ref plus, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
             plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
     }
+
+    #[test]
+    fn conditional_parse_test() {
+        use tokenizer;
+        use super::ASTNode::*;
+        use super::Expression::*;
+
+        let t1 = "if null then 20 else 40 end";
+        let tokens = tokenizer::tokenize(t1).unwrap();
+        match parse(&tokens, &[]).unwrap()[..] {
+            [ExprNode(Conditional(box Null, box ref a, Some(box ref b)))] => {
+                // TODO make this test better
+
+            }
+            _ => panic!("Bad conditional test"),
+        }
+    }
 }

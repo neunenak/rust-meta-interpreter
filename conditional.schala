@@ -1,2 +1,2 @@
 
-if true then 20 else 40 end
+if 34 then 20 else 40 end
