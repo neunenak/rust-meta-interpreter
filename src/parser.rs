@@ -45,7 +45,7 @@ pub enum Expression {
     Variable(String),
     BinExp(String, Box<Expression>, Box<Expression>),
     Call(String, Vec<Expression>),
-    Conditional(Box<Expression>, Box<Vec<Expression>>, Option<Box<Vec<Expression>>>),
+    Conditional(Box<Expression>, Vec<Expression>, Option<Vec<Expression>>),
 }
 
 impl fmt::Display for ASTNode {
@@ -349,13 +349,13 @@ impl Parser {
                     }
                 }
             }
-            Some(Box::new(else_exprs))
+            Some(else_exprs)
         } else {
             None
         };
 
         expect!(self, Keyword(Kw::End));
-        Ok(Expression::Conditional(Box::new(test), Box::new(then_block), else_block))
+        Ok(Expression::Conditional(Box::new(test), then_block, else_block))
     }
 
     fn identifier_expr(&mut self) -> ParseResult<Expression> {

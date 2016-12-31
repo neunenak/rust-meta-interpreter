@@ -203,7 +203,7 @@ impl Evaluator {
                     (Call(name, args), None)
                 }
             }
-            Conditional(_, _, _) => unimplemented!(),
+            Conditional(box test, then_block, else_block) => unimplemented!(),
         }
     }
 
