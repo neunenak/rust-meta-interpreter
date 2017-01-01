@@ -58,7 +58,8 @@ fn run_noninteractive(filename: &str, compile: bool) {
     let ast = match parse(&tokens, &[]) {
         Ok(ast) => ast,
         Err(err) => {
-            println!("Parse error: {:?}", err);
+            println!("Parse error: {:?}", err.msg);
+            println!("Remaining tokens: {:?}", err.remaining_tokens);
             std::process::exit(1)
         }
     };

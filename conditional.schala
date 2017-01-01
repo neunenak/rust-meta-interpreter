@@ -1,2 +1,8 @@
-
-if 34 then 20 else 40 end
+if 20 then
+    a = 20
+    b = 30
+    c = 40
+    a + b + c
+else 
+    Null
+end

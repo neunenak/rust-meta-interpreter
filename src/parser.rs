@@ -82,11 +82,12 @@ pub type ParseResult<T> = Result<T, ParseError>;
 #[derive(Debug)]
 pub struct ParseError {
     pub msg: String,
+    pub remaining_tokens: Vec<Token>,
 }
 
 impl ParseError {
     fn result_from_str<T>(msg: &str) -> ParseResult<T> {
-        Err(ParseError { msg: msg.to_string() })
+        Err(ParseError { msg: msg.to_string(), remaining_tokens: vec!() })
     }
 }
 
@@ -171,7 +172,11 @@ impl Parser {
 
             match result {
                 Ok(node) => ast.push(node),
-                Err(err) => return Err(err),
+                Err(mut err) => {
+                    err.remaining_tokens = self.tokens.clone();
+                    err.remaining_tokens.reverse();
+                    return Err(err)
+                }
             }
         }
 
@@ -317,7 +322,7 @@ impl Parser {
             Some(Identifier(_)) => try!(self.identifier_expr()),
             Some(Token::LParen) => try!(self.paren_expr()),
             Some(e) => {
-                return ParseError::result_from_str("Expected primary expression");
+                return ParseError::result_from_str(&format!("Expected primary expression, got {:?}", e));
             }
             None => return ParseError::result_from_str("Expected primary expression received EoI"),
         })
@@ -333,6 +338,10 @@ impl Parser {
         loop {
             match self.peek() {
                 None | Some(Keyword(Kw::Else)) | Some(Keyword(Kw::End)) => break,
+                Some(Semicolon) | Some(Newline) => {
+                    self.next();
+                    continue;
+                }
                 _ => {
                     let exp = try!(self.expression());
                     then_block.push_back(exp);
@@ -345,6 +354,10 @@ impl Parser {
             loop {
                 match self.peek() {
                     None | Some(Keyword(Kw::End)) => break,
+                    Some(Semicolon) | Some(Newline) => {
+                        self.next();
+                        continue;
+                    }
                     _ => {
                         let exp = try!(self.expression());
                         else_exprs.push_back(exp);
