@@ -1,5 +1,8 @@
+extern crate itertools;
+
 use std::iter::Peekable;
 use std::str::Chars;
+use self::itertools::Itertools;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
@@ -95,15 +98,7 @@ fn tokenize_str(iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
 fn tokenize_operator(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
     let mut buffer = String::new();
     buffer.push(c);
-    loop {
-        if iter.peek().map_or(false,
-                              |x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x)) {
-            let n = iter.next().unwrap();
-            buffer.push(n);
-        } else {
-            break;
-        }
-    }
+    buffer.extend(iter.peeking_take_while(|x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x))); 
     Ok(Token::Operator(Op(buffer)))
 }
 
@@ -114,14 +109,8 @@ fn tokenize_number_or_period(c: char, iter: &mut Peekable<Chars>) -> Result<Toke
 
     let mut buffer = String::new();
     buffer.push(c);
-    loop {
-        if iter.peek().map_or(false, |x| is_digit(x) || *x == '.') {
-            let n = iter.next().unwrap();
-            buffer.push(n);
-        } else {
-            break;
-        }
-    }
+    buffer.extend(iter.peeking_take_while(|x| is_digit(x) || *x == '.'));
+
     match buffer.parse::<f64>() {
         Ok(f) => Ok(Token::NumLiteral(f)),
         Err(_) => Err(TokenizeError::new("Failed to parse digit")),
@@ -138,13 +127,8 @@ fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, Tok
     use self::Token::*;
     let mut buffer = String::new();
     buffer.push(c);
-    loop {
-        if iter.peek().map_or(true, |x| ends_identifier(x)) {
-            break;
-        } else {
-            buffer.push(iter.next().unwrap());
-        }
-    }
+    buffer.extend(iter.peeking_take_while(ends_identifier));
+
     Ok(match &buffer[..] {
         "if" => Keyword(Kw::If),
         "then" => Keyword(Kw::Then),
