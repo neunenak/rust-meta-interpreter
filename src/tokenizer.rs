@@ -127,7 +127,7 @@ fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, Tok
     use self::Token::*;
     let mut buffer = String::new();
     buffer.push(c);
-    buffer.extend(iter.peeking_take_while(ends_identifier));
+    buffer.extend(iter.peeking_take_while(|x| !ends_identifier(x)));
 
     Ok(match &buffer[..] {
         "if" => Keyword(Kw::If),
