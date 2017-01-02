@@ -74,7 +74,7 @@ pub fn tokenize(input: &str) -> TokenizeResult {
             ',' => Comma,
             '"' => try!(tokenize_str(&mut iter)),
             c if !char::is_alphanumeric(c) => try!(tokenize_operator(c, &mut iter)),
-            c if is_digit(&c) || c == '.' => try!(tokenize_number_or_period(c, &mut iter)),
+            c @ '.' | c if is_digit(&c) => try!(tokenize_number_or_period(c, &mut iter)),
             c => try!(tokenize_identifier(c, &mut iter)),
         };
         tokens.push(cur_tok);
