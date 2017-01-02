@@ -60,9 +60,7 @@ pub fn tokenize(input: &str) -> TokenizeResult {
     let mut iter = input.chars().peekable();
 
     while let Some(c) = iter.next() {
-        if char::is_whitespace(c) && c != '\n' {
-            continue;
-        } else if c == '#' {
+        if c == '#' {
             while let Some(c) = iter.next() {
                 if c == '\n' {
                     break;
@@ -70,80 +68,81 @@ pub fn tokenize(input: &str) -> TokenizeResult {
             }
         }
 
-        let cur_tok = if c == '\n' {
-            Newline
-        } else if c == ';' {
-            Semicolon
-        } else if c == '(' {
-            LParen
-        } else if c == ')' {
-            RParen
-        } else if c == ':' {
-            Colon
-        } else if c == ',' {
-            Comma
-        } else if c == '"' {
-            let mut buffer = String::with_capacity(20);
-            loop {
-                // TODO handle string escapes, interpolation
-                match iter.next() {
-                    Some(x) if x == '"' => break,
-                    Some(x) => buffer.push(x),
-                    None => return Err(TokenizeError::new("Unclosed quote")),
+        let cur_tok = match c {
+            c if char::is_whitespace(c) && c != '\n' => continue,
+            '\n' => Newline,
+            ';' => Semicolon,
+            '(' => LParen,
+            ')' => RParen,
+            ':' => Colon,
+            ',' => Comma,
+            '"' => {
+                let mut buffer = String::with_capacity(20);
+                loop {
+                    // TODO handle string escapes, interpolation
+                    match iter.next() {
+                        Some(x) if x == '"' => break,
+                        Some(x) => buffer.push(x),
+                        None => return Err(TokenizeError::new("Unclosed quote")),
+                    }
                 }
+                StrLiteral(buffer)
             }
-            StrLiteral(buffer)
-        } else if c == '.' && !iter.peek().map_or(false, |x| is_digit(x)) {
-            Period
-        } else if is_digit(&c) || c == '.' {
-            let mut buffer = String::with_capacity(20);
-            buffer.push(c);
-            loop {
-                if iter.peek().map_or(false, |x| is_digit(x) || *x == '.') {
-                    let n = iter.next().unwrap();
-                    buffer.push(n);
+            c if !char::is_alphanumeric(c) => {
+                let mut buffer = String::with_capacity(20);
+                buffer.push(c);
+                loop {
+                    if iter.peek().map_or(false,
+                                          |x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x)) {
+                        let n = iter.next().unwrap();
+                        buffer.push(n);
+                    } else {
+                        break;
+                    }
+                }
+                Operator(Op { repr: buffer })
+            }
+            c => {
+                if c == '.' && !iter.peek().map_or(false, |x| is_digit(x)) {
+                    Period
+                } else if is_digit(&c) || c == '.' {
+                    let mut buffer = String::with_capacity(20);
+                    buffer.push(c);
+                    loop {
+                        if iter.peek().map_or(false, |x| is_digit(x) || *x == '.') {
+                            let n = iter.next().unwrap();
+                            buffer.push(n);
+                        } else {
+                            break;
+                        }
+                    }
+                    match buffer.parse::<f64>() {
+                        Ok(f) => NumLiteral(f),
+                        Err(_) => return Err(TokenizeError::new("Failed to pase digit")),
+                    }
                 } else {
-                    break;
-                }
-            }
-            match buffer.parse::<f64>() {
-                Ok(f) => NumLiteral(f),
-                Err(_) => return Err(TokenizeError::new("Failed to pase digit")),
-            }
-        } else if !char::is_alphanumeric(c) {
-            let mut buffer = String::with_capacity(20);
-            buffer.push(c);
-            loop {
-                if iter.peek().map_or(false,
-                                      |x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x)) {
-                    let n = iter.next().unwrap();
-                    buffer.push(n);
-                } else {
-                    break;
-                }
-            }
-            Operator(Op { repr: buffer })
-        } else {
-            let mut buffer = String::with_capacity(20);
-            buffer.push(c);
-            loop {
-                if iter.peek().map_or(true, |x| ends_identifier(x)) {
-                    break;
-                } else {
-                    buffer.push(iter.next().unwrap());
-                }
-            }
+                    let mut buffer = String::with_capacity(20);
+                    buffer.push(c);
+                    loop {
+                        if iter.peek().map_or(true, |x| ends_identifier(x)) {
+                            break;
+                        } else {
+                            buffer.push(iter.next().unwrap());
+                        }
+                    }
 
-            match &buffer[..] {
-                "if" => Keyword(Kw::If),
-                "then" => Keyword(Kw::Then),
-                "else" => Keyword(Kw::Else),
-                "while" => Keyword(Kw::While),
-                "end" => Keyword(Kw::End),
-                "let" => Keyword(Kw::Let),
-                "fn" => Keyword(Kw::Fn),
-                "null" => Keyword(Kw::Null),
-                b => Identifier(b.to_string()),
+                    match &buffer[..] {
+                        "if" => Keyword(Kw::If),
+                        "then" => Keyword(Kw::Then),
+                        "else" => Keyword(Kw::Else),
+                        "while" => Keyword(Kw::While),
+                        "end" => Keyword(Kw::End),
+                        "let" => Keyword(Kw::Let),
+                        "fn" => Keyword(Kw::Fn),
+                        "null" => Keyword(Kw::Null),
+                        b => Identifier(b.to_string()),
+                    }
+                }
             }
         };
 
