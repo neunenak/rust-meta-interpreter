@@ -1,3 +1,6 @@
+use std::iter::Peekable;
+use std::str::Chars;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Newline,
@@ -46,17 +49,10 @@ fn is_digit(c: &char) -> bool {
     c.is_digit(10)
 }
 
-fn ends_identifier(c: &char) -> bool {
-    let c = *c;
-    char::is_whitespace(c) || is_digit(&c) || c == ';' || c == '(' || c == ')' || c == ',' ||
-    c == '.' || c == ',' || c == ':'
-}
-
 pub fn tokenize(input: &str) -> TokenizeResult {
     use self::Token::*;
     let mut tokens = Vec::new();
-    let mut iter = input.chars().peekable();
-
+    let mut iter: Peekable<Chars> = input.chars().peekable();
     while let Some(c) = iter.next() {
         if c == '#' {
             while let Some(c) = iter.next() {
@@ -65,7 +61,6 @@ pub fn tokenize(input: &str) -> TokenizeResult {
                 }
             }
         }
-
         let cur_tok = match c {
             c if char::is_whitespace(c) && c != '\n' => continue,
             '\n' => Newline,
@@ -74,80 +69,93 @@ pub fn tokenize(input: &str) -> TokenizeResult {
             ')' => RParen,
             ':' => Colon,
             ',' => Comma,
-            '"' => {
-                let mut buffer = String::with_capacity(20);
-                loop {
-                    // TODO handle string escapes, interpolation
-                    match iter.next() {
-                        Some(x) if x == '"' => break,
-                        Some(x) => buffer.push(x),
-                        None => return Err(TokenizeError::new("Unclosed quote")),
-                    }
-                }
-                StrLiteral(buffer)
-            }
-            c if !char::is_alphanumeric(c) => {
-                let mut buffer = String::with_capacity(20);
-                buffer.push(c);
-                loop {
-                    if iter.peek().map_or(false,
-                                          |x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x)) {
-                        let n = iter.next().unwrap();
-                        buffer.push(n);
-                    } else {
-                        break;
-                    }
-                }
-                Operator(Op(buffer))
-            }
-            c => {
-                if c == '.' && !iter.peek().map_or(false, |x| is_digit(x)) {
-                    Period
-                } else if is_digit(&c) || c == '.' {
-                    let mut buffer = String::with_capacity(20);
-                    buffer.push(c);
-                    loop {
-                        if iter.peek().map_or(false, |x| is_digit(x) || *x == '.') {
-                            let n = iter.next().unwrap();
-                            buffer.push(n);
-                        } else {
-                            break;
-                        }
-                    }
-                    match buffer.parse::<f64>() {
-                        Ok(f) => NumLiteral(f),
-                        Err(_) => return Err(TokenizeError::new("Failed to pase digit")),
-                    }
-                } else {
-                    let mut buffer = String::with_capacity(20);
-                    buffer.push(c);
-                    loop {
-                        if iter.peek().map_or(true, |x| ends_identifier(x)) {
-                            break;
-                        } else {
-                            buffer.push(iter.next().unwrap());
-                        }
-                    }
-
-                    match &buffer[..] {
-                        "if" => Keyword(Kw::If),
-                        "then" => Keyword(Kw::Then),
-                        "else" => Keyword(Kw::Else),
-                        "while" => Keyword(Kw::While),
-                        "end" => Keyword(Kw::End),
-                        "let" => Keyword(Kw::Let),
-                        "fn" => Keyword(Kw::Fn),
-                        "null" => Keyword(Kw::Null),
-                        b => Identifier(b.to_string()),
-                    }
-                }
-            }
+            '"' => try!(tokenize_str(&mut iter)),
+            c if !char::is_alphanumeric(c) => try!(tokenize_operator(c, &mut iter)),
+            c if is_digit(&c) || c == '.' => try!(tokenize_number_or_period(c, &mut iter)),
+            c => try!(tokenize_identifier(c, &mut iter)),
         };
-
         tokens.push(cur_tok);
     }
-
     Ok(tokens)
+}
+
+fn tokenize_str(iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
+    let mut buffer = String::new();
+    loop {
+        // TODO handle string escapes, interpolation
+        match iter.next() {
+            Some(x) if x == '"' => break,
+            Some(x) => buffer.push(x),
+            None => return Err(TokenizeError::new("Unclosed quote")),
+        }
+    }
+    Ok(Token::StrLiteral(buffer))
+}
+
+fn tokenize_operator(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
+    let mut buffer = String::new();
+    buffer.push(c);
+    loop {
+        if iter.peek().map_or(false,
+                              |x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x)) {
+            let n = iter.next().unwrap();
+            buffer.push(n);
+        } else {
+            break;
+        }
+    }
+    Ok(Token::Operator(Op(buffer)))
+}
+
+fn tokenize_number_or_period(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
+    if c == '.' && !iter.peek().map_or(false, is_digit) {
+        return Ok(Token::Period);
+    }
+
+    let mut buffer = String::new();
+    buffer.push(c);
+    loop {
+        if iter.peek().map_or(false, |x| is_digit(x) || *x == '.') {
+            let n = iter.next().unwrap();
+            buffer.push(n);
+        } else {
+            break;
+        }
+    }
+    match buffer.parse::<f64>() {
+        Ok(f) => Ok(Token::NumLiteral(f)),
+        Err(_) => Err(TokenizeError::new("Failed to parse digit")),
+    }
+}
+
+fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
+    fn ends_identifier(c: &char) -> bool {
+        let c = *c;
+        char::is_whitespace(c) || is_digit(&c) || c == ';' || c == '(' || c == ')' ||
+        c == ',' || c == '.' || c == ',' || c == ':'
+    }
+
+    use self::Token::*;
+    let mut buffer = String::new();
+    buffer.push(c);
+    loop {
+        if iter.peek().map_or(true, |x| ends_identifier(x)) {
+            break;
+        } else {
+            buffer.push(iter.next().unwrap());
+        }
+    }
+    Ok(match &buffer[..] {
+        "if" => Keyword(Kw::If),
+        "then" => Keyword(Kw::Then),
+        "else" => Keyword(Kw::Else),
+        "while" => Keyword(Kw::While),
+        "end" => Keyword(Kw::End),
+        "let" => Keyword(Kw::Let),
+        "fn" => Keyword(Kw::Fn),
+        "null" => Keyword(Kw::Null),
+        b => Identifier(b.to_string()),
+    })
 }
 
 #[cfg(test)]
@@ -167,17 +175,17 @@ mod tests {
     #[test]
     fn tokeniziation_tests() {
         tokentest!("let a = 3\n",
-                   "[Keyword(Let), Identifier(\"a\"), Operator(Op { repr: \"=\" }), \
+                   "[Keyword(Let), Identifier(\"a\"), Operator(Op(\"=\")), \
                     NumLiteral(3), Newline]");
 
         tokentest!("2+1",
-                   "[NumLiteral(2), Operator(Op { repr: \"+\" }), NumLiteral(1)]");
+                   "[NumLiteral(2), Operator(Op(\"+\")), NumLiteral(1)]");
 
         tokentest!("2 + 1",
-                   "[NumLiteral(2), Operator(Op { repr: \"+\" }), NumLiteral(1)]");
+                   "[NumLiteral(2), Operator(Op(\"+\")), NumLiteral(1)]");
 
         tokentest!("2.3*49.2",
-                   "[NumLiteral(2.3), Operator(Op { repr: \"*\" }), NumLiteral(49.2)]");
+                   "[NumLiteral(2.3), Operator(Op(\"*\")), NumLiteral(49.2)]");
 
         assert!(tokenize("2.4.5").is_err());
     }
