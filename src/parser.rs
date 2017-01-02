@@ -111,7 +111,7 @@ impl Parser {
     }
 
     fn get_precedence(&self, op: &Op) -> Precedence {
-        match &op.repr[..] {
+        match &op.0[..] {
             "+" => 10,
             "-" => 10,
             "*" => 20,
@@ -297,7 +297,7 @@ impl Parser {
                 }
             }
 
-            lhs = Expression::BinExp(op.repr, Box::new(lhs), Box::new(rhs));
+            lhs = Expression::BinExp(op.0, Box::new(lhs), Box::new(rhs));
         }
 
         Ok(lhs)

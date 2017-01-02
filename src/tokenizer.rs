@@ -15,9 +15,7 @@ pub enum Token {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Op {
-    pub repr: String,
-}
+pub struct Op(pub String);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Kw {
@@ -100,7 +98,7 @@ pub fn tokenize(input: &str) -> TokenizeResult {
                         break;
                     }
                 }
-                Operator(Op { repr: buffer })
+                Operator(Op(buffer))
             }
             c => {
                 if c == '.' && !iter.peek().map_or(false, |x| is_digit(x)) {
