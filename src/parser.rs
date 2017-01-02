@@ -87,7 +87,10 @@ pub struct ParseError {
 
 impl ParseError {
     fn result_from_str<T>(msg: &str) -> ParseResult<T> {
-        Err(ParseError { msg: msg.to_string(), remaining_tokens: vec!() })
+        Err(ParseError {
+            msg: msg.to_string(),
+            remaining_tokens: vec![],
+        })
     }
 }
 
@@ -175,7 +178,7 @@ impl Parser {
                 Err(mut err) => {
                     err.remaining_tokens = self.tokens.clone();
                     err.remaining_tokens.reverse();
-                    return Err(err)
+                    return Err(err);
                 }
             }
         }
@@ -322,7 +325,9 @@ impl Parser {
             Some(Identifier(_)) => try!(self.identifier_expr()),
             Some(Token::LParen) => try!(self.paren_expr()),
             Some(e) => {
-                return ParseError::result_from_str(&format!("Expected primary expression, got {:?}", e));
+                return ParseError::result_from_str(&format!("Expected primary expression, got \
+                                                             {:?}",
+                                                            e));
             }
             None => return ParseError::result_from_str("Expected primary expression received EoI"),
         })
@@ -337,7 +342,9 @@ impl Parser {
         let mut then_block = VecDeque::new();
         loop {
             match self.peek() {
-                None | Some(Keyword(Kw::Else)) | Some(Keyword(Kw::End)) => break,
+                None |
+                Some(Keyword(Kw::Else)) |
+                Some(Keyword(Kw::End)) => break,
                 Some(Semicolon) | Some(Newline) => {
                     self.next();
                     continue;
@@ -353,7 +360,8 @@ impl Parser {
             let mut else_exprs = VecDeque::new();
             loop {
                 match self.peek() {
-                    None | Some(Keyword(Kw::End)) => break,
+                    None |
+                    Some(Keyword(Kw::End)) => break,
                     Some(Semicolon) | Some(Newline) => {
                         self.next();
                         continue;
@@ -370,7 +378,9 @@ impl Parser {
         };
 
         expect!(self, Keyword(Kw::End));
-        Ok(Conditional(Box::new(test), Box::new(Block(then_block)), else_block.map(|list| Box::new(Block(list)))))
+        Ok(Conditional(Box::new(test),
+                       Box::new(Block(then_block)),
+                       else_block.map(|list| Box::new(Block(list)))))
     }
 
     fn identifier_expr(&mut self) -> ParseResult<Expression> {
