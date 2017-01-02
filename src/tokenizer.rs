@@ -144,42 +144,53 @@ fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, Tok
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use super::Token::*;
 
-    macro_rules! tokentest {
-        ($input:expr, $output:expr) => {
-            {
+    macro_rules! token_test {
+        ($input: expr, $output: pat, $ifexpr: expr) => {
             let tokens = tokenize($input).unwrap();
-            assert_eq!(format!("{:?}", tokens), $output);
+            match tokens[..] {
+                $output if $ifexpr => (),
+                _ => panic!("Actual output: {:?}", tokens),
             }
         }
     }
 
-    use super::*;
-
     #[test]
-    fn tokeniziation_tests() {
-        tokentest!("let a = 3\n",
-                   "[Keyword(Let), Identifier(\"a\"), Operator(Op(\"=\")), \
-                    NumLiteral(3), Newline]");
+    fn basic_tokeniziation_tests() {
+        token_test!("let a = 3\n",
+                    [Keyword(Kw::Let), Identifier(ref a), Operator(Op(ref b)), NumLiteral(3.0), Newline],
+                    a == "a" && b == "=");
 
-        tokentest!("2+1",
-                   "[NumLiteral(2), Operator(Op(\"+\")), NumLiteral(1)]");
+        token_test!("2+1",
+                    [NumLiteral(2.0), Operator(Op(ref a)), NumLiteral(1.0)],
+                    a == "+");
 
-        tokentest!("2 + 1",
-                   "[NumLiteral(2), Operator(Op(\"+\")), NumLiteral(1)]");
+        token_test!("2 + 1",
+                    [NumLiteral(2.0), Operator(Op(ref a)), NumLiteral(1.0)],
+                    a == "+");
 
-        tokentest!("2.3*49.2",
-                   "[NumLiteral(2.3), Operator(Op(\"*\")), NumLiteral(49.2)]");
+        token_test!("2.3*49.2",
+                   [NumLiteral(2.3), Operator(Op(ref a)), NumLiteral(49.2)],
+                   a == "*");
 
         assert!(tokenize("2.4.5").is_err());
     }
 
     #[test]
-    #[ignore]
-    fn more_tokenization() {
-        // it would be nice to support complicated operators in a nice, haskell-ish way
-        tokentest!("a *> b",
-                   "[Identifier(\"a\"), Identifier(\"*>\"), Identifier(\"b\"), EOF]");
+    fn string_test() {
+        token_test!("null + \"a string\"",
+                    [Keyword(Kw::Null), Operator(Op(ref a)), StrLiteral(ref b)],
+                    a == "+" && b == "a string");
+    }
+
+    #[test]
+    fn operator_test() {
+        token_test!("a *> b",
+                   [Identifier(ref a), Operator(Op(ref b)), Identifier(ref c)],
+                   a == "a" && b == "*>" && c == "b");
+
 
     }
 }
