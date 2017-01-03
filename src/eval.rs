@@ -9,6 +9,7 @@ type Reduction<T> = (T, Option<SideEffect>);
 enum SideEffect {
     Print(String),
     AddBinding(String, Expression),
+    AddFunctionBinding(Function),
 }
 
 struct EnvFrame {
@@ -140,6 +141,9 @@ impl Evaluator {
             Print(s) => println!("{}", s),
             AddBinding(var, value) => {
                 self.add_binding(var, value);
+            },
+            AddFunctionBinding(function) => {
+                self.add_function(function.prototype.name.clone(), function);
             }
         }
     }
@@ -156,10 +160,8 @@ impl Evaluator {
                 }
             }
             FuncDefNode(func) => {
-                let fn_name = func.prototype.name.clone();
-                // TODO get rid of this clone
-                self.add_function(fn_name, func.clone());
-                (ExprNode(Expression::Lambda(func)), None)
+                let binding = Some(SideEffect::AddFunctionBinding(func.clone()));
+                (ExprNode(Expression::Lambda(func)), binding)
             }
         }
     }
