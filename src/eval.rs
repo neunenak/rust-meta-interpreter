@@ -29,7 +29,7 @@ impl<'a> Evaluator<'a> {
 
     pub fn run(&mut self, ast: AST) -> Vec<String> {
         ast.into_iter()
-            .map(|astnode| format!("{}", self.reduce(astnode)))
+            .map(|astnode| format!("{}", self.reduction_loop(astnode)))
             .collect()
     }
 
@@ -102,7 +102,7 @@ impl Expression {
 }
 
 impl<'a> Evaluator<'a> {
-    fn reduce(&mut self, mut node: ASTNode) -> ASTNode {
+    fn reduction_loop(&mut self, mut node: ASTNode) -> ASTNode {
         loop {
             node = self.step(node);
             if !node.is_reducible() {
@@ -290,16 +290,16 @@ impl<'a> Evaluator<'a> {
             evaluator.add_binding(binding.clone(), expr.clone());
         }
 
-        let nodes = function.body.iter().map(|expr| ASTNode::ExprNode(expr.clone()));
-        let mut retval = Null;
+        let nodes = function.body.iter().map(|node| node.clone());
+        let mut retval = ExprNode(Null);
         for n in nodes {
-            retval = match evaluator.reduce(n) {
-                ExprNode(expr) => expr,
-                FuncDefNode(_) => panic!("This should never happen! A maximally-reduced node\
-                should never be a function definition!")
-            };
+            retval = evaluator.reduction_loop(n);
         }
 
-        (retval, None)
+        match retval {
+            ExprNode(expr) => (expr, None),
+            FuncDefNode(_) => panic!("This should never happen! A maximally-reduced node\
+            should never be a function definition!")
+        }
     }
 }

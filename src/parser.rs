@@ -6,7 +6,7 @@ use std::collections::VecDeque;
 // program := (statement delimiter ?)*
 // delimiter := Newline | Semicolon
 // statement := declaration | expression
-// declaraion :=  Fn prototype (statement)* End
+// declaration :=  Fn prototype (statement)* End
 // prototype := identifier LParen identlist RParen
 // identlist := Ident (Comma Ident)* | e
 // exprlist  := Expression (Comma Expression)* | e
@@ -29,7 +29,7 @@ pub enum ASTNode {
 #[derive(Debug, Clone)]
 pub struct Function {
     pub prototype: Prototype,
-    pub body: Vec<Expression>,
+    pub body: Vec<ASTNode>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -205,7 +205,7 @@ impl Parser {
         use tokenizer::Token::*;
         expect!(self, Keyword(Kw::Fn));
         let prototype = try!(self.prototype());
-        let body: Vec<Expression> = try!(self.body());
+        let body: Vec<ASTNode> = try!(self.body());
         expect!(self, Keyword(Kw::End));
         Ok(ASTNode::FuncDefNode(Function {
             prototype: prototype,
@@ -258,9 +258,9 @@ impl Parser {
         Ok(args)
     }
 
-    fn body(&mut self) -> ParseResult<Vec<Expression>> {
+    fn body(&mut self) -> ParseResult<Vec<ASTNode>> {
         use tokenizer::Token::*;
-        let mut exprs = Vec::new();
+        let mut statements = Vec::new();
         loop {
             match self.peek() {
                 Some(ref t) if is_delimiter(t) => {
@@ -269,12 +269,12 @@ impl Parser {
                 }
                 Some(Keyword(Kw::End)) => break,
                 _ => {
-                    let expr = try!(self.expression());
-                    exprs.push(expr);
+                    let ast_node = try!(self.statement());
+                    statements.push(ast_node);
                 }
             }
         }
-        Ok(exprs)
+        Ok(statements)
     }
 
     fn expression(&mut self) -> ParseResult<Expression> {
@@ -460,14 +460,14 @@ mod tests {
         parsetest!(
         "fn a() 1 + 2 end",
         &[FuncDefNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
-        match &body[..] { &[BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
+        match &body[..] { &[ExprNode(BinExp(_, box Number(1.0), box Number(2.0)))] => true, _ => false }
             && name == "a" && match &parameters[..] { &[] => true, _ => false }
         );
 
         parsetest!(
         "fn a(x,y) 1 + 2 end",
         &[FuncDefNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
-        match &body[..] { &[BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
+        match &body[..] { &[ExprNode(BinExp(_, box Number(1.0), box Number(2.0)))] => true, _ => false }
             && name == "a" && *parameters == ["x","y"]
         );
     }

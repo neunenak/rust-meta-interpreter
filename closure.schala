@@ -1,0 +1,11 @@
+
+
+fn outer()
+    fn inner(a)
+        a + 10
+    end
+
+    inner(20) + 8.3
+end
+
+outer()
