@@ -203,6 +203,9 @@ impl<'a> Evaluator<'a> {
                     (Call(name, args), None)
                 }
             }
+            While(box test, body) => {
+                unimplemented!()
+            }
             Conditional(box test, then_block, else_block) => {
                 if test.is_reducible() {
                     let (new_test, new_effect) = self.reduce_expr(test);

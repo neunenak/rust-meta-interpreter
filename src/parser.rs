@@ -49,6 +49,7 @@ pub enum Expression {
     Conditional(Box<Expression>, Box<Expression>, Option<Box<Expression>>),
     Lambda(Function),
     Block(VecDeque<Expression>),
+    While(Box<Expression>, Vec<Expression>),
 }
 
 impl fmt::Display for Statement {
@@ -326,6 +327,7 @@ impl Parser {
                 Expression::StringLiteral(s)
             }
             Some(Keyword(Kw::If)) => try!(self.conditional_expr()),
+            Some(Keyword(Kw::While)) => try!(self.while_expr()),
             Some(Identifier(_)) => try!(self.identifier_expr()),
             Some(Token::LParen) => try!(self.paren_expr()),
             Some(e) => {
@@ -335,6 +337,33 @@ impl Parser {
             }
             None => return ParseError::result_from_str("Expected primary expression received EoI"),
         })
+    }
+
+    fn while_expr(&mut self) -> ParseResult<Expression> {
+        use tokenizer::Token::*;
+        use self::Expression::*;
+        expect!(self, Keyword(Kw::While));
+
+        let test = try!(self.expression());
+
+
+        let mut body = Vec::new();
+        loop {
+            match self.peek() {
+                None |
+                Some(Keyword(Kw::End)) => break,
+                Some(Semicolon) | Some(Newline) => {
+                    self.next();
+                    continue;
+                }
+                _ => {
+                    let exp = try!(self.expression());
+                    body.push(exp);
+                }
+            }
+        }
+        expect!(self, Keyword(Kw::End));
+        Ok(While(Box::new(test), body))
     }
 
     fn conditional_expr(&mut self) -> ParseResult<Expression> {
