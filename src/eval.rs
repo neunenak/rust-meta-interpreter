@@ -31,9 +31,7 @@ pub struct Evaluator {
 
 impl Evaluator {
     pub fn new() -> Evaluator {
-        Evaluator {
-            frames: vec!(EnvFrame::new()),
-        }
+        Evaluator { frames: vec![EnvFrame::new()] }
     }
 
     pub fn run(&mut self, ast: AST) -> Vec<String> {
@@ -159,7 +157,7 @@ impl Evaluator {
             }
             FuncDefNode(func) => {
                 let fn_name = func.prototype.name.clone();
-                //TODO get rid of this clone
+                // TODO get rid of this clone
                 self.add_function(fn_name, func.clone());
                 (ExprNode(Expression::Lambda(func)), None)
             }
@@ -192,7 +190,7 @@ impl Evaluator {
                             let binding = SideEffect::AddBinding(var, right);
                             return (Null, Some(binding));
                         }
-                        _ => return (Null, None)
+                        _ => return (Null, None),
                     }
                 }
 
@@ -228,7 +226,7 @@ impl Evaluator {
                     } else {
                         match else_block {
                             Some(box expr) => (expr, None),
-                            None => (Null, None)
+                            None => (Null, None),
                         }
                     }
                 }
@@ -272,10 +270,7 @@ impl Evaluator {
         }
     }
 
-    fn reduce_call(&mut self,
-                   name: String,
-                   arguments: Vec<Expression>)
-                   -> Reduction<Expression> {
+    fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> Reduction<Expression> {
         use parser::Expression::*;
 
         // ugly hack for now

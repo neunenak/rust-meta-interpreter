@@ -68,14 +68,9 @@ impl fmt::Display for Expression {
             &Null => write!(f, "null"),
             &StringLiteral(ref s) => write!(f, "\"{}\"", s),
             &Number(n) => write!(f, "{}", n),
-            &Lambda(Function {
-                prototype: Prototype {
-                    ref name,
-                    ref parameters,
-                    ..
-                },
-                ..
-            }) => write!(f, "«function: {}, {} arg(s)»", name, parameters.len()),
+            &Lambda(Function { prototype: Prototype { ref name, ref parameters, .. }, .. }) => {
+                write!(f, "«function: {}, {} arg(s)»", name, parameters.len())
+            }
             _ => write!(f, "UNIMPLEMENTED"),
         }
     }
