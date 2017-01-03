@@ -444,14 +444,14 @@ mod tests {
 
         parsetest!(
         "fn a() 1 + 2 end",
-        &[FuncNode(Function {prototype: Prototype { name: ref name, parameters: ref parameters }, body: ref body})],
+        &[FuncNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
         match &body[..] { &[BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
             && name == "a" && match &parameters[..] { &[] => true, _ => false }
         );
 
         parsetest!(
         "fn a(x,y) 1 + 2 end",
-        &[FuncNode(Function {prototype: Prototype { name: ref name, parameters: ref parameters }, body: ref body})],
+        &[FuncNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
         match &body[..] { &[BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
             && name == "a" && *parameters == ["x","y"]
         );
@@ -485,11 +485,8 @@ mod tests {
         let t1 = "if null then 20 else 40 end";
         let tokens = tokenizer::tokenize(t1).unwrap();
         match parse(&tokens, &[]).unwrap()[..] {
-            [ExprNode(Conditional(box Null, box ref a, Some(box ref b)))] => {
-                // TODO make this test better
-
-            }
-            _ => panic!("Bad conditional test"),
+            [ExprNode(Conditional(box Null, box Block(_), Some(box Block(_))))] => (),
+            _ => panic!(),
         }
     }
 }
