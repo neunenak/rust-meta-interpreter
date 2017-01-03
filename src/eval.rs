@@ -86,7 +86,7 @@ impl Evaluable for ASTNode {
         use parser::ASTNode::*;
         match self {
             &ExprNode(ref expr) => expr.is_reducible(),
-            &FuncNode(_) => true,
+            &FuncDefNode(_) => true,
         }
     }
 }
@@ -97,6 +97,7 @@ impl Evaluable for Expression {
         match *self {
             Null => false,
             StringLiteral(_) => false,
+            Lambda(_) => false,
             Number(_) => false,
             _ => true,
         }
@@ -156,10 +157,11 @@ impl Evaluator {
                     (ExprNode(expr), None)
                 }
             }
-            FuncNode(func) => {
+            FuncDefNode(func) => {
                 let fn_name = func.prototype.name.clone();
-                self.add_function(fn_name, func);
-                (ExprNode(Expression::Null), None)
+                //TODO get rid of this clone
+                self.add_function(fn_name, func.clone());
+                (ExprNode(Expression::Lambda(func)), None)
             }
         }
     }
@@ -170,6 +172,7 @@ impl Evaluator {
             Null => (Null, None),
             e @ StringLiteral(_) => (e, None),
             e @ Number(_) => (e, None),
+            e @ Lambda(_) => (e, None),
             Variable(var) => {
                 match self.lookup_binding(var) {
                     None => (Null, None),

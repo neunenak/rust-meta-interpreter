@@ -23,7 +23,7 @@ use std::collections::VecDeque;
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     ExprNode(Expression),
-    FuncNode(Function),
+    FuncDefNode(Function),
 }
 
 #[derive(Debug, Clone)]
@@ -47,15 +47,16 @@ pub enum Expression {
     BinExp(String, Box<Expression>, Box<Expression>),
     Call(String, Vec<Expression>),
     Conditional(Box<Expression>, Box<Expression>, Option<Box<Expression>>),
+    Lambda(Function),
     Block(VecDeque<Expression>),
 }
 
 impl fmt::Display for ASTNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ASTNode::*;
-        match self {
-            &ExprNode(ref expr) => write!(f, "{}", expr),
-            &FuncNode(_) => write!(f, "UNIMPLEMENTED"),
+        match *self {
+            ExprNode(ref expr) => write!(f, "{}", expr),
+            FuncDefNode(_) => write!(f, "UNIMPLEMENTED"),
         }
     }
 }
@@ -67,6 +68,14 @@ impl fmt::Display for Expression {
             &Null => write!(f, "null"),
             &StringLiteral(ref s) => write!(f, "\"{}\"", s),
             &Number(n) => write!(f, "{}", n),
+            &Lambda(Function {
+                prototype: Prototype {
+                    ref name,
+                    ref parameters,
+                    ..
+                },
+                ..
+            }) => write!(f, "«function: {}, {} arg(s)»", name, parameters.len()),
             _ => write!(f, "UNIMPLEMENTED"),
         }
     }
@@ -203,7 +212,7 @@ impl Parser {
         let prototype = try!(self.prototype());
         let body: Vec<Expression> = try!(self.body());
         expect!(self, Keyword(Kw::End));
-        Ok(ASTNode::FuncNode(Function {
+        Ok(ASTNode::FuncDefNode(Function {
             prototype: prototype,
             body: body,
         }))
@@ -444,14 +453,14 @@ mod tests {
 
         parsetest!(
         "fn a() 1 + 2 end",
-        &[FuncNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
+        &[FuncDefNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
         match &body[..] { &[BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
             && name == "a" && match &parameters[..] { &[] => true, _ => false }
         );
 
         parsetest!(
         "fn a(x,y) 1 + 2 end",
-        &[FuncNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
+        &[FuncDefNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
         match &body[..] { &[BinExp(_, box Number(1.0), box Number(2.0))] => true, _ => false }
             && name == "a" && *parameters == ["x","y"]
         );

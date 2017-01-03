@@ -100,7 +100,7 @@ impl CodeGen for ASTNode {
         use self::ASTNode::*;
         match self {
             &ExprNode(ref expr) => expr.codegen(data),
-            &FuncNode(ref func) => func.codegen(data),
+            &FuncDefNode(ref func) => func.codegen(data),
         }
     }
 }
