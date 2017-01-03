@@ -50,8 +50,6 @@ struct CompilationData {
 
 fn compile_ast(ast: AST, filename: &str) {
     println!("Compiling!");
-    println!("AST is {:?}", ast);
-
     let names: VariableMap = HashMap::new();
 
     let context = LLVMWrap::create_context();
