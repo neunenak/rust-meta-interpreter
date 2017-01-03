@@ -3,7 +3,7 @@ extern crate llvm_sys;
 use std::collections::HashMap;
 
 use self::llvm_sys::prelude::*;
-use parser::{AST, ASTNode, Function, Expression};
+use parser::{AST, Statement, Function, Expression};
 
 use llvm_wrap as LLVMWrap;
 
@@ -95,9 +95,9 @@ impl CodeGen for AST {
     }
 }
 
-impl CodeGen for ASTNode {
+impl CodeGen for Statement {
     fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
-        use self::ASTNode::*;
+        use self::Statement::*;
         match self {
             &ExprNode(ref expr) => expr.codegen(data),
             &FuncDefNode(ref func) => func.codegen(data),

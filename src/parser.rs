@@ -21,7 +21,7 @@ use std::collections::VecDeque;
 //
 
 #[derive(Debug, Clone)]
-pub enum ASTNode {
+pub enum Statement {
     ExprNode(Expression),
     FuncDefNode(Function),
 }
@@ -29,7 +29,7 @@ pub enum ASTNode {
 #[derive(Debug, Clone)]
 pub struct Function {
     pub prototype: Prototype,
-    pub body: Vec<ASTNode>,
+    pub body: Vec<Statement>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,9 +51,9 @@ pub enum Expression {
     Block(VecDeque<Expression>),
 }
 
-impl fmt::Display for ASTNode {
+impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::ASTNode::*;
+        use self::Statement::*;
         match *self {
             ExprNode(ref expr) => write!(f, "{}", expr),
             FuncDefNode(_) => write!(f, "UNIMPLEMENTED"),
@@ -76,7 +76,7 @@ impl fmt::Display for Expression {
     }
 }
 
-pub type AST = Vec<ASTNode>;
+pub type AST = Vec<Statement>;
 
 type Precedence = u8;
 
@@ -168,7 +168,7 @@ impl Parser {
     fn program(&mut self) -> ParseResult<AST> {
         let mut ast = Vec::new(); //TODO have this come from previously-parsed tree
         loop {
-            let result: ParseResult<ASTNode> = match self.peek() {
+            let result: ParseResult<Statement> = match self.peek() {
                 Some(ref t) if is_delimiter(&t) => {
                     self.next();
                     continue;
@@ -190,24 +190,24 @@ impl Parser {
         Ok(ast)
     }
 
-    fn statement(&mut self) -> ParseResult<ASTNode> {
+    fn statement(&mut self) -> ParseResult<Statement> {
         use tokenizer::Token::*;
-        let node: ASTNode = match self.peek() {
+        let node: Statement = match self.peek() {
             Some(Keyword(Kw::Fn)) => try!(self.declaration()),
-            Some(_) => ASTNode::ExprNode(try!(self.expression())),
+            Some(_) => Statement::ExprNode(try!(self.expression())),
             None => panic!("unexpected end of tokens"),
         };
 
         Ok(node)
     }
 
-    fn declaration(&mut self) -> ParseResult<ASTNode> {
+    fn declaration(&mut self) -> ParseResult<Statement> {
         use tokenizer::Token::*;
         expect!(self, Keyword(Kw::Fn));
         let prototype = try!(self.prototype());
-        let body: Vec<ASTNode> = try!(self.body());
+        let body: Vec<Statement> = try!(self.body());
         expect!(self, Keyword(Kw::End));
-        Ok(ASTNode::FuncDefNode(Function {
+        Ok(Statement::FuncDefNode(Function {
             prototype: prototype,
             body: body,
         }))
@@ -258,7 +258,7 @@ impl Parser {
         Ok(args)
     }
 
-    fn body(&mut self) -> ParseResult<Vec<ASTNode>> {
+    fn body(&mut self) -> ParseResult<Vec<Statement>> {
         use tokenizer::Token::*;
         let mut statements = Vec::new();
         loop {
@@ -428,7 +428,7 @@ impl Parser {
     }
 }
 
-pub fn parse(tokens: &[Token], _parsed_tree: &[ASTNode]) -> ParseResult<AST> {
+pub fn parse(tokens: &[Token], _parsed_tree: &[Statement]) -> ParseResult<AST> {
     let mut parser = Parser::initialize(tokens);
     parser.program()
 }
@@ -437,6 +437,8 @@ pub fn parse(tokens: &[Token], _parsed_tree: &[ASTNode]) -> ParseResult<AST> {
 mod tests {
     use tokenizer;
     use super::*;
+    use super::Statement::*;
+    use super::Expression::*;
 
     macro_rules! parsetest {
         ($input:expr, $output:pat, $ifexpr:expr) => {
@@ -453,10 +455,7 @@ mod tests {
 
     #[test]
     fn call_parse_test() {
-        use super::ASTNode::*;
-        use super::Expression::*;
         use super::Function;
-
         parsetest!(
         "fn a() 1 + 2 end",
         &[FuncDefNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
@@ -474,8 +473,6 @@ mod tests {
 
     #[test]
     fn expression_parse_test() {
-        use super::ASTNode::*;
-        use super::Expression::*;
         parsetest!("a", &[ExprNode(Variable(ref s))], s == "a");
         parsetest!("a + b",
             &[ExprNode(BinExp(ref plus, box Variable(ref a), box Variable(ref b)))],
@@ -494,9 +491,6 @@ mod tests {
     #[test]
     fn conditional_parse_test() {
         use tokenizer;
-        use super::ASTNode::*;
-        use super::Expression::*;
-
         let t1 = "if null then 20 else 40 end";
         let tokens = tokenizer::tokenize(t1).unwrap();
         match parse(&tokens, &[]).unwrap()[..] {

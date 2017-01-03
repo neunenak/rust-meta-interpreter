@@ -1,7 +1,7 @@
 extern crate take_mut;
 
 use std::collections::HashMap;
-use parser::{AST, ASTNode, Expression, Function};
+use parser::{AST, Statement, Expression, Function};
 
 type Reduction<T> = (T, Option<SideEffect>);
 
@@ -66,9 +66,9 @@ trait Evaluable {
     fn is_reducible(&self) -> bool;
 }
 
-impl Evaluable for ASTNode {
+impl Evaluable for Statement {
     fn is_reducible(&self) -> bool {
-        use parser::ASTNode::*;
+        use parser::Statement::*;
         match self {
             &ExprNode(ref expr) => expr.is_reducible(),
             &FuncDefNode(_) => true,
@@ -102,7 +102,7 @@ impl Expression {
 }
 
 impl<'a> Evaluator<'a> {
-    fn reduction_loop(&mut self, mut node: ASTNode) -> ASTNode {
+    fn reduction_loop(&mut self, mut node: Statement) -> Statement {
         loop {
             node = self.step(node);
             if !node.is_reducible() {
@@ -112,7 +112,7 @@ impl<'a> Evaluator<'a> {
         node
     }
 
-    fn step(&mut self, node: ASTNode) -> ASTNode {
+    fn step(&mut self, node: Statement) -> Statement {
         let (new_node, side_effect) = self.reduce_astnode(node);
         if let Some(s) = side_effect {
             self.perform_side_effect(s);
@@ -133,8 +133,8 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    fn reduce_astnode(&mut self, node: ASTNode) -> Reduction<ASTNode> {
-        use parser::ASTNode::*;
+    fn reduce_astnode(&mut self, node: Statement) -> Reduction<Statement> {
+        use parser::Statement::*;
         match node {
             ExprNode(expr) => {
                 if expr.is_reducible() {
@@ -265,7 +265,7 @@ impl<'a> Evaluator<'a> {
 
     fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> Reduction<Expression> {
         use parser::Expression::*;
-        use parser::ASTNode::*;
+        use parser::Statement::*;
 
         // ugly hack for now
         if name == "print" {
