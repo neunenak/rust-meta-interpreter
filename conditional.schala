@@ -1,4 +1,5 @@
-if 20 then
+if 20
+then
     a = 20
     b = 30
     c = 40

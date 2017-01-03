@@ -341,7 +341,18 @@ impl Parser {
         use tokenizer::Token::*;
         use self::Expression::*;
         expect!(self, Keyword(Kw::If));
+
         let test = try!(self.expression());
+        loop {
+            match self.peek() {
+                Some(ref t) if is_delimiter(t) => {
+                    self.next();
+                    continue;
+                }
+                _ => break,
+            }
+        }
+
         expect!(self, Keyword(Kw::Then));
         let mut then_block = VecDeque::new();
         loop {
@@ -489,6 +500,13 @@ mod tests {
         let t1 = "if null then 20 else 40 end";
         let tokens = tokenizer::tokenize(t1).unwrap();
         match parse(&tokens, &[]).unwrap()[..] {
+            [ExprNode(Conditional(box Null, box Block(_), Some(box Block(_))))] => (),
+            _ => panic!(),
+        }
+
+        let t2 = "if null\nthen\n20\nelse\n40\nend";
+        let tokens2 = tokenizer::tokenize(t2).unwrap();
+        match parse(&tokens2, &[]).unwrap()[..] {
             [ExprNode(Conditional(box Null, box Block(_), Some(box Block(_))))] => (),
             _ => panic!(),
         }
