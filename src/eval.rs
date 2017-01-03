@@ -255,6 +255,8 @@ impl Evaluator {
 
     fn reduce_binop(&mut self, op: String, left: Expression, right: Expression) -> Expression {
         use parser::Expression::*;
+        let truthy = Number(1.0);
+        let falsy = Null;
         match (&op[..], left, right) {
             ("+", Number(l), Number(r)) => Number(l + r),
             ("+", StringLiteral(s1), StringLiteral(s2)) => StringLiteral(format!("{}{}", s1, s2)),
@@ -262,11 +264,15 @@ impl Evaluator {
             ("*", Number(l), Number(r)) => Number(l * r),
             ("/", Number(l), Number(r)) if r != 0.0 => Number(l / r), 
             ("%", Number(l), Number(r)) => Number(l % r),
-            ("<", Number(l), Number(r)) => if l < r { Number(1.0) } else { Null },
-            ("<=", Number(l), Number(r)) => if l <= r { Number(1.0) } else { Null },
-            (">", Number(l), Number(r)) => if l > r { Number(1.0) } else { Null },
-            (">=", Number(l), Number(r)) => if l >= r { Number(1.0) } else { Null },
-            _ => Null,
+            ("<", Number(l), Number(r)) => if l < r { truthy } else { falsy },
+            ("<=", Number(l), Number(r)) => if l <= r { truthy } else { falsy },
+            (">", Number(l), Number(r)) => if l > r { truthy } else { falsy },
+            (">=", Number(l), Number(r)) => if l >= r { truthy } else { falsy },
+            ("==", Number(l), Number(r)) => if l == r { truthy } else { falsy },
+            ("==", Null, Null) => truthy,
+            ("==", StringLiteral(s1), StringLiteral(s2)) => if s1 == s2 { truthy } else { falsy },
+            ("==", _, _) => falsy,
+            _ => falsy,
         }
     }
 
