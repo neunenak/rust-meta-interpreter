@@ -37,8 +37,8 @@ impl<'a> Evaluator<'a> {
         self.variables.insert(var, value);
     }
 
-    fn lookup_binding(&self, var: String) -> Option<Expression> {
-        match self.variables.get(&var) {
+    fn lookup_binding(&self, var: &str) -> Option<Expression> {
+        match self.variables.get(var) {
             Some(expr) => Some(expr.clone()),
             None => match self.parent {
                 Some(env) => env.lookup_binding(var),
@@ -158,7 +158,7 @@ impl<'a> Evaluator<'a> {
             e @ StringLiteral(_) => (e, None),
             e @ Number(_) => (e, None),
             e @ Lambda(_) => (e, None),
-            Variable(var) => {
+            Variable(ref var) => {
                 match self.lookup_binding(var) {
                     None => (Null, None),
                     Some(expr) => (expr, None),
