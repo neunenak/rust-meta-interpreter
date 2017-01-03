@@ -67,7 +67,7 @@ fn run_noninteractive(filename: &str, compile: bool) {
     if compile {
         compilation_sequence(ast, filename);
     } else {
-        let mut evaluator = Evaluator::new();
+        let mut evaluator = Evaluator::new(None);
         let results = evaluator.run(ast);
         for result in results.iter() {
             println!("{}", result);
@@ -80,18 +80,18 @@ fn run_repl() {
     let initial_state = InterpreterState {
         show_tokens: false,
         show_parse: false,
-        evaluator: Evaluator::new(),
+        evaluator: Evaluator::new(None),
     };
     REPL::with_prompt_and_state(Box::new(repl_handler), ">> ", initial_state).run();
 }
 
-struct InterpreterState {
+struct InterpreterState<'a> {
     show_tokens: bool,
     show_parse: bool,
-    evaluator: Evaluator,
+    evaluator: Evaluator<'a>,
 }
 
-impl ReplState for InterpreterState {
+impl<'a> ReplState for InterpreterState<'a> {
     fn update_state(&mut self, input: &Vec<&str>) {
         match input[..] {
             ["set", "show", "tokens", "true"] => {

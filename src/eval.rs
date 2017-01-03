@@ -12,67 +12,53 @@ enum SideEffect {
     AddFunctionBinding(Function),
 }
 
-struct EnvFrame {
+pub struct Evaluator<'a> {
+    parent: Option<&'a Evaluator<'a>>,
     functions: HashMap<String, Function>,
     variables: HashMap<String, Expression>,
 }
 
-impl EnvFrame {
-    fn new() -> EnvFrame {
-        EnvFrame {
+impl<'a> Evaluator<'a> {
+    pub fn new(parent: Option<&'a Evaluator>) -> Evaluator<'a> {
+        Evaluator {
             functions: HashMap::new(),
             variables: HashMap::new(),
+            parent: parent,
         }
-    }
-}
-
-pub struct Evaluator {
-    frames: Vec<EnvFrame>,
-}
-
-impl Evaluator {
-    pub fn new() -> Evaluator {
-        Evaluator { frames: vec![EnvFrame::new()] }
     }
 
     pub fn run(&mut self, ast: AST) -> Vec<String> {
         ast.into_iter()
-            .map(|astnode| self.reduce(astnode))
+            .map(|astnode| format!("{}", self.reduce(astnode)))
             .collect()
     }
 
     fn add_binding(&mut self, var: String, value: Expression) {
-        match self.frames.last_mut() {
-            Some(frame) => frame.variables.insert(var, value),
-            None => panic!("Evaluator should ensure that frames always has at least one element"),
-        };
+        self.variables.insert(var, value);
     }
 
     fn lookup_binding(&self, var: String) -> Option<Expression> {
-        for frame in self.frames.iter().rev() {
-            match frame.variables.get(&var) {
-                None => (),
-                Some(expr) => return Some(expr.clone()),
+        match self.variables.get(&var) {
+            Some(expr) => Some(expr.clone()),
+            None => match self.parent {
+                Some(env) => env.lookup_binding(var),
+                None => None
             }
         }
-        None
     }
 
     fn add_function(&mut self, name: String, function: Function) {
-        match self.frames.last_mut() {
-            Some(frame) => frame.functions.insert(name, function),
-            None => panic!("Evaluator should ensure that frames always has at least one element"),
-        };
+        self.functions.insert(name, function);
     }
 
     fn lookup_function(&self, name: String) -> Option<Function> {
-        for frame in self.frames.iter().rev() {
-            match frame.functions.get(&name) {
-                None => (),
-                Some(function) => return Some(function.clone()),
+        match self.functions.get(&name) {
+            Some(func) => Some(func.clone()),
+            None => match self.parent {
+                Some(env) => env.lookup_function(name),
+                None => None
             }
         }
-        None
     }
 }
 
@@ -115,16 +101,15 @@ impl Expression {
     }
 }
 
-impl Evaluator {
-    fn reduce(&mut self, mut node: ASTNode) -> String {
+impl<'a> Evaluator<'a> {
+    fn reduce(&mut self, mut node: ASTNode) -> ASTNode {
         loop {
             node = self.step(node);
             if !node.is_reducible() {
                 break;
             }
         }
-
-        format!("{}", node)
+        node
     }
 
     fn step(&mut self, node: ASTNode) -> ASTNode {
@@ -280,6 +265,7 @@ impl Evaluator {
 
     fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> Reduction<Expression> {
         use parser::Expression::*;
+        use parser::ASTNode::*;
 
         // ugly hack for now
         if name == "print" {
@@ -290,7 +276,6 @@ impl Evaluator {
             return (Null, Some(SideEffect::Print(s)));
         }
 
-
         let function = match self.lookup_function(name) {
             Some(func) => func,
             None => return (Null, None),
@@ -300,25 +285,21 @@ impl Evaluator {
             return (Null, None);
         }
 
-        let mut frame = EnvFrame::new();
+        let mut evaluator = Evaluator::new(Some(self));
         for (binding, expr) in function.prototype.parameters.iter().zip(arguments.iter()) {
-            frame.variables.insert(binding.clone(), expr.clone());
+            evaluator.add_binding(binding.clone(), expr.clone());
         }
 
-        self.frames.push(frame);
+        let nodes = function.body.iter().map(|expr| ASTNode::ExprNode(expr.clone()));
         let mut retval = Null;
-        for expr in function.body.iter() {
-            retval = expr.clone();
-            while retval.is_reducible() {
-                let r = self.reduce_expr(retval);
-                retval = r.0;
-                if let Some(s) = r.1 {
-                    self.perform_side_effect(s);
-                }
-            }
+        for n in nodes {
+            retval = match evaluator.reduce(n) {
+                ExprNode(expr) => expr,
+                FuncDefNode(_) => panic!("This should never happen! A maximally-reduced node\
+                should never be a function definition!")
+            };
         }
 
-        self.frames.pop();
         (retval, None)
     }
 }
