@@ -20,10 +20,22 @@ use std::collections::VecDeque;
 // op := '+', '-', etc.
 //
 
+pub type AST = Vec<Statement>;
+
 #[derive(Debug, Clone)]
 pub enum Statement {
     ExprNode(Expression),
     FuncDefNode(Function),
+}
+
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Statement::*;
+        match *self {
+            ExprNode(ref expr) => write!(f, "{}", expr),
+            FuncDefNode(_) => write!(f, "UNIMPLEMENTED"),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -52,16 +64,6 @@ pub enum Expression {
     While(Box<Expression>, Vec<Expression>),
 }
 
-impl fmt::Display for Statement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Statement::*;
-        match *self {
-            ExprNode(ref expr) => write!(f, "{}", expr),
-            FuncDefNode(_) => write!(f, "UNIMPLEMENTED"),
-        }
-    }
-}
-
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Expression::*;
@@ -76,8 +78,6 @@ impl fmt::Display for Expression {
         }
     }
 }
-
-pub type AST = Vec<Statement>;
 
 type Precedence = u8;
 
@@ -126,6 +126,8 @@ impl Parser {
             "/" => 20,
             "%" => 20,
             "=" => 1,
+            "==" => 40,
+            ">" | ">=" | "<" | "<=" => 30,
             _ => 255,
         }
     }
