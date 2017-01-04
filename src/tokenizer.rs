@@ -3,6 +3,7 @@ extern crate itertools;
 use std::iter::Peekable;
 use std::str::Chars;
 use self::itertools::Itertools;
+use std::rc::Rc;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
@@ -14,14 +15,14 @@ pub enum Token {
     Period,
     Colon,
     NumLiteral(f64),
-    StrLiteral(String),
-    Identifier(String),
+    StrLiteral(Rc<String>),
+    Identifier(Rc<String>),
     Operator(Op),
     Keyword(Kw),
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Op(pub String);
+pub struct Op(pub Rc<String>);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Kw {
@@ -92,14 +93,14 @@ fn tokenize_str(iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
             None => return Err(TokenizeError::new("Unclosed quote")),
         }
     }
-    Ok(Token::StrLiteral(buffer))
+    Ok(Token::StrLiteral(Rc::new(buffer)))
 }
 
 fn tokenize_operator(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
     let mut buffer = String::new();
     buffer.push(c);
     buffer.extend(iter.peeking_take_while(|x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x))); 
-    Ok(Token::Operator(Op(buffer)))
+    Ok(Token::Operator(Op(Rc::new(buffer))))
 }
 
 fn tokenize_number_or_period(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
@@ -138,7 +139,7 @@ fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, Tok
         "let" => Keyword(Kw::Let),
         "fn" => Keyword(Kw::Fn),
         "null" => Keyword(Kw::Null),
-        b => Identifier(b.to_string()),
+        b => Identifier(Rc::new(b.to_string())),
     })
 }
 
@@ -181,7 +182,7 @@ mod tests {
     #[test]
     fn string_test() {
         token_test!("null + \"a string\"",
-                    [Keyword(Kw::Null), Operator(Op(ref a)), StrLiteral(ref b)],
+                    [Keyword(Kw::Null), Operator(Op(ref a)), StrgLiteral(ref b)],
                     a == "+" && b == "a string");
     }
 

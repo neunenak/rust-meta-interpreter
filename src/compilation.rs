@@ -123,11 +123,11 @@ impl CodeGen for Expression {
         let int_type = LLVMWrap::Int64TypeInContext(data.context);
 
         match self {
-            &Variable(ref name) => *data.variables.get(name).unwrap(),
-            &BinExp(ref op, ref left, ref right) if op == "=" => {
+            &Variable(ref name) => *data.variables.get(&**name).unwrap(),
+            &BinExp(ref op, ref left, ref right) if **op == "=" => {
                 if let Variable(ref name) = **left {
                     let new_value = right.codegen(data);
-                    data.variables.insert(name.clone(), new_value);
+                    data.variables.insert((**name).clone(), new_value);
                     new_value
                 } else {
                     panic!("Bad variable assignment")
@@ -136,7 +136,7 @@ impl CodeGen for Expression {
             &BinExp(ref op, ref left, ref right) => {
                 let lhs = left.codegen(data);
                 let rhs = right.codegen(data);
-                let generator = match op.as_ref() {
+                let generator = match op.as_ref().as_ref() {
                     "+" => LLVMWrap::BuildAdd,
                     "-" => LLVMWrap::BuildSub,
                     "*" => LLVMWrap::BuildMul,

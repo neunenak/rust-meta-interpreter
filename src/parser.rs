@@ -1,6 +1,7 @@
 use std::fmt;
 use tokenizer::{Token, Kw, Op};
 use std::collections::VecDeque;
+use std::rc::Rc;
 
 // Grammar
 // program := (statement delimiter ?)*
@@ -46,18 +47,18 @@ pub struct Function {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Prototype {
-    pub name: String,
-    pub parameters: Vec<String>,
+    pub name: Rc<String>,
+    pub parameters: Vec<Rc<String>>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Expression {
     Null,
-    StringLiteral(String),
+    StringLiteral(Rc<String>),
     Number(f64),
-    Variable(String),
-    BinExp(String, Box<Expression>, Box<Expression>),
-    Call(String, Vec<Expression>),
+    Variable(Rc<String>),
+    BinExp(Rc<String>, Box<Expression>, Box<Expression>),
+    Call(Rc<String>, Vec<Expression>),
     Conditional(Box<Expression>, Box<Expression>, Option<Box<Expression>>),
     Lambda(Function),
     Block(VecDeque<Expression>),
@@ -218,9 +219,9 @@ impl Parser {
 
     fn prototype(&mut self) -> ParseResult<Prototype> {
         use tokenizer::Token::*;
-        let name: String = expect_identifier!(self);
+        let name: Rc<String> = expect_identifier!(self);
         expect!(self, LParen);
-        let parameters: Vec<String> = try!(self.identlist());
+        let parameters: Vec<Rc<String>> = try!(self.identlist());
         expect!(self, RParen);
         Ok(Prototype {
             name: name,
@@ -228,11 +229,11 @@ impl Parser {
         })
     }
 
-    fn identlist(&mut self) -> ParseResult<Vec<String>> {
+    fn identlist(&mut self) -> ParseResult<Vec<Rc<String>>> {
         use tokenizer::Token::*;
-        let mut args: Vec<String> = Vec::new();
+        let mut args: Vec<Rc<String>> = Vec::new();
         while let Some(Identifier(name)) = self.peek() {
-            args.push(name);
+            args.push(name.clone());
             self.next();
             if let Some(Comma) = self.peek() {
                 self.next();

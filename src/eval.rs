@@ -2,6 +2,7 @@ extern crate take_mut;
 
 use std::collections::HashMap;
 use parser::{AST, Statement, Expression, Function};
+use std::rc::Rc;
 
 type Reduction<T> = (T, Option<SideEffect>);
 
@@ -94,7 +95,7 @@ impl Expression {
         use parser::Expression::*;
         match *self {
             Null => false,
-            StringLiteral(ref s) if s == "" => false,
+            StringLiteral(ref s) if **s == "" => false,
             Number(0.0) => false,
             _ => true,
         }
@@ -128,7 +129,7 @@ impl<'a> Evaluator<'a> {
                 self.add_binding(var, value);
             },
             AddFunctionBinding(function) => {
-                self.add_function(function.prototype.name.clone(), function);
+                self.add_function((*function.prototype.name).clone(), function);
             }
         }
     }
@@ -171,10 +172,10 @@ impl<'a> Evaluator<'a> {
                 }
 
                 // special case for variable assignment
-                if op == "=" {
+                if *op == "=" {
                     match left {
                         Variable(var) => {
-                            let binding = SideEffect::AddBinding(var, right);
+                            let binding = SideEffect::AddBinding((*var).clone(), right);
                             return (Null, Some(binding));
                         }
                         _ => return (Null, None),
@@ -243,13 +244,13 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    fn reduce_binop(&mut self, op: String, left: Expression, right: Expression) -> Expression {
+    fn reduce_binop(&mut self, op: Rc<String>, left: Expression, right: Expression) -> Expression {
         use parser::Expression::*;
         let truthy = Number(1.0);
         let falsy = Null;
         match (&op[..], left, right) {
             ("+", Number(l), Number(r)) => Number(l + r),
-            ("+", StringLiteral(s1), StringLiteral(s2)) => StringLiteral(format!("{}{}", s1, s2)),
+            ("+", StringLiteral(s1), StringLiteral(s2)) => StringLiteral(Rc::new(format!("{}{}", *s1, *s2))),
             ("-", Number(l), Number(r)) => Number(l - r),
             ("*", Number(l), Number(r)) => Number(l * r),
             ("/", Number(l), Number(r)) if r != 0.0 => Number(l / r), 
@@ -266,12 +267,12 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    fn reduce_call(&mut self, name: String, arguments: Vec<Expression>) -> Reduction<Expression> {
+    fn reduce_call(&mut self, name: Rc<String>, arguments: Vec<Expression>) -> Reduction<Expression> {
         use parser::Expression::*;
         use parser::Statement::*;
 
         // ugly hack for now
-        if name == "print" {
+        if *name == "print" {
             let mut s = String::new();
             for arg in arguments {
                 s.push_str(&format!("{}\n", arg));
@@ -279,7 +280,7 @@ impl<'a> Evaluator<'a> {
             return (Null, Some(SideEffect::Print(s)));
         }
 
-        let function = match self.lookup_function(name) {
+        let function = match self.lookup_function((*name).clone()) {
             Some(func) => func,
             None => return (Null, None),
         };
@@ -290,7 +291,7 @@ impl<'a> Evaluator<'a> {
 
         let mut evaluator = Evaluator::new(Some(self));
         for (binding, expr) in function.prototype.parameters.iter().zip(arguments.iter()) {
-            evaluator.add_binding(binding.clone(), expr.clone());
+            evaluator.add_binding((**binding).clone(), expr.clone());
         }
 
         let nodes = function.body.iter().map(|node| node.clone());
