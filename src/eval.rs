@@ -1,6 +1,7 @@
 extern crate take_mut;
 
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use parser::{AST, Statement, Expression, Function};
 use std::rc::Rc;
 
@@ -206,8 +207,11 @@ impl<'a> Evaluator<'a> {
                     (Call(name, args), None)
                 }
             }
-            While(box test, body) => {
-                unimplemented!()
+            While(test, body) => {
+                let mut block = VecDeque::from(body.clone());
+                block.push_back(While(test.clone(), body.clone()));
+                let reduction = Conditional(test, Box::new(Block(block)), None); 
+                (reduction, None)
             }
             Conditional(box test, then_block, else_block) => {
                 if test.is_reducible() {
