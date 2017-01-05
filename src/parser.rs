@@ -206,7 +206,7 @@ impl Parser {
     fn declaration(&mut self) -> ParseResult<Statement> {
         expect!(self, Keyword(Kw::Fn));
         let prototype = try!(self.prototype());
-        let body: Vec<Statement> = try!(self.body());
+        let body = try!(self.body());
         expect!(self, Keyword(Kw::End));
         Ok(Statement::FuncDefNode(Function {
             prototype: prototype,
@@ -215,9 +215,9 @@ impl Parser {
     }
 
     fn prototype(&mut self) -> ParseResult<Prototype> {
-        let name: Rc<String> = expect_identifier!(self);
+        let name = expect_identifier!(self);
         expect!(self, LParen);
-        let parameters: Vec<Rc<String>> = try!(self.identlist());
+        let parameters = try!(self.identlist());
         expect!(self, RParen);
         Ok(Prototype {
             name: name,
@@ -226,34 +226,32 @@ impl Parser {
     }
 
     fn identlist(&mut self) -> ParseResult<Vec<Rc<String>>> {
-        let mut args: Vec<Rc<String>> = Vec::new();
+        let mut args = Vec::new();
         while let Some(Identifier(name)) = self.peek() {
             args.push(name.clone());
             self.next();
-            if let Some(Comma) = self.peek() {
-                self.next();
-            } else {
-                break;
+            match self.peek() {
+                Some(Comma) => {self.next();},
+                _ => break,
             }
         }
         Ok(args)
     }
 
     fn exprlist(&mut self) -> ParseResult<Vec<Expression>> {
-        let mut args: Vec<Expression> = Vec::new();
+        let mut exprs = Vec::new();
         loop {
             if let Some(RParen) = self.peek() {
                 break;
             }
             let exp = try!(self.expression());
-            args.push(exp);
-            if let Some(Comma) = self.peek() {
-                self.next();
-            } else {
-                break;
+            exprs.push(exp);
+            match self.peek() {
+                Some(Comma) => {self.next();},
+                _ => break,
             }
         }
-        Ok(args)
+        Ok(exprs)
     }
 
     fn body(&mut self) -> ParseResult<Vec<Statement>> {
@@ -266,8 +264,8 @@ impl Parser {
                 }
                 Some(Keyword(Kw::End)) => break,
                 _ => {
-                    let ast_node = try!(self.statement());
-                    statements.push(ast_node);
+                    let statement = try!(self.statement());
+                    statements.push(statement);
                 }
             }
         }
@@ -381,7 +379,7 @@ impl Parser {
                 None |
                 Some(Keyword(Kw::Else)) |
                 Some(Keyword(Kw::End)) => break,
-                Some(Semicolon) | Some(Newline) => {
+                Some(ref t) if is_delimiter(t) => {
                     self.next();
                     continue;
                 }
