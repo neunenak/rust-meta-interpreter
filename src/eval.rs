@@ -5,6 +5,9 @@ use std::collections::VecDeque;
 use parser::{AST, Statement, Expression, Function};
 use std::rc::Rc;
 
+use parser::Expression::*;
+use parser::Statement::*;
+
 type Reduction<T> = (T, Option<SideEffect>);
 
 #[derive(Debug)]
@@ -70,7 +73,6 @@ trait Evaluable {
 
 impl Evaluable for Statement {
     fn is_reducible(&self) -> bool {
-        use parser::Statement::*;
         match self {
             &ExprNode(ref expr) => expr.is_reducible(),
             &FuncDefNode(_) => true,
@@ -80,7 +82,6 @@ impl Evaluable for Statement {
 
 impl Evaluable for Expression {
     fn is_reducible(&self) -> bool {
-        use parser::Expression::*;
         match *self {
             Null => false,
             StringLiteral(_) => false,
@@ -93,7 +94,6 @@ impl Evaluable for Expression {
 
 impl Expression {
     fn is_truthy(&self) -> bool {
-        use parser::Expression::*;
         match *self {
             Null => false,
             StringLiteral(ref s) if **s == "" => false,
@@ -136,7 +136,6 @@ impl<'a> Evaluator<'a> {
     }
 
     fn reduce_astnode(&mut self, node: Statement) -> Reduction<Statement> {
-        use parser::Statement::*;
         match node {
             ExprNode(expr) => {
                 if expr.is_reducible() {
@@ -154,7 +153,6 @@ impl<'a> Evaluator<'a> {
     }
 
     fn reduce_expr(&mut self, expression: Expression) -> Reduction<Expression> {
-        use parser::Expression::*;
         match expression {
             Null => (Null, None),
             e @ StringLiteral(_) => (e, None),
@@ -251,7 +249,6 @@ impl<'a> Evaluator<'a> {
     }
 
     fn reduce_binop(&mut self, op: Rc<String>, left: Expression, right: Expression) -> Expression {
-        use parser::Expression::*;
         let truthy = Number(1.0);
         let falsy = Null;
         match (&op[..], left, right) {
@@ -274,16 +271,8 @@ impl<'a> Evaluator<'a> {
     }
 
     fn reduce_call(&mut self, name: Rc<String>, arguments: Vec<Expression>) -> Reduction<Expression> {
-        use parser::Expression::*;
-        use parser::Statement::*;
-
-        // ugly hack for now
-        if *name == "print" {
-            let mut s = String::new();
-            for arg in arguments {
-                s.push_str(&format!("{} ", arg));
-            }
-            return (Null, Some(SideEffect::Print(s)));
+        if let Some(res) = handle_builtin(&*name, &arguments) {
+            return res;
         }
 
         let function = match self.lookup_function(&*name) {
@@ -311,5 +300,18 @@ impl<'a> Evaluator<'a> {
             FuncDefNode(_) => panic!("This should never happen! A maximally-reduced node\
             should never be a function definition!")
         }
+    }
+}
+
+fn handle_builtin(name: &str, arguments: &Vec<Expression>) -> Option<Reduction<Expression>> {
+    match name {
+        "print" => {
+            let mut s = String::new();
+            for arg in arguments {
+                s.push_str(&format!("{} ", arg));
+            }
+            return Some((Null, Some(SideEffect::Print(s))));
+        },
+        _ => None
     }
 }
