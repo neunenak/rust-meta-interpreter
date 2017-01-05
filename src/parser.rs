@@ -275,7 +275,6 @@ impl Parser {
     }
 
     fn body(&mut self) -> ParseResult<Vec<Statement>> {
-
         let statements = delimiter_block!(
             self,
             statement,
@@ -312,7 +311,6 @@ impl Parser {
 
             lhs = Expression::BinExp(op.0, Box::new(lhs), Box::new(rhs));
         }
-
         Ok(lhs)
     }
 
@@ -346,15 +344,12 @@ impl Parser {
     fn while_expr(&mut self) -> ParseResult<Expression> {
         use self::Expression::*;
         expect!(self, Keyword(Kw::While));
-
         let test = try!(self.expression());
-
         let body = delimiter_block!(
             self,
             expression,
             Some(Keyword(Kw::End))
         );
-
         expect!(self, Keyword(Kw::End));
         Ok(While(Box::new(test), body))
     }
@@ -362,9 +357,7 @@ impl Parser {
     fn conditional_expr(&mut self) -> ParseResult<Expression> {
         use self::Expression::*;
         expect!(self, Keyword(Kw::If));
-
         let test = try!(self.expression());
-
         loop {
             match self.peek() {
                 Some(ref t) if is_delimiter(t) => {
@@ -374,14 +367,12 @@ impl Parser {
                 _ => break,
             }
         }
-
         expect!(self, Keyword(Kw::Then));
         let then_block = delimiter_block!(
             self,
             expression,
             Some(Keyword(Kw::Else)) | Some(Keyword(Kw::End))
         );
-
         let else_block = if let Some(Keyword(Kw::Else)) = self.peek() {
             self.next();
             let else_exprs  = delimiter_block!(
@@ -393,7 +384,6 @@ impl Parser {
         } else {
             None
         };
-
         expect!(self, Keyword(Kw::End));
         Ok(Conditional(Box::new(test),
                        Box::new(Block(VecDeque::from(then_block))),
@@ -409,7 +399,6 @@ impl Parser {
             }
             __ => Expression::Variable(name),
         };
-
         Ok(expr)
     }
 
