@@ -349,22 +349,12 @@ impl Parser {
 
         let test = try!(self.expression());
 
+        let body = delimiter_block!(
+            self,
+            expression,
+            Some(Keyword(Kw::End))
+        );
 
-        let mut body = Vec::new();
-        loop {
-            match self.peek() {
-                None |
-                Some(Keyword(Kw::End)) => break,
-                Some(Semicolon) | Some(Newline) => {
-                    self.next();
-                    continue;
-                }
-                _ => {
-                    let exp = try!(self.expression());
-                    body.push(exp);
-                }
-            }
-        }
         expect!(self, Keyword(Kw::End));
         Ok(While(Box::new(test), body))
     }
