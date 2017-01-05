@@ -162,19 +162,19 @@ mod tests {
     fn basic_tokeniziation_tests() {
         token_test!("let a = 3\n",
                     [Keyword(Kw::Let), Identifier(ref a), Operator(Op(ref b)), NumLiteral(3.0), Newline],
-                    a == "a" && b == "=");
+                    **a == "a" && **b == "=");
 
         token_test!("2+1",
                     [NumLiteral(2.0), Operator(Op(ref a)), NumLiteral(1.0)],
-                    a == "+");
+                    **a == "+");
 
         token_test!("2 + 1",
                     [NumLiteral(2.0), Operator(Op(ref a)), NumLiteral(1.0)],
-                    a == "+");
+                    **a == "+");
 
         token_test!("2.3*49.2",
                    [NumLiteral(2.3), Operator(Op(ref a)), NumLiteral(49.2)],
-                   a == "*");
+                   **a == "*");
 
         assert!(tokenize("2.4.5").is_err());
     }
@@ -182,15 +182,15 @@ mod tests {
     #[test]
     fn string_test() {
         token_test!("null + \"a string\"",
-                    [Keyword(Kw::Null), Operator(Op(ref a)), StrgLiteral(ref b)],
-                    a == "+" && b == "a string");
+                    [Keyword(Kw::Null), Operator(Op(ref a)), StrLiteral(ref b)],
+                    **a == "+" && **b == "a string");
     }
 
     #[test]
     fn operator_test() {
         token_test!("a *> b",
                    [Identifier(ref a), Operator(Op(ref b)), Identifier(ref c)],
-                   a == "a" && b == "*>" && c == "b");
+                   **a == "a" && **b == "*>" && **c == "b");
 
 
     }

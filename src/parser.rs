@@ -489,32 +489,32 @@ mod tests {
         "fn a() 1 + 2 end",
         &[FuncDefNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
         match &body[..] { &[ExprNode(BinExp(_, box Number(1.0), box Number(2.0)))] => true, _ => false }
-            && name == "a" && match &parameters[..] { &[] => true, _ => false }
+            && **name == "a" && match &parameters[..] { &[] => true, _ => false }
         );
 
         parsetest!(
         "fn a(x,y) 1 + 2 end",
         &[FuncDefNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
         match &body[..] { &[ExprNode(BinExp(_, box Number(1.0), box Number(2.0)))] => true, _ => false }
-            && name == "a" && *parameters == ["x","y"]
+            && **name == "a" && *parameters[0] == "x" && *parameters[1] == "y" && parameters.len() == 2
         );
     }
 
     #[test]
     fn expression_parse_test() {
-        parsetest!("a", &[ExprNode(Variable(ref s))], s == "a");
+        parsetest!("a", &[ExprNode(Variable(ref s))], **s == "a");
         parsetest!("a + b",
             &[ExprNode(BinExp(ref plus, box Variable(ref a), box Variable(ref b)))],
-            plus == "+" && a == "a" && b == "b");
+            **plus == "+" && **a == "a" && **b == "b");
         parsetest!("a + b * c",
             &[ExprNode(BinExp(ref plus, box Variable(ref a), box BinExp(ref mul, box Variable(ref b), box Variable(ref c))))],
-            plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
+            **plus == "+" && **mul == "*" && **a == "a" && **b == "b" && **c == "c");
         parsetest!("a * b + c",
             &[ExprNode(BinExp(ref plus, box BinExp(ref mul, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
-            plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
+            **plus == "+" && **mul == "*" && **a == "a" && **b == "b" && **c == "c");
         parsetest!("(a + b) * c",
             &[ExprNode(BinExp(ref mul, box BinExp(ref plus, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
-            plus == "+" && mul == "*" && a == "a" && b == "b" && c == "c");
+            **plus == "+" && **mul == "*" && **a == "a" && **b == "b" && **c == "c");
     }
 
     #[test]
