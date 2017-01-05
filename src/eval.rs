@@ -9,7 +9,7 @@ type Reduction<T> = (T, Option<SideEffect>);
 #[derive(Debug)]
 enum SideEffect {
     Print(String),
-    AddBinding(String, Expression),
+    AddBinding(Rc<String>, Expression),
     AddFunctionBinding(Function),
 }
 
@@ -52,8 +52,8 @@ impl<'a> Evaluator<'a> {
         self.functions.insert(name, function);
     }
 
-    fn lookup_function(&self, name: String) -> Option<Function> {
-        match self.functions.get(&name) {
+    fn lookup_function(&self, name: &str) -> Option<Function> {
+        match self.functions.get(name) {
             Some(func) => Some(func.clone()),
             None => match self.parent {
                 Some(env) => env.lookup_function(name),
@@ -126,7 +126,7 @@ impl<'a> Evaluator<'a> {
         match side_effect {
             Print(s) => println!("{}", s),
             AddBinding(var, value) => {
-                self.add_binding(var, value);
+                self.add_binding((*var).clone(), value);
             },
             AddFunctionBinding(function) => {
                 self.add_function((*function.prototype.name).clone(), function);
@@ -175,7 +175,7 @@ impl<'a> Evaluator<'a> {
                 if *op == "=" {
                     match left {
                         Variable(var) => {
-                            let binding = SideEffect::AddBinding((*var).clone(), right);
+                            let binding = SideEffect::AddBinding(var, right);
                             return (Null, Some(binding));
                         }
                         _ => return (Null, None),
@@ -275,12 +275,12 @@ impl<'a> Evaluator<'a> {
         if *name == "print" {
             let mut s = String::new();
             for arg in arguments {
-                s.push_str(&format!("{}\n", arg));
+                s.push_str(&format!("{} ", arg));
             }
             return (Null, Some(SideEffect::Print(s)));
         }
 
-        let function = match self.lookup_function((*name).clone()) {
+        let function = match self.lookup_function(&*name) {
             Some(func) => func,
             None => return (Null, None),
         };
