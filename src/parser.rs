@@ -1,5 +1,6 @@
 use std::fmt;
 use tokenizer::{Token, Kw, Op};
+use tokenizer::Token::*;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
@@ -139,7 +140,7 @@ macro_rules! expect {
         match $self_.peek() {
             Some($token) => {$self_.next();},
             Some(x) => {
-                let err = format!("Expected `{:?}` but got `{:?}`", stringify!($token), x); //TODO implement Display for token
+                let err = format!("Expected `{:?}` but got `{:?}`", stringify!($token), x);
                 return ParseError::result_from_str(&err)
             },
             None => {
@@ -155,13 +156,13 @@ macro_rules! expect_identifier {
     ($self_:expr) => {
         match $self_.peek() {
             Some(Identifier(s)) => {$self_.next(); s},
-            _ => return ParseError::result_from_str("Expected Identifier")
+            Some(x) => return ParseError::result_from_str(&format!("Expected identifier, but got {:?}", x)),
+            None => return ParseError::result_from_str("Expected identifier, but got end of input"),
         }
     }
 }
 
 fn is_delimiter(token: &Token) -> bool {
-    use tokenizer::Token::*;
     match *token {
         Newline | Semicolon => true,
         _ => false,
@@ -190,23 +191,19 @@ impl Parser {
                 }
             }
         }
-
         Ok(ast)
     }
 
     fn statement(&mut self) -> ParseResult<Statement> {
-        use tokenizer::Token::*;
         let node: Statement = match self.peek() {
             Some(Keyword(Kw::Fn)) => try!(self.declaration()),
             Some(_) => Statement::ExprNode(try!(self.expression())),
-            None => panic!("unexpected end of tokens"),
+            None => panic!("Unexpected end of tokens"),
         };
-
         Ok(node)
     }
 
     fn declaration(&mut self) -> ParseResult<Statement> {
-        use tokenizer::Token::*;
         expect!(self, Keyword(Kw::Fn));
         let prototype = try!(self.prototype());
         let body: Vec<Statement> = try!(self.body());
@@ -218,7 +215,6 @@ impl Parser {
     }
 
     fn prototype(&mut self) -> ParseResult<Prototype> {
-        use tokenizer::Token::*;
         let name: Rc<String> = expect_identifier!(self);
         expect!(self, LParen);
         let parameters: Vec<Rc<String>> = try!(self.identlist());
@@ -230,7 +226,6 @@ impl Parser {
     }
 
     fn identlist(&mut self) -> ParseResult<Vec<Rc<String>>> {
-        use tokenizer::Token::*;
         let mut args: Vec<Rc<String>> = Vec::new();
         while let Some(Identifier(name)) = self.peek() {
             args.push(name.clone());
@@ -245,7 +240,6 @@ impl Parser {
     }
 
     fn exprlist(&mut self) -> ParseResult<Vec<Expression>> {
-        use tokenizer::Token::*;
         let mut args: Vec<Expression> = Vec::new();
         loop {
             if let Some(RParen) = self.peek() {
@@ -263,7 +257,6 @@ impl Parser {
     }
 
     fn body(&mut self) -> ParseResult<Vec<Statement>> {
-        use tokenizer::Token::*;
         let mut statements = Vec::new();
         loop {
             match self.peek() {
@@ -290,7 +283,6 @@ impl Parser {
                        mut lhs: Expression,
                        min_precedence: u8)
                        -> ParseResult<Expression> {
-        use tokenizer::Token::*;
         while let Some(Operator(op)) = self.peek() {
             let precedence = self.get_precedence(&op);
             if precedence < min_precedence {
@@ -315,7 +307,6 @@ impl Parser {
     }
 
     fn primary_expression(&mut self) -> ParseResult<Expression> {
-        use tokenizer::Token::*;
         Ok(match self.peek() {
             Some(Keyword(Kw::Null)) => {
                 self.next();
@@ -343,7 +334,6 @@ impl Parser {
     }
 
     fn while_expr(&mut self) -> ParseResult<Expression> {
-        use tokenizer::Token::*;
         use self::Expression::*;
         expect!(self, Keyword(Kw::While));
 
@@ -370,7 +360,6 @@ impl Parser {
     }
 
     fn conditional_expr(&mut self) -> ParseResult<Expression> {
-        use tokenizer::Token::*;
         use self::Expression::*;
         expect!(self, Keyword(Kw::If));
 
@@ -431,7 +420,6 @@ impl Parser {
     }
 
     fn identifier_expr(&mut self) -> ParseResult<Expression> {
-        use tokenizer::Token::*;
         let name = expect_identifier!(self);
         let expr = match self.peek() {
             Some(LParen) => {
@@ -445,7 +433,6 @@ impl Parser {
     }
 
     fn call_expr(&mut self) -> ParseResult<Vec<Expression>> {
-        use tokenizer::Token::*;
         expect!(self, LParen);
         let args: Vec<Expression> = try!(self.exprlist());
         expect!(self, RParen);
