@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use parser::{AST, Statement, Expression, Function};
 use std::rc::Rc;
+use std::io::{Write, Stdout, BufWriter};
 
 use parser::Expression::*;
 use parser::Statement::*;
@@ -21,6 +22,7 @@ pub struct Evaluator<'a> {
     parent: Option<&'a Evaluator<'a>>,
     functions: HashMap<String, Function>,
     variables: HashMap<String, Expression>,
+    stdout: BufWriter<Stdout>,
 }
 
 impl<'a> Evaluator<'a> {
@@ -29,6 +31,7 @@ impl<'a> Evaluator<'a> {
             functions: HashMap::new(),
             variables: HashMap::new(),
             parent: parent,
+            stdout: BufWriter::new(::std::io::stdout()),
         }
     }
 
@@ -125,7 +128,9 @@ impl<'a> Evaluator<'a> {
     fn perform_side_effect(&mut self, side_effect: SideEffect) {
         use self::SideEffect::*;
         match side_effect {
-            Print(s) => println!("{}", s),
+            Print(s) => {
+                write!(self.stdout, "{}\n", s).unwrap();
+            }
             AddBinding(var, value) => {
                 self.add_binding((*var).clone(), value);
             },
