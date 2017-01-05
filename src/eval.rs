@@ -165,17 +165,18 @@ impl<'a> Evaluator<'a> {
                     Some(expr) => (expr, None),
                 }
             }
-            BinExp(op, box left, box right) => {
+            BinExp(op, mut left, mut right) => {
                 if right.is_reducible() {
-                    let new = self.reduce_expr(right);
-                    return (BinExp(op, Box::new(left), Box::new(new.0)), new.1);
+                    let mut side_effect = None;
+                    take_mut::take(right.as_mut(), |expr| { let (a, b) = self.reduce_expr(expr); side_effect = b; a});
+                    return (BinExp(op, left, right), side_effect);
                 }
 
                 // special case for variable assignment
                 if *op == "=" {
-                    match left {
+                    match *left {
                         Variable(var) => {
-                            let binding = SideEffect::AddBinding(var, right);
+                            let binding = SideEffect::AddBinding(var, *right);
                             return (Null, Some(binding));
                         }
                         _ => return (Null, None),
@@ -183,10 +184,11 @@ impl<'a> Evaluator<'a> {
                 }
 
                 if left.is_reducible() {
-                    let new = self.reduce_expr(left);
-                    (BinExp(op, Box::new(new.0), Box::new(right)), new.1)
+                    let mut side_effect = None;
+                    take_mut::take(left.as_mut(), |expr| { let (a, b) = self.reduce_expr(expr); side_effect = b; a});
+                    (BinExp(op, left, right), side_effect)
                 } else {
-                    (self.reduce_binop(op, left, right), None) //can assume both arguments are maximally reduced
+                    (self.reduce_binop(op, *left, *right), None) //can assume both arguments are maximally reduced
                 }
             }
             Call(name, mut args) => {
