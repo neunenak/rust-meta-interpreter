@@ -174,7 +174,7 @@ impl Parser {
         let mut ast = Vec::new(); //TODO have this come from previously-parsed tree
         loop {
             let result: ParseResult<Statement> = match self.peek() {
-                Some(ref t) if is_delimiter(&t) => {
+                Some(ref t) if is_delimiter(t) => {
                     self.next();
                     continue;
                 }
