@@ -162,6 +162,26 @@ macro_rules! expect_identifier {
     }
 }
 
+macro_rules! delimiter_block {
+    ($_self:expr, $try_parse: ident, $break_pattern: pat) => {
+        {
+        let mut acc = Vec::new();
+        loop {
+            match $_self.peek() {
+                None => break,
+                Some(ref t) if is_delimiter(t) => { $_self.next(); continue; },
+                $break_pattern => break,
+                _ => {
+                    let a = try!($_self.$try_parse());
+                    acc.push(a);
+                }
+            }
+        }
+        acc
+        }
+    }
+}
+
 fn is_delimiter(token: &Token) -> bool {
     match *token {
         Newline | Semicolon => true,
@@ -255,20 +275,12 @@ impl Parser {
     }
 
     fn body(&mut self) -> ParseResult<Vec<Statement>> {
-        let mut statements = Vec::new();
-        loop {
-            match self.peek() {
-                Some(ref t) if is_delimiter(t) => {
-                    self.next();
-                    continue;
-                }
-                Some(Keyword(Kw::End)) => break,
-                _ => {
-                    let statement = try!(self.statement());
-                    statements.push(statement);
-                }
-            }
-        }
+
+        let statements = delimiter_block!(
+            self,
+            statement,
+            Some(Keyword(Kw::End))
+        );
         Ok(statements)
     }
 
