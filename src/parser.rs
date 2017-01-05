@@ -163,14 +163,14 @@ macro_rules! expect_identifier {
 }
 
 macro_rules! delimiter_block {
-    ($_self:expr, $try_parse: ident, $break_pattern: pat) => {
+    ($_self:expr, $try_parse: ident, $($break_pattern: pat)|+) => {
         {
         let mut acc = Vec::new();
         loop {
             match $_self.peek() {
                 None => break,
                 Some(ref t) if is_delimiter(t) => { $_self.next(); continue; },
-                $break_pattern => break,
+                $($break_pattern)|+ => break,
                 _ => {
                     let a = try!($_self.$try_parse());
                     acc.push(a);
@@ -374,6 +374,7 @@ impl Parser {
         expect!(self, Keyword(Kw::If));
 
         let test = try!(self.expression());
+
         loop {
             match self.peek() {
                 Some(ref t) if is_delimiter(t) => {
@@ -385,39 +386,19 @@ impl Parser {
         }
 
         expect!(self, Keyword(Kw::Then));
-        let mut then_block = VecDeque::new();
-        loop {
-            match self.peek() {
-                None |
-                Some(Keyword(Kw::Else)) |
-                Some(Keyword(Kw::End)) => break,
-                Some(ref t) if is_delimiter(t) => {
-                    self.next();
-                    continue;
-                }
-                _ => {
-                    let exp = try!(self.expression());
-                    then_block.push_back(exp);
-                }
-            }
-        }
+        let then_block = delimiter_block!(
+            self,
+            expression,
+            Some(Keyword(Kw::Else)) | Some(Keyword(Kw::End))
+        );
+
         let else_block = if let Some(Keyword(Kw::Else)) = self.peek() {
             self.next();
-            let mut else_exprs = VecDeque::new();
-            loop {
-                match self.peek() {
-                    None |
-                    Some(Keyword(Kw::End)) => break,
-                    Some(Semicolon) | Some(Newline) => {
-                        self.next();
-                        continue;
-                    }
-                    _ => {
-                        let exp = try!(self.expression());
-                        else_exprs.push_back(exp);
-                    }
-                }
-            }
+            let else_exprs  = delimiter_block!(
+                self,
+                expression,
+                Some(Keyword(Kw::End))
+            );
             Some(else_exprs)
         } else {
             None
@@ -425,8 +406,8 @@ impl Parser {
 
         expect!(self, Keyword(Kw::End));
         Ok(Conditional(Box::new(test),
-                       Box::new(Block(then_block)),
-                       else_block.map(|list| Box::new(Block(list)))))
+                       Box::new(Block(VecDeque::from(then_block))),
+                       else_block.map(|list| Box::new(Block(VecDeque::from(list))))))
     }
 
     fn identifier_expr(&mut self) -> ParseResult<Expression> {
