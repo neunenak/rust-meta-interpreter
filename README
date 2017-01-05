@@ -25,10 +25,15 @@ Keywords:
 if, then, else, while, let, fn, end, null
 
 
-Parsing:
+Refernece works:
 
-http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
+    Evaluation:
+    Understanding Computation
+
+    Parsing:
+
+    http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
 
 
-LLVM:
-http://blog.ulysse.io/2016/07/03/llvm-getting-started.html
+    LLVM:
+    http://blog.ulysse.io/2016/07/03/llvm-getting-started.html
