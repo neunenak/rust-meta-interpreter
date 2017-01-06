@@ -1,5 +1,5 @@
 use std::fmt;
-use tokenizer::{Token, Kw, Op};
+use tokenizer::{Token, Kw, OpTok};
 use tokenizer::Token::*;
 use std::collections::VecDeque;
 use std::rc::Rc;
@@ -66,6 +66,11 @@ pub enum Expression {
     While(Box<Expression>, Vec<Expression>),
 }
 
+#[derive(Debug, Clone)]
+pub struct Op {
+    rep: Rc<String>,
+}
+
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Expression::*;
@@ -120,7 +125,7 @@ impl Parser {
         self.tokens.pop()
     }
 
-    fn get_precedence(&self, op: &Op) -> Precedence {
+    fn get_precedence(&self, op: &OpTok) -> Precedence {
         match &op.0[..] {
             "+" => 10,
             "-" => 10,

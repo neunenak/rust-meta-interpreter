@@ -17,12 +17,12 @@ pub enum Token {
     NumLiteral(f64),
     StrLiteral(Rc<String>),
     Identifier(Rc<String>),
-    Operator(Op),
+    Operator(OpTok),
     Keyword(Kw),
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Op(pub Rc<String>);
+pub struct OpTok(pub Rc<String>);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Kw {
@@ -100,7 +100,7 @@ fn tokenize_operator(c: char, iter: &mut Peekable<Chars>) -> Result<Token, Token
     let mut buffer = String::new();
     buffer.push(c);
     buffer.extend(iter.peeking_take_while(|x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x))); 
-    Ok(Token::Operator(Op(Rc::new(buffer))))
+    Ok(Token::Operator(OpTok(Rc::new(buffer))))
 }
 
 fn tokenize_number_or_period(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
@@ -161,19 +161,19 @@ mod tests {
     #[test]
     fn basic_tokeniziation_tests() {
         token_test!("let a = 3\n",
-                    [Keyword(Kw::Let), Identifier(ref a), Operator(Op(ref b)), NumLiteral(3.0), Newline],
+                    [Keyword(Kw::Let), Identifier(ref a), Operator(OpTok(ref b)), NumLiteral(3.0), Newline],
                     **a == "a" && **b == "=");
 
         token_test!("2+1",
-                    [NumLiteral(2.0), Operator(Op(ref a)), NumLiteral(1.0)],
+                    [NumLiteral(2.0), Operator(OpTok(ref a)), NumLiteral(1.0)],
                     **a == "+");
 
         token_test!("2 + 1",
-                    [NumLiteral(2.0), Operator(Op(ref a)), NumLiteral(1.0)],
+                    [NumLiteral(2.0), Operator(OpTok(ref a)), NumLiteral(1.0)],
                     **a == "+");
 
         token_test!("2.3*49.2",
-                   [NumLiteral(2.3), Operator(Op(ref a)), NumLiteral(49.2)],
+                   [NumLiteral(2.3), Operator(OpTok(ref a)), NumLiteral(49.2)],
                    **a == "*");
 
         assert!(tokenize("2.4.5").is_err());
@@ -182,14 +182,14 @@ mod tests {
     #[test]
     fn string_test() {
         token_test!("null + \"a string\"",
-                    [Keyword(Kw::Null), Operator(Op(ref a)), StrLiteral(ref b)],
+                    [Keyword(Kw::Null), Operator(OpTok(ref a)), StrLiteral(ref b)],
                     **a == "+" && **b == "a string");
     }
 
     #[test]
     fn operator_test() {
         token_test!("a *> b",
-                   [Identifier(ref a), Operator(Op(ref b)), Identifier(ref c)],
+                   [Identifier(ref a), Operator(OpTok(ref b)), Identifier(ref c)],
                    **a == "a" && **b == "*>" && **c == "b");
 
 
