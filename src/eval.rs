@@ -259,6 +259,8 @@ impl<'a> Evaluator<'a> {
         match (&op[..], left, right) {
             ("+", Number(l), Number(r)) => Number(l + r),
             ("+", StringLiteral(s1), StringLiteral(s2)) => StringLiteral(Rc::new(format!("{}{}", *s1, *s2))),
+            ("+", StringLiteral(s1), Number(r)) => StringLiteral(Rc::new(format!("{}{}", *s1, r))),
+            ("+", Number(l), StringLiteral(s1)) => StringLiteral(Rc::new(format!("{}{}", l, *s1))),
             ("-", Number(l), Number(r)) => Number(l - r),
             ("*", Number(l), Number(r)) => Number(l * r),
             ("/", Number(l), Number(r)) if r != 0.0 => Number(l / r), 
@@ -271,6 +273,10 @@ impl<'a> Evaluator<'a> {
             ("==", Null, Null) => truthy,
             ("==", StringLiteral(s1), StringLiteral(s2)) => if s1 == s2 { truthy } else { falsy },
             ("==", _, _) => falsy,
+            ("+=", l, r) => BinExp("=", l, BinExp("+", l, r)),
+            ("-=", l, r) => BinExp("=", l, BinExp("-", l, r)),
+            ("*=", l, r) => BinExp("=", l, BinExp("*", l, r)),
+            ("/=", l, r) => BinExp("=", l, BinExp("/", l, r)),
             _ => falsy,
         }
     }
