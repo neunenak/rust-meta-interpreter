@@ -106,6 +106,14 @@ impl Expression {
     }
 }
 
+fn is_assignment(op: &str) -> bool {
+    match op {
+        "=" | "+=" | "-=" |
+        "*=" | "/=" => true,
+        _ => false,
+    }
+}
+
 impl<'a> Evaluator<'a> {
     fn reduction_loop(&mut self, mut node: Statement) -> Statement {
         loop {
@@ -118,6 +126,7 @@ impl<'a> Evaluator<'a> {
     }
 
     fn step(&mut self, node: Statement) -> Statement {
+        println!("Step: {:?}", node);
         let (new_node, side_effect) = self.reduce_astnode(node);
         if let Some(s) = side_effect {
             self.perform_side_effect(s);
@@ -176,15 +185,32 @@ impl<'a> Evaluator<'a> {
                     return (BinExp(op, left, right), side_effect);
                 }
 
-                // special case for variable assignment
                 if *op == "=" {
-                    match *left {
+                    return match *left {
                         Variable(var) => {
                             let binding = SideEffect::AddBinding(var, *right);
-                            return (Null, Some(binding));
-                        }
-                        _ => return (Null, None),
-                    }
+                            (Null, Some(binding))
+                        },
+                        _ => (Null, None)
+                    };
+                }
+
+                if is_assignment(&*op) {
+                    let new_op = Rc::new(String::from(match &op[..] {
+                        "+=" => "+", 
+                        "-=" => "-",
+                        "*=" => "*",
+                        "/=" => "/",
+                        _ => unreachable!(),
+                    }));
+
+                    let reduction =
+                        BinExp(Rc::new(String::from("=")),
+                               Box::new(*left.clone()),
+                               Box::new(BinExp(new_op, left, right))
+                              );
+
+                    return (reduction, None);
                 }
 
                 if left.is_reducible() {
@@ -254,6 +280,7 @@ impl<'a> Evaluator<'a> {
     }
 
     fn reduce_binop(&mut self, op: Rc<String>, left: Expression, right: Expression) -> Expression {
+        println!("Got op {:?}, l: {:?}, r: {:?}", op, left, right);
         let truthy = Number(1.0);
         let falsy = Null;
         match (&op[..], left, right) {
@@ -273,10 +300,6 @@ impl<'a> Evaluator<'a> {
             ("==", Null, Null) => truthy,
             ("==", StringLiteral(s1), StringLiteral(s2)) => if s1 == s2 { truthy } else { falsy },
             ("==", _, _) => falsy,
-            ("+=", l, r) => BinExp("=", l, BinExp("+", l, r)),
-            ("-=", l, r) => BinExp("=", l, BinExp("-", l, r)),
-            ("*=", l, r) => BinExp("=", l, BinExp("*", l, r)),
-            ("/=", l, r) => BinExp("=", l, BinExp("/", l, r)),
             _ => falsy,
         }
     }
