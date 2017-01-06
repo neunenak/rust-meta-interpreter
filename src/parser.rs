@@ -3,6 +3,7 @@ use tokenizer::{Token, Kw, OpTok};
 use tokenizer::Token::*;
 use std::collections::VecDeque;
 use std::rc::Rc;
+use std::convert::From;
 
 // Grammar
 // program := (statement delimiter ?)*
@@ -66,11 +67,6 @@ pub enum Expression {
     While(Box<Expression>, Vec<Expression>),
 }
 
-#[derive(Debug, Clone)]
-pub struct Op {
-    rep: Rc<String>,
-}
-
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Expression::*;
@@ -82,6 +78,50 @@ impl fmt::Display for Expression {
                 write!(f, "«function: {}, {} arg(s)»", name, parameters.len())
             }
             _ => write!(f, "UNIMPLEMENTED"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Op {
+    Add,
+    AddAssign,
+    Sub,
+    SubAssign,
+    Mul,
+    MulAssign,
+    Div,
+    DivAssign,
+    Mod,
+    Less,
+    LessEq,
+    Greater,
+    GreaterEq,
+    Equal,
+    Assign,
+    Custom(String),
+}
+
+impl<'a> From<&'a str> for Op {
+    fn from(s: &'a str) -> Op {
+        use self::Op::*;
+        match s {
+            "+" => Add,
+            "+=" => AddAssign,
+            "-" => Sub,
+            "-=" => SubAssign,
+            "*" => Mul,
+            "*=" => MulAssign,
+            "/" => Div,
+            "/=" => DivAssign,
+            "%" => Mod,
+            "<" => Less,
+            "<=" => LessEq,
+            ">" => Greater,
+            ">=" => GreaterEq,
+            "==" => Equal,
+            "=" => Assign,
+            op =>  Custom(op.to_string()),
         }
     }
 }
