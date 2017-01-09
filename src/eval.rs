@@ -23,15 +23,22 @@ pub struct Evaluator<'a> {
     functions: HashMap<String, Function>,
     variables: HashMap<String, Expression>,
     stdout: BufWriter<Stdout>,
+    pub trace_evaluation: bool,
 }
 
 impl<'a> Evaluator<'a> {
+    pub fn new_with_opts(parent: Option<&'a Evaluator>, trace_evaluation: bool) -> Evaluator<'a> {
+        let mut e = Evaluator::new(parent);
+        e.trace_evaluation = trace_evaluation;
+        e
+    }
     pub fn new(parent: Option<&'a Evaluator>) -> Evaluator<'a> {
         Evaluator {
             functions: HashMap::new(),
             variables: HashMap::new(),
             parent: parent,
             stdout: BufWriter::new(::std::io::stdout()),
+            trace_evaluation: parent.map_or(false, |e| e.trace_evaluation),
         }
     }
 
@@ -126,7 +133,9 @@ impl<'a> Evaluator<'a> {
     }
 
     fn step(&mut self, node: Statement) -> Statement {
-        println!("Step: {:?}", node);
+        if self.trace_evaluation {
+            println!("Step: {:?}", node);
+        }
         let (new_node, side_effect) = self.reduce_astnode(node);
         if let Some(s) = side_effect {
             self.perform_side_effect(s);
@@ -280,7 +289,6 @@ impl<'a> Evaluator<'a> {
     }
 
     fn reduce_binop(&mut self, op: Rc<String>, left: Expression, right: Expression) -> Expression {
-        println!("Got op {:?}, l: {:?}, r: {:?}", op, left, right);
         let truthy = Number(1.0);
         let falsy = Null;
         match (&op[..], left, right) {

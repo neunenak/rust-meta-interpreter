@@ -24,12 +24,13 @@ mod llvm_wrap;
 fn main() {
     let option_matches =
         program_options().parse(std::env::args()).expect("Could not parse options");
+    let trace = option_matches.opt_present("t");
     match option_matches.free[..] {
         [] | [_] => {
-            run_repl();
+            run_repl(trace);
         }
         [_, ref filename, _..] => {
-            run_noninteractive(filename, !option_matches.opt_present("i"));
+            run_noninteractive(filename, !option_matches.opt_present("i"), trace);
         }
     };
 }
@@ -39,10 +40,13 @@ fn program_options() -> getopts::Options {
     options.optflag("i",
                     "interpret",
                     "Interpret source file instead of compiling");
+    options.optflag("t",
+                    "trace-evaluation",
+                    "Print out trace of evaluation");
     options
 }
 
-fn run_noninteractive(filename: &str, compile: bool) {
+fn run_noninteractive(filename: &str, compile: bool, trace_evaluation: bool) {
     let mut source_file = File::open(&Path::new(filename)).unwrap();
     let mut buffer = String::new();
     source_file.read_to_string(&mut buffer).unwrap();
@@ -67,7 +71,7 @@ fn run_noninteractive(filename: &str, compile: bool) {
     if compile {
         compilation_sequence(ast, filename);
     } else {
-        let mut evaluator = Evaluator::new(None);
+        let mut evaluator = Evaluator::new_with_opts(None, trace_evaluation);
         let results = evaluator.run(ast);
         for result in results.iter() {
             println!("{}", result);
@@ -75,12 +79,13 @@ fn run_noninteractive(filename: &str, compile: bool) {
     }
 }
 
-fn run_repl() {
+fn run_repl(trace_evaluation: bool) {
     println!("Schala v 0.02");
     let initial_state = InterpreterState {
         show_tokens: false,
         show_parse: false,
-        evaluator: Evaluator::new(None),
+        show_eval: trace_evaluation,
+        evaluator: Evaluator::new_with_opts(None, trace_evaluation),
     };
     REPL::with_prompt_and_state(Box::new(repl_handler), ">> ", initial_state).run();
 }
@@ -88,6 +93,7 @@ fn run_repl() {
 struct InterpreterState<'a> {
     show_tokens: bool,
     show_parse: bool,
+    show_eval: bool,
     evaluator: Evaluator<'a>,
 }
 
@@ -105,6 +111,12 @@ impl<'a> ReplState for InterpreterState<'a> {
             }
             ["set", "show", "parse", "false"] => {
                 self.show_parse = false;
+            }
+            ["set", "show", "eval", "true"] => {
+                self.evaluator.trace_evaluation = true;
+            }
+            ["set", "show", "eval", "false"] => {
+                self.evaluator.trace_evaluation = false;
             }
             _ => (),
         }
