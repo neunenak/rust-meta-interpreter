@@ -168,7 +168,7 @@ impl CodeGen for Expression {
                                         zero,
                                         "is_nonzero");
 
-                let func = 4;
+                let func: LLVMValueRef = zero;
                 let then_block =
                     LLVMWrap::AppendBasicBlockInContext(data.context, func, "entry");
                 let else_block =
@@ -179,7 +179,10 @@ impl CodeGen for Expression {
                 LLVMWrap::PositionBuilderAtEnd(data.builder, then_block);
                 let then_return = then_expr.codegen(data);
                 LLVMWrap::BuildBr(data.builder, merge_block);
-                let else_return = else_expr.codegen(data);
+                let else_return = match else_expr {
+                    &Some(e) => e.codegen(data),
+                    &None => zero,
+                };
                 LLVMWrap::BuildBr(data.builder, merge_block);
                 LLVMWrap::PositionBuilderAtEnd(data.builder, else_block);
                 zero
