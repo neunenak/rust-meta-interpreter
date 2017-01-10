@@ -31,10 +31,8 @@ pub struct OpTok(pub Rc<String>);
 #[derive(Debug, Clone, PartialEq)]
 pub enum Kw {
     If,
-    Then,
     Else,
     While,
-    End,
     Let,
     Fn,
     Null,
@@ -140,10 +138,8 @@ fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, Tok
 
     Ok(match &buffer[..] {
         "if" => Keyword(Kw::If),
-        "then" => Keyword(Kw::Then),
         "else" => Keyword(Kw::Else),
         "while" => Keyword(Kw::While),
-        "end" => Keyword(Kw::End),
         "let" => Keyword(Kw::Let),
         "fn" => Keyword(Kw::Fn),
         "null" => Keyword(Kw::Null),
