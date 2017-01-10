@@ -88,8 +88,14 @@ trait CodeGen {
 
 impl CodeGen for AST {
     fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
-        let first = self.get(0).unwrap();
-        first.codegen(data)
+
+        let int_type = LLVMWrap::Int64TypeInContext(data.context);
+        let mut ret = LLVMWrap::ConstInt(int_type, 0, false);
+
+        for statement in self {
+            ret = statement.codegen(data);
+        }
+        ret
     }
 }
 
