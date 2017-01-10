@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 extern crate llvm_sys;
 
+use self::llvm_sys::LLVMIntPredicate;
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::core;
 use std::ptr;
@@ -130,6 +131,24 @@ pub fn BuildSRem(builder: LLVMBuilderRef,
                  -> LLVMValueRef {
     let name = CString::new(reg_name).unwrap();
     unsafe { core::LLVMBuildSRem(builder, lhs, rhs, name.as_ptr()) }
+}
+
+pub fn BuildCondBr(builder: LLVMBuilderRef,
+                   if_expr: LLVMValueRef,
+                   then_expr: LLVMBasicBlockRef,
+                   else_expr: LLVMBasicBlockRef) -> LLVMValueRef {
+
+
+    unsafe { core::LLVMBuildCondBr(builder, if_expr, then_expr, else_expr) }
+}
+
+pub fn BuildICmp(builder: LLVMBuilderRef,
+                 op: LLVMIntPredicate,
+                 lhs: LLVMValueRef,
+                 rhs: LLVMValueRef,
+                 name: &str) -> LLVMValueRef {
+    let name = CString::new(name).unwrap();
+    unsafe { core::LLVMBuildICmp(builder, op, lhs, rhs, name.as_ptr()) }
 }
 
 pub fn PrintModuleToFile(module: LLVMModuleRef, filename: &str) -> LLVMBool {

@@ -128,9 +128,9 @@ impl CodeGen for Expression {
 
         let int_type = LLVMWrap::Int64TypeInContext(data.context);
 
-        match self {
-            &Variable(ref name) => *data.variables.get(&**name).unwrap(),
-            &BinExp(ref op, ref left, ref right) if **op == "=" => {
+        match *self {
+            Variable(ref name) => *data.variables.get(&**name).unwrap(),
+            BinExp(ref op, ref left, ref right) if **op == "=" => {
                 if let Variable(ref name) = **left {
                     let new_value = right.codegen(data);
                     data.variables.insert((**name).clone(), new_value);
@@ -139,7 +139,7 @@ impl CodeGen for Expression {
                     panic!("Bad variable assignment")
                 }
             }
-            &BinExp(ref op, ref left, ref right) => {
+            BinExp(ref op, ref left, ref right) => {
                 let lhs = left.codegen(data);
                 let rhs = right.codegen(data);
                 let generator = match op.as_ref().as_ref() {
@@ -153,10 +153,34 @@ impl CodeGen for Expression {
 
                 generator(data.builder, lhs, rhs, "temp")
             }
-            &Number(ref n) => {
+            Number(ref n) => {
                 let native_val = *n as u64;
                 let int_value: LLVMValueRef = LLVMWrap::ConstInt(int_type, native_val, false);
                 int_value
+            }
+            Conditional(ref test, ref then_block, ref else_block) => {
+                let condition_value = test.codegen(data);
+                let zero = LLVMWrap::ConstInt(int_type, 0, false);
+                let is_nonzero = LLVMWrap::BuildICmp(data.builder,
+                                                     llvm_sys::LLVMIntPredicate::LLVMIntNE,
+                                                     condition_value,
+                                                     zero,
+                                                     "is_nonzero");
+
+                let func = 4;
+                let then_block = LLVMWrap::AppendBasicBlockInContext(data.context,
+                                                                     func,
+                                                                     "entry");
+                let else_block = LLVMWrap::AppendBasicBlockInContext(data.context,
+                                                                     func,
+                                                                     "entry");
+                let merge_block = LLVMWrap::AppendBasicBlockInContext(data.context,
+                                                                      func,
+                                                                      "entry");
+                //LLVMWrap::BuildCondBr(data.builder, is_nonzero, g
+
+                unimplemented!()
+
             }
             _ => unimplemented!(),
         }
