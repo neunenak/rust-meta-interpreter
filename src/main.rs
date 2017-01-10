@@ -23,7 +23,13 @@ mod llvm_wrap;
 
 fn main() {
     let option_matches =
-        program_options().parse(std::env::args()).expect("Could not parse options");
+        match program_options().parse(std::env::args()) {
+            Ok(o) => o,
+            Err(e) => {
+                println!("{:?}", e);
+                std::process::exit(1);
+            }
+        };
     let trace = option_matches.opt_present("t");
     match option_matches.free[..] {
         [] | [_] => {
