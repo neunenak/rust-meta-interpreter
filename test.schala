@@ -1,11 +1,11 @@
 
-fn a(x)
-x + 20
-end
+fn a(x) {
+    x + 20
+}
 
-fn x(x)
- x + a(9384)
-end
+fn x(x) {
+    x + a(9384)
+}
 
 a(0)
 x(1)

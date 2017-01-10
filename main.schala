@@ -1,17 +1,17 @@
 
-fn add(a, b)
+fn add(a, b) {
    a + b
-end
+}
 
-fn subtract(a, b)
+fn subtract(a, b) {
     a - b
-end
+}
 
-fn main()
+fn main() {
     first_value = add(20, 20)
     second_value = subtract(700, 650)
     first_value + second_value
-end
+}
 
 main()
 

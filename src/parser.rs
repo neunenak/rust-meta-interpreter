@@ -9,17 +9,19 @@ use std::convert::From;
 // program := (statement delimiter ?)*
 // delimiter := Newline | Semicolon
 // statement := declaration | expression
-// declaration :=  Fn prototype (statement)* End
+// declaration :=  Fn prototype LCurlyBrace (statement)* RCurlyBrace
 // prototype := identifier LParen identlist RParen
 // identlist := Ident (Comma Ident)* | e
 // exprlist  := Expression (Comma Expression)* | e
 //
 // expression := primary_expression (op primary_expression)*
-// primary_expression :=  Number | String | identifier_expr | paren_expr | conditional_expr
+// primary_expression :=  Number | String | identifier_expr | paren_expr | conditional_expr |
+// while_expr
 // identifier_expr := call_expression | Variable
+// while_expr := WHILE primary_expression LCurlyBrace (expression delimiter)* RCurlyBrace
 // paren_expr := LParen expression RParen
 // call_expr := Identifier LParen exprlist RParen
-// conditional_expr := IF expression THEN (expression delimiter?)* ELSE (expresion delimiter?)* END
+// conditional_expr := IF expression LCurlyBrace (expression delimiter)* RCurlyBrace (LCurlyBrace (expresion delimiter)* RCurlyBrace)?
 // op := '+', '-', etc.
 //
 
@@ -271,8 +273,9 @@ impl Parser {
     fn declaration(&mut self) -> ParseResult<Statement> {
         expect!(self, Keyword(Kw::Fn));
         let prototype = try!(self.prototype());
+        expect!(self, LCurlyBrace);
         let body = try!(self.body());
-        expect!(self, Keyword(Kw::End));
+        expect!(self, RCurlyBrace);
         Ok(Statement::FuncDefNode(Function {
             prototype: prototype,
             body: body,
@@ -323,7 +326,7 @@ impl Parser {
         let statements = delimiter_block!(
             self,
             statement,
-            Some(Keyword(Kw::End))
+            Some(RCurlyBrace)
         );
         Ok(statements)
     }
@@ -390,12 +393,13 @@ impl Parser {
         use self::Expression::*;
         expect!(self, Keyword(Kw::While));
         let test = try!(self.expression());
+        expect!(self, LCurlyBrace);
         let body = delimiter_block!(
             self,
             expression,
-            Some(Keyword(Kw::End))
+            Some(RCurlyBrace)
         );
-        expect!(self, Keyword(Kw::End));
+        expect!(self, RCurlyBrace);
         Ok(While(Box::new(test), body))
     }
 
@@ -412,24 +416,35 @@ impl Parser {
                 _ => break,
             }
         }
-        expect!(self, Keyword(Kw::Then));
+        expect!(self, LCurlyBrace);
+        loop {
+            match self.peek() {
+                Some(ref t) if is_delimiter(t) => {
+                    self.next();
+                    continue;
+                }
+                _ => break,
+            }
+        }
         let then_block = delimiter_block!(
             self,
             expression,
-            Some(Keyword(Kw::Else)) | Some(Keyword(Kw::End))
+            Some(RCurlyBrace)
         );
+        expect!(self, RCurlyBrace);
         let else_block = if let Some(Keyword(Kw::Else)) = self.peek() {
             self.next();
+            expect!(self, LCurlyBrace);
             let else_exprs  = delimiter_block!(
                 self,
                 expression,
-                Some(Keyword(Kw::End))
+                Some(RCurlyBrace)
             );
             Some(else_exprs)
         } else {
             None
         };
-        expect!(self, Keyword(Kw::End));
+        expect!(self, RCurlyBrace);
         Ok(Conditional(Box::new(test),
                        Box::new(Block(VecDeque::from(then_block))),
                        else_block.map(|list| Box::new(Block(VecDeque::from(list))))))
@@ -491,14 +506,14 @@ mod tests {
     fn call_parse_test() {
         use super::Function;
         parsetest!(
-        "fn a() 1 + 2 end",
+        "fn a() { 1 + 2 }",
         &[FuncDefNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
         match &body[..] { &[ExprNode(BinExp(_, box Number(1.0), box Number(2.0)))] => true, _ => false }
             && **name == "a" && match &parameters[..] { &[] => true, _ => false }
         );
 
         parsetest!(
-        "fn a(x,y) 1 + 2 end",
+        "fn a(x,y){ 1 + 2 }",
         &[FuncDefNode(Function {prototype: Prototype { ref name, ref parameters }, ref body})],
         match &body[..] { &[ExprNode(BinExp(_, box Number(1.0), box Number(2.0)))] => true, _ => false }
             && **name == "a" && *parameters[0] == "x" && *parameters[1] == "y" && parameters.len() == 2
@@ -525,18 +540,20 @@ mod tests {
     #[test]
     fn conditional_parse_test() {
         use tokenizer;
-        let t1 = "if null then 20 else 40 end";
+        let t1 = "if null { 20 } else { 40 }";
         let tokens = tokenizer::tokenize(t1).unwrap();
         match parse(&tokens, &[]).unwrap()[..] {
             [ExprNode(Conditional(box Null, box Block(_), Some(box Block(_))))] => (),
             _ => panic!(),
         }
 
-        let t2 = "if null\nthen\n20\nelse\n40\nend";
+        /*
+        let t2 = "if null\n{\n20\n}\nelse {\n40\n}";
         let tokens2 = tokenizer::tokenize(t2).unwrap();
         match parse(&tokens2, &[]).unwrap()[..] {
             [ExprNode(Conditional(box Null, box Block(_), Some(box Block(_))))] => (),
             _ => panic!(),
         }
+        */
     }
 }

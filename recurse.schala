@@ -1,24 +1,24 @@
 
 
-fn hella(x)
+fn hella(x) {
     print("hey")
-    if x == 3 then
+    if x == 3 {
         Null
-    else
+    } else {
         hella(x + 1)
-    end
-end
+    }
+}
 
 hella(0)
         
 
 
-fn fib(x)
-    if x < 3 then
-        1
-    else
-        fib(x - 1) + fib(x - 2)
-    end
-end
+fn fib(x) {
+    if x < 3 {
+      1
+    } else {
+      fib(x - 1) + fib(x - 2)
+    }
+}
 
 fib(10)
