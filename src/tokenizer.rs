@@ -11,6 +11,10 @@ pub enum Token {
     Semicolon,
     LParen,
     RParen,
+    LSquareBracket,
+    RSquareBracket,
+    LCurlyBrace,
+    RCurlyBrace,
     Comma,
     Period,
     Colon,
@@ -73,6 +77,10 @@ pub fn tokenize(input: &str) -> TokenizeResult {
             ')' => RParen,
             ':' => Colon,
             ',' => Comma,
+            '{' => LCurlyBrace,
+            '}' => RCurlyBrace,
+            '[' => LSquareBracket,
+            ']' => RSquareBracket,
             '"' => try!(tokenize_str(&mut iter)),
             c if !char::is_alphanumeric(c) => try!(tokenize_operator(c, &mut iter)),
             c @ '.' | c if is_digit(&c) => try!(tokenize_number_or_period(c, &mut iter)),
@@ -177,6 +185,11 @@ mod tests {
                    **a == "*");
 
         assert!(tokenize("2.4.5").is_err());
+
+        token_test!("fn my_func(a) { a ? 3[1] }",
+                    [Keyword(Kw::Fn), Identifier(ref a), LParen, Identifier(ref b), RParen, LCurlyBrace, Identifier(ref c),
+                     Operator(OpTok(ref d)), NumLiteral(3.0), LSquareBracket, NumLiteral(1.0), RSquareBracket, RCurlyBrace],
+                     **a == "my_func" && **b == "a" && **c == "a" && **d == "?");
     }
 
     #[test]
@@ -184,6 +197,10 @@ mod tests {
         token_test!("null + \"a string\"",
                     [Keyword(Kw::Null), Operator(OpTok(ref a)), StrLiteral(ref b)],
                     **a == "+" && **b == "a string");
+
+        token_test!("\"{?'q@?\"",
+                    [StrLiteral(ref a)],
+                    **a == "{?'q@?");
     }
 
     #[test]
