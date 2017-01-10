@@ -209,8 +209,22 @@ macro_rules! expect_identifier {
     }
 }
 
+macro_rules! skip_whitespace {
+    ($_self: expr) => {
+        loop {
+            match $_self.peek() {
+                Some(ref t) if is_delimiter(t) => {
+                    $_self.next();
+                    continue;
+                }
+                _ => break,
+            }
+        }
+    }
+}
+
 macro_rules! delimiter_block {
-    ($_self:expr, $try_parse: ident, $($break_pattern: pat)|+) => {
+    ($_self: expr, $try_parse: ident, $($break_pattern: pat)|+) => {
         {
         let mut acc = Vec::new();
         loop {
@@ -407,33 +421,19 @@ impl Parser {
         use self::Expression::*;
         expect!(self, Keyword(Kw::If));
         let test = try!(self.expression());
-        loop {
-            match self.peek() {
-                Some(ref t) if is_delimiter(t) => {
-                    self.next();
-                    continue;
-                }
-                _ => break,
-            }
-        }
+        skip_whitespace!(self);
         expect!(self, LCurlyBrace);
-        loop {
-            match self.peek() {
-                Some(ref t) if is_delimiter(t) => {
-                    self.next();
-                    continue;
-                }
-                _ => break,
-            }
-        }
+        skip_whitespace!(self);
         let then_block = delimiter_block!(
             self,
             expression,
             Some(RCurlyBrace)
         );
         expect!(self, RCurlyBrace);
+        skip_whitespace!(self);
         let else_block = if let Some(Keyword(Kw::Else)) = self.peek() {
             self.next();
+            skip_whitespace!(self);
             expect!(self, LCurlyBrace);
             let else_exprs  = delimiter_block!(
                 self,
@@ -547,13 +547,30 @@ mod tests {
             _ => panic!(),
         }
 
-        /*
-        let t2 = "if null\n{\n20\n}\nelse {\n40\n}";
+        let t2 = r"
+        if null {
+            20
+        } else {
+            40
+        }
+        ";
         let tokens2 = tokenizer::tokenize(t2).unwrap();
         match parse(&tokens2, &[]).unwrap()[..] {
             [ExprNode(Conditional(box Null, box Block(_), Some(box Block(_))))] => (),
             _ => panic!(),
         }
-        */
+
+        let t2 = r"
+        if null {
+            20 } else
+        {
+            40
+        }
+        ";
+        let tokens3 = tokenizer::tokenize(t2).unwrap();
+        match parse(&tokens3, &[]).unwrap()[..] {
+            [ExprNode(Conditional(box Null, box Block(_), Some(box Block(_))))] => (),
+            _ => panic!(),
+        }
     }
 }
