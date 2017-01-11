@@ -142,6 +142,11 @@ pub fn BuildCondBr(builder: LLVMBuilderRef,
     unsafe { core::LLVMBuildCondBr(builder, if_expr, then_expr, else_expr) }
 }
 
+pub fn BuildBr(builder: LLVMBuilderRef,
+               dest: LLVMBasicBlockRef) -> LLVMValueRef {
+    unsafe { core::LLVMBuildBr(builder, dest) }
+}
+
 pub fn BuildICmp(builder: LLVMBuilderRef,
                  op: LLVMIntPredicate,
                  lhs: LLVMValueRef,

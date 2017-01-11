@@ -19,6 +19,7 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
     };
 
     compile_ast(ast, ll_filename);
+    println!("YOLO");
     Command::new("llc")
         .arg("-filetype=obj")
         .arg(ll_filename)
@@ -31,6 +32,7 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         .output()
         .expect("failed to run gcc");
 
+    println!("ai");
     for filename in [obj_filename].iter() {
         Command::new("rm")
             .arg(filename)
@@ -46,6 +48,7 @@ struct CompilationData {
     module: LLVMModuleRef,
     builder: LLVMBuilderRef,
     variables: VariableMap,
+    func: Option<LLVMValueRef>,
 }
 
 fn compile_ast(ast: AST, filename: &str) {
@@ -61,11 +64,14 @@ fn compile_ast(ast: AST, filename: &str) {
         module: module,
         builder: builder,
         variables: names,
+        func: None,
     };
 
     let int_type = LLVMWrap::Int64TypeInContext(data.context);
     let function_type = LLVMWrap::FunctionType(int_type, &Vec::new(), false);
     let function = LLVMWrap::AddFunction(data.module, "main", function_type);
+
+    data.func = Some(function);
 
     let bb = LLVMWrap::AppendBasicBlockInContext(data.context, function, "entry");
     LLVMWrap::PositionBuilderAtEnd(builder, bb);
@@ -74,6 +80,7 @@ fn compile_ast(ast: AST, filename: &str) {
 
     LLVMWrap::BuildRet(builder, value);
 
+    println!("Printing {} to file", filename);
     LLVMWrap::PrintModuleToFile(module, filename);
 
     // Clean up. Values created in the context mostly get cleaned up there.
@@ -123,10 +130,10 @@ impl CodeGen for Function {
 
 impl CodeGen for Expression {
     fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
-        println!("Running codegen on: {:?}", self);
         use self::Expression::*;
 
         let int_type = LLVMWrap::Int64TypeInContext(data.context);
+        let zero = LLVMWrap::ConstInt(int_type, 0, false);
 
         match *self {
             Variable(ref name) => *data.variables.get(&**name).unwrap(),
@@ -160,7 +167,6 @@ impl CodeGen for Expression {
             }
             Conditional(ref test, ref then_expr, ref else_expr) => {
                 let condition_value = test.codegen(data);
-                let zero = LLVMWrap::ConstInt(int_type, 0, false);
                 let is_nonzero =
                     LLVMWrap::BuildICmp(data.builder,
                                         llvm_sys::LLVMIntPredicate::LLVMIntNE,
@@ -168,7 +174,7 @@ impl CodeGen for Expression {
                                         zero,
                                         "is_nonzero");
 
-                let func: LLVMValueRef = zero;
+                let func: LLVMValueRef = data.func.expect("lol no function here");
                 let then_block =
                     LLVMWrap::AppendBasicBlockInContext(data.context, func, "entry");
                 let else_block =
@@ -179,15 +185,25 @@ impl CodeGen for Expression {
                 LLVMWrap::PositionBuilderAtEnd(data.builder, then_block);
                 let then_return = then_expr.codegen(data);
                 LLVMWrap::BuildBr(data.builder, merge_block);
-                let else_return = match else_expr {
-                    &Some(e) => e.codegen(data),
-                    &None => zero,
+                let else_return = match *else_expr {
+                    Some(ref e) => e.codegen(data),
+                    None => zero,
                 };
                 LLVMWrap::BuildBr(data.builder, merge_block);
                 LLVMWrap::PositionBuilderAtEnd(data.builder, else_block);
                 zero
             }
-            _ => unimplemented!(),
+            Block(ref exprs) => {
+                let mut ret = zero;
+                for e in exprs.iter() {
+                    ret = e.codegen(data);
+                }
+                ret
+            }
+            ref e => {
+                println!("Unimplemented {:?}", e);
+                unimplemented!()
+            }
         }
     }
 }
