@@ -19,7 +19,6 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
     };
 
     compile_ast(ast, ll_filename);
-    println!("YOLO");
     Command::new("llc")
         .arg("-filetype=obj")
         .arg(ll_filename)
@@ -32,7 +31,6 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         .output()
         .expect("failed to run gcc");
 
-    println!("ai");
     for filename in [obj_filename].iter() {
         Command::new("rm")
             .arg(filename)
@@ -181,16 +179,20 @@ impl CodeGen for Expression {
                     LLVMWrap::AppendBasicBlockInContext(data.context, func, "entry");
                 let merge_block =
                     LLVMWrap::AppendBasicBlockInContext(data.context, func, "entry");
+
                 LLVMWrap::BuildCondBr(data.builder, is_nonzero, then_block, else_block);
                 LLVMWrap::PositionBuilderAtEnd(data.builder, then_block);
+
                 let then_return = then_expr.codegen(data);
                 LLVMWrap::BuildBr(data.builder, merge_block);
+
+                LLVMWrap::PositionBuilderAtEnd(data.builder, else_block);
                 let else_return = match *else_expr {
                     Some(ref e) => e.codegen(data),
                     None => zero,
                 };
                 LLVMWrap::BuildBr(data.builder, merge_block);
-                LLVMWrap::PositionBuilderAtEnd(data.builder, else_block);
+                LLVMWrap::PositionBuilderAtEnd(data.builder, merge_block);
                 zero
             }
             Block(ref exprs) => {
