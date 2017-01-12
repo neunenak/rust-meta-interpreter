@@ -9,19 +9,20 @@ use std::convert::From;
 // program := (statement delimiter ?)*
 // delimiter := Newline | Semicolon
 // statement := declaration | expression
-// declaration :=  Fn prototype LCurlyBrace (statement)* RCurlyBrace
+// declaration :=  FN prototype LCurlyBrace (statement)* RCurlyBrace
 // prototype := identifier LParen identlist RParen
 // identlist := Ident (Comma Ident)* | e
 // exprlist  := Expression (Comma Expression)* | e
 //
 // expression := primary_expression (op primary_expression)*
 // primary_expression :=  Number | String | identifier_expr | paren_expr | conditional_expr |
-// while_expr
+//                        while_expr | lambda_expr
 // identifier_expr := call_expression | Variable
 // while_expr := WHILE primary_expression LCurlyBrace (expression delimiter)* RCurlyBrace
 // paren_expr := LParen expression RParen
 // call_expr := Identifier LParen exprlist RParen
 // conditional_expr := IF expression LCurlyBrace (expression delimiter)* RCurlyBrace (LCurlyBrace (expresion delimiter)* RCurlyBrace)?
+// lambda_expr := FN LParen identlist RParen LCurlyBrace (expression delimiter)* RCurlyBrace
 // op := '+', '-', etc.
 //
 
@@ -394,6 +395,7 @@ impl Parser {
             Some(Keyword(Kw::While)) => try!(self.while_expr()),
             Some(Identifier(_)) => try!(self.identifier_expr()),
             Some(Token::LParen) => try!(self.paren_expr()),
+            Some(Keyword(Kw::Fn)) => try!(self.lambda_expr()),
             Some(e) => {
                 return ParseError::result_from_str(&format!("Expected primary expression, got \
                                                              {:?}",
@@ -401,6 +403,30 @@ impl Parser {
             }
             None => return ParseError::result_from_str("Expected primary expression received EoI"),
         })
+    }
+
+    fn lambda_expr(&mut self) -> ParseResult<Expression> {
+        use self::Expression::*;
+        expect!(self, Keyword(Kw::Fn));
+        skip_whitespace!(self);
+        expect!(self, LParen);
+        let parameters = try!(self.identlist());
+        expect!(self, RParen);
+        skip_whitespace!(self);
+        expect!(self, LCurlyBrace);
+        let body = try!(self.body());
+        expect!(self, RCurlyBrace);
+
+        let prototype = Prototype {
+            name: Rc::new("a lambda yo!".to_string()),
+            parameters: parameters,
+        };
+
+        let function = Function {
+            prototype: prototype,
+            body: body,
+        };
+        Ok(Lambda(function))
     }
 
     fn while_expr(&mut self) -> ParseResult<Expression> {
@@ -503,7 +529,7 @@ mod tests {
     }
 
     #[test]
-    fn call_parse_test() {
+    fn function_parse_test() {
         use super::Function;
         parsetest!(
         "fn a() { 1 + 2 }",
@@ -518,6 +544,10 @@ mod tests {
         match &body[..] { &[ExprNode(BinExp(_, box Number(1.0), box Number(2.0)))] => true, _ => false }
             && **name == "a" && *parameters[0] == "x" && *parameters[1] == "y" && parameters.len() == 2
         );
+
+        let t3 = "fn (x) { x + 2 }";
+        let tokens3 = tokenizer::tokenize(t3).unwrap();
+        assert!(parse(&tokens3, &[]).is_err());
     }
 
     #[test]
@@ -535,6 +565,20 @@ mod tests {
         parsetest!("(a + b) * c",
             &[ExprNode(BinExp(ref mul, box BinExp(ref plus, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
             **plus == "+" && **mul == "*" && **a == "a" && **b == "b" && **c == "c");
+    }
+
+    #[test]
+    fn lambda_parse_test() {
+        use tokenizer;
+        let t1 = "(fn(x) { x + 2 })";
+        let tokens1 = tokenizer::tokenize(t1).unwrap();
+        match parse(&tokens1, &[]).unwrap()[..] {
+            _ => (),
+        }
+
+        let t2 = "fn(x) { x + 2 }";
+        let tokens2 = tokenizer::tokenize(t2).unwrap();
+        assert!(parse(&tokens2, &[]).is_err());
     }
 
     #[test]
