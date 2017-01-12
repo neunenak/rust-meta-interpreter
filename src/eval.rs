@@ -133,12 +133,24 @@ impl<'a> Evaluator<'a> {
     }
 
     fn step(&mut self, node: Statement) -> Statement {
+        let mut trace = String::new();
         if self.trace_evaluation {
-            println!("Step: {:?}", node);
+            trace.push_str(&format!("Step: {:?}", node));
         }
+
         let (new_node, side_effect) = self.reduce_astnode(node);
+
+        if self.trace_evaluation {
+            trace.push_str(&format!(" ➜ {:?}", new_node));
+        }
         if let Some(s) = side_effect {
+            if self.trace_evaluation {
+                trace.push_str(&format!(" | side-effect: {:?}", s));
+            }
             self.perform_side_effect(s);
+        }
+        if self.trace_evaluation {
+            println!("{}", trace);
         }
         new_node
     }
