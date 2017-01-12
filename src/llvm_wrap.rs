@@ -147,6 +147,21 @@ pub fn BuildBr(builder: LLVMBuilderRef,
     unsafe { core::LLVMBuildBr(builder, dest) }
 }
 
+pub fn GetInsertBlock(builder: LLVMBuilderRef) -> LLVMBasicBlockRef {
+    unsafe { core::LLVMGetInsertBlock(builder) }
+}
+
+pub fn BuildPhi(builder: LLVMBuilderRef, ty: LLVMTypeRef, name: &str) -> LLVMValueRef {
+    let name = CString::new(name).unwrap();
+    unsafe { core::LLVMBuildPhi(builder, ty, name.as_ptr()) }
+}
+
+pub fn AddIncoming(phi: LLVMValueRef, incoming_values: *mut LLVMValueRef, incoming_blocks: *mut LLVMBasicBlockRef,
+                   count: u32) {
+
+    unsafe { core::LLVMAddIncoming(phi, incoming_values, incoming_blocks, count) }
+}
+
 pub fn BuildICmp(builder: LLVMBuilderRef,
                  op: LLVMIntPredicate,
                  lhs: LLVMValueRef,
