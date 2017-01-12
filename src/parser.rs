@@ -18,11 +18,13 @@ use std::convert::From;
 // primary_expression :=  Number | String | identifier_expr | paren_expr | conditional_expr |
 //                        while_expr | lambda_expr
 // identifier_expr := call_expression | Variable
+// call_expr := Identifier LParen exprlist RParen
 // while_expr := WHILE primary_expression LCurlyBrace (expression delimiter)* RCurlyBrace
 // paren_expr := LParen expression RParen
-// call_expr := Identifier LParen exprlist RParen
 // conditional_expr := IF expression LCurlyBrace (expression delimiter)* RCurlyBrace (LCurlyBrace (expresion delimiter)* RCurlyBrace)?
 // lambda_expr := FN LParen identlist RParen LCurlyBrace (expression delimiter)* RCurlyBrace
+//                lambda_call
+// lambda_call := ε | LParen exprlist RParen
 // op := '+', '-', etc.
 //
 
@@ -63,11 +65,17 @@ pub enum Expression {
     Number(f64),
     Variable(Rc<String>),
     BinExp(Rc<String>, Box<Expression>, Box<Expression>),
-    Call(Rc<String>, Vec<Expression>),
+    Call(Callable, Vec<Expression>),
     Conditional(Box<Expression>, Box<Expression>, Option<Box<Expression>>),
     Lambda(Function),
     Block(VecDeque<Expression>),
     While(Box<Expression>, Vec<Expression>),
+}
+
+#[derive(Clone, Debug)]
+pub enum Callable {
+    NamedFunction(Rc<String>),
+    Lambda(Function),
 }
 
 impl fmt::Display for Expression {
@@ -426,7 +434,14 @@ impl Parser {
             prototype: prototype,
             body: body,
         };
-        Ok(Lambda(function))
+
+        match self.peek() {
+            Some(LParen) => {
+                let args = try!(self.call_expr());
+                Ok(Call(Callable::Lambda(function), args))
+            },
+            _ => Ok(Lambda(function))
+        }
     }
 
     fn while_expr(&mut self) -> ParseResult<Expression> {
@@ -481,7 +496,7 @@ impl Parser {
         let expr = match self.peek() {
             Some(LParen) => {
                 let args = try!(self.call_expr());
-                Expression::Call(name, args)
+                Expression::Call(Callable::NamedFunction(name), args)
             }
             __ => Expression::Variable(name),
         };

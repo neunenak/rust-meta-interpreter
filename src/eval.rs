@@ -2,7 +2,7 @@ extern crate take_mut;
 
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use parser::{AST, Statement, Expression, Function};
+use parser::{AST, Statement, Expression, Function, Callable};
 use std::rc::Rc;
 use std::io::{Write, Stdout, BufWriter};
 use std::convert::From;
@@ -11,7 +11,6 @@ use parser::Expression::*;
 use parser::Statement::*;
 
 type Reduction<T> = (T, Option<SideEffect>);
-
 
 #[derive(Debug, Clone)]
 enum ReducedValue {
@@ -259,7 +258,7 @@ impl<'a> Evaluator<'a> {
                     (self.reduce_binop(op, *left, *right), None) //can assume both arguments are maximally reduced
                 }
             }
-            Call(name, mut args) => {
+            Call(callable, mut args) => {
                 let mut f = true;
                 for arg in args.iter_mut() {
                     if arg.is_reducible() {
@@ -269,9 +268,9 @@ impl<'a> Evaluator<'a> {
                     }
                 }
                 if f {
-                    self.reduce_call(name, args)
+                    self.reduce_call(callable, args)
                 } else {
-                    (Call(name, args), None)
+                    (Call(callable, args), None)
                 }
             }
             While(test, body) => {
@@ -327,7 +326,7 @@ impl<'a> Evaluator<'a> {
             ("+", Number(l), StringLiteral(s1)) => StringLiteral(Rc::new(format!("{}{}", l, *s1))),
             ("-", Number(l), Number(r)) => Number(l - r),
             ("*", Number(l), Number(r)) => Number(l * r),
-            ("/", Number(l), Number(r)) if r != 0.0 => Number(l / r), 
+            ("/", Number(l), Number(r)) if r != 0.0 => Number(l / r),
             ("%", Number(l), Number(r)) => Number(l % r),
             ("<", Number(l), Number(r)) => if l < r { truthy } else { falsy },
             ("<=", Number(l), Number(r)) => if l <= r { truthy } else { falsy },
@@ -341,18 +340,22 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    fn reduce_call(&mut self, name: Rc<String>, arguments: Vec<Expression>) -> Reduction<Expression> {
-        if let Some(res) = handle_builtin(&*name, &arguments) {
+    fn reduce_call(&mut self, callable: Callable, arguments: Vec<Expression>) -> Reduction<Expression> {
+        if let Some(res) = handle_builtin(&callable, &arguments) {
             return res;
         }
 
-        println!("Reduce call, name {} args: {:?}", name, arguments);
+        println!("Reduce call, callable {:?} args: {:?}", callable, arguments);
 
-        let function = match self.lookup_binding(&*name) {
-            Some(ReducedValue::Lambda(func)) => func,
-            _ => return (Null, None),
+        let function = match callable {
+            Callable::Lambda(func) => func.clone(),
+            Callable::NamedFunction(name) => {
+                match self.lookup_binding(&*name) {
+                    Some(ReducedValue::Lambda(func)) => func,
+                    _ => return (Null, None),
+                }
+            }
         };
-
         if function.prototype.parameters.len() != arguments.len() {
             return (Null, None);
         }
@@ -376,7 +379,12 @@ impl<'a> Evaluator<'a> {
     }
 }
 
-fn handle_builtin(name: &str, arguments: &Vec<Expression>) -> Option<Reduction<Expression>> {
+fn handle_builtin(callable: &Callable, arguments: &Vec<Expression>) -> Option<Reduction<Expression>> {
+    let name: &str = match *callable {
+        Callable::NamedFunction(ref name) => *&name,
+        _ => return None,
+    };
+
     match name {
         "print" => {
             let mut s = String::new();
