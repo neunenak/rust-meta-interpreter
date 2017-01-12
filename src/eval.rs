@@ -160,6 +160,10 @@ impl<'a> Evaluator<'a> {
         match side_effect {
             Print(s) => {
                 write!(self.stdout, "{}\n", s).unwrap();
+                match self.stdout.flush() {
+                    Ok(_) => (),
+                    Err(_) => println!("Could not flush stdout"),
+                };
             }
             AddBinding(var, value) => {
                 self.add_binding((*var).clone(), value);
