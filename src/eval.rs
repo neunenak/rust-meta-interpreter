@@ -5,23 +5,51 @@ use std::collections::VecDeque;
 use parser::{AST, Statement, Expression, Function};
 use std::rc::Rc;
 use std::io::{Write, Stdout, BufWriter};
+use std::convert::From;
 
 use parser::Expression::*;
 use parser::Statement::*;
 
 type Reduction<T> = (T, Option<SideEffect>);
 
+
+#[derive(Debug, Clone)]
+enum ReducedValue {
+    StringLiteral(Rc<String>),
+    Number(f64),
+    Lambda(Function),
+}
+
+impl From<ReducedValue> for Expression {
+    fn from(rv: ReducedValue) -> Expression {
+        match rv {
+            ReducedValue::Number(n) => Expression::Number(n),
+            ReducedValue::StringLiteral(n) => Expression::StringLiteral(n),
+            ReducedValue::Lambda(f) => Expression::Lambda(f),
+        }
+    }
+}
+
+impl From<Expression> for ReducedValue {
+    fn from(rv: Expression) -> ReducedValue {
+        match rv {
+            Expression::Number(n) => ReducedValue::Number(n),
+            Expression::StringLiteral(n) => ReducedValue::StringLiteral(n),
+            Expression::Lambda(f) => ReducedValue::Lambda(f),
+            _ => panic!("trying to store a non-fully-reduced variable"),
+        }
+    }
+}
+
 #[derive(Debug)]
 enum SideEffect {
     Print(String),
-    AddBinding(Rc<String>, Expression),
-    AddFunctionBinding(Function),
+    AddBinding(Rc<String>, ReducedValue),
 }
 
 pub struct Evaluator<'a> {
     parent: Option<&'a Evaluator<'a>>,
-    functions: HashMap<String, Function>,
-    variables: HashMap<String, Expression>,
+    variables: HashMap<String, ReducedValue>,
     stdout: BufWriter<Stdout>,
     pub trace_evaluation: bool,
 }
@@ -34,7 +62,6 @@ impl<'a> Evaluator<'a> {
     }
     pub fn new(parent: Option<&'a Evaluator>) -> Evaluator<'a> {
         Evaluator {
-            functions: HashMap::new(),
             variables: HashMap::new(),
             parent: parent,
             stdout: BufWriter::new(::std::io::stdout()),
@@ -48,29 +75,15 @@ impl<'a> Evaluator<'a> {
             .collect()
     }
 
-    fn add_binding(&mut self, var: String, value: Expression) {
+    fn add_binding(&mut self, var: String, value: ReducedValue) {
         self.variables.insert(var, value);
     }
 
-    fn lookup_binding(&self, var: &str) -> Option<Expression> {
+    fn lookup_binding(&self, var: &str) -> Option<ReducedValue> {
         match self.variables.get(var) {
             Some(expr) => Some(expr.clone()),
             None => match self.parent {
                 Some(env) => env.lookup_binding(var),
-                None => None
-            }
-        }
-    }
-
-    fn add_function(&mut self, name: String, function: Function) {
-        self.functions.insert(name, function);
-    }
-
-    fn lookup_function(&self, name: &str) -> Option<Function> {
-        match self.functions.get(name) {
-            Some(func) => Some(func.clone()),
-            None => match self.parent {
-                Some(env) => env.lookup_function(name),
                 None => None
             }
         }
@@ -168,9 +181,6 @@ impl<'a> Evaluator<'a> {
             AddBinding(var, value) => {
                 self.add_binding((*var).clone(), value);
             },
-            AddFunctionBinding(function) => {
-                self.add_function((*function.prototype.name).clone(), function);
-            }
         }
     }
 
@@ -185,7 +195,9 @@ impl<'a> Evaluator<'a> {
                 }
             }
             FuncDefNode(func) => {
-                let binding = Some(SideEffect::AddFunctionBinding(func.clone()));
+                let name = func.prototype.name.clone();
+                let reduced_value = ReducedValue::Lambda(func.clone());
+                let binding = Some(SideEffect::AddBinding(name, reduced_value));
                 (ExprNode(Expression::Lambda(func)), binding)
             }
         }
@@ -198,7 +210,7 @@ impl<'a> Evaluator<'a> {
             e @ Number(_) => (e, None),
             e @ Lambda(_) => (e, None),
             Variable(ref var) => {
-                match self.lookup_binding(var) {
+                match self.lookup_binding(var).map(|x| x.into()) {
                     None => (Null, None),
                     Some(expr) => (expr, None),
                 }
@@ -213,7 +225,8 @@ impl<'a> Evaluator<'a> {
                 if *op == "=" {
                     return match *left {
                         Variable(var) => {
-                            let binding = SideEffect::AddBinding(var, *right);
+                            let reduced_value: ReducedValue = ReducedValue::from(*right);
+                            let binding = SideEffect::AddBinding(var, reduced_value);
                             (Null, Some(binding))
                         },
                         _ => (Null, None)
@@ -333,9 +346,11 @@ impl<'a> Evaluator<'a> {
             return res;
         }
 
-        let function = match self.lookup_function(&*name) {
-            Some(func) => func,
-            None => return (Null, None),
+        println!("Reduce call, name {} args: {:?}", name, arguments);
+
+        let function = match self.lookup_binding(&*name) {
+            Some(ReducedValue::Lambda(func)) => func,
+            _ => return (Null, None),
         };
 
         if function.prototype.parameters.len() != arguments.len() {
@@ -344,7 +359,7 @@ impl<'a> Evaluator<'a> {
 
         let mut evaluator = Evaluator::new(Some(self));
         for (binding, expr) in function.prototype.parameters.iter().zip(arguments.iter()) {
-            evaluator.add_binding((**binding).clone(), expr.clone());
+            evaluator.add_binding((**binding).clone(), expr.clone().into());
         }
 
         let nodes = function.body.iter().map(|node| node.clone());
