@@ -85,35 +85,34 @@ fn run_noninteractive(filename: &str, compile: bool, trace_evaluation: bool) {
     }
 }
 
+type LineReader = linefeed::Reader<linefeed::terminal::DefaultTerminal>;
 struct Repl<'a> {
     show_tokens: bool,
     show_parse: bool,
     show_eval: bool,
-    input_history: Vec<String>,
-    output_history: Vec<String>,
     evaluator: Evaluator<'a>,
     interpreter_directive_sigil: char,
+    reader: LineReader,
 }
 
 impl<'a> Repl<'a> {
     fn new(trace_evaluation: bool) -> Repl<'a> {
+        let mut reader: linefeed::Reader<_> = linefeed::Reader::new("").unwrap();
+        reader.set_prompt(">> ");
         Repl {
             show_tokens: false,
             show_parse: false,
             show_eval: false,
-            input_history: vec![],
-            output_history: vec![],
             evaluator: Evaluator::new_with_opts(None, trace_evaluation),
             interpreter_directive_sigil: '.',
+            reader: reader,
         }
     }
     fn run(&mut self) {
         use linefeed::ReadResult::*;
         println!("Schala v 0.02");
-        let mut reader = linefeed::Reader::new("oi").unwrap();
-        reader.set_prompt(">> ");
         loop {
-            match reader.read_line() {
+            match self.reader.read_line() {
                 Err(e) => {
                     println!("Terminal read error: {:?}", e);
                     break;
@@ -183,16 +182,8 @@ impl<'a> Repl<'a> {
         match cmd {
             "exit" | "quit"  => process::exit(0),
             "history"  => {
-                println!("history:");
-                for cmd in self.input_history.iter() {
-                    println!("{}", cmd);
-                }
             },
             "output_history" => {
-                println!("output history:");
-                for cmd in self.output_history.iter() {
-                    println!("{}", cmd);
-                }
             },
             _ => {
                 self.update_state(&commands);
