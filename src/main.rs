@@ -97,7 +97,7 @@ struct Repl<'a> {
 
 impl<'a> Repl<'a> {
     fn new(trace_evaluation: bool) -> Repl<'a> {
-        let mut reader: linefeed::Reader<_> = linefeed::Reader::new("").unwrap();
+        let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Schala").unwrap();
         reader.set_prompt(">> ");
         Repl {
             show_tokens: false,
@@ -114,25 +114,23 @@ impl<'a> Repl<'a> {
         loop {
             match self.reader.read_line() {
                 Err(e) => {
-                    println!("Terminal read error: {:?}", e);
-                    break;
+                    println!("Terminal read error: {}", e);
                 },
                 Ok(Eof) => {
-                    println!("Exiting...");
                     break;
                 }
                 Ok(Input(ref input)) => {
+                    self.reader.add_history(input.clone());
                     if self.handle_interpreter_directive(input) {
                         continue;
                     }
                     let output = self.input_handler(input);
-                    println!("{}", output);
+                    println!("=> {}", output);
                 }
-                Ok(Signal(signal)) => {
-                    println!("Received signal: {:?}", signal);
-                },
+                _ => (),
             }
         }
+        println!("Exiting...");
     }
 
     fn input_handler(&mut self, input: &str) -> String {
