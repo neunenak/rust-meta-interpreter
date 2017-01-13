@@ -123,6 +123,9 @@ impl<'a> Repl<'a> {
                     break;
                 }
                 Ok(Input(ref input)) => {
+                    if self.handle_interpreter_directive(input) {
+                        continue;
+                    }
                     let output = self.input_handler(input);
                     println!("{}", output);
                 }
