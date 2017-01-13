@@ -1,12 +1,11 @@
 #![feature(advanced_slice_patterns, slice_patterns, box_patterns)]
-extern crate simplerepl;
 extern crate getopts;
+extern crate linefeed;
 
 use std::path::Path;
 use std::fs::File;
 use std::io::Read;
-
-use simplerepl::{REPL, ReplState};
+use std::process;
 
 use tokenizer::tokenize;
 mod tokenizer;
@@ -33,7 +32,8 @@ fn main() {
     let trace = option_matches.opt_present("t");
     match option_matches.free[..] {
         [] | [_] => {
-            run_repl(trace);
+            let mut repl = Repl::new(trace);
+            repl.run();
         }
         [_, ref filename, _..] => {
             run_noninteractive(filename, !option_matches.opt_present("i"), trace);
@@ -85,25 +85,119 @@ fn run_noninteractive(filename: &str, compile: bool, trace_evaluation: bool) {
     }
 }
 
-fn run_repl(trace_evaluation: bool) {
-    println!("Schala v 0.02");
-    let initial_state = InterpreterState {
-        show_tokens: false,
-        show_parse: false,
-        show_eval: trace_evaluation,
-        evaluator: Evaluator::new_with_opts(None, trace_evaluation),
-    };
-    REPL::with_prompt_and_state(Box::new(repl_handler), ">> ", initial_state).run();
-}
-
-struct InterpreterState<'a> {
+struct Repl<'a> {
     show_tokens: bool,
     show_parse: bool,
     show_eval: bool,
+    input_history: Vec<String>,
+    output_history: Vec<String>,
     evaluator: Evaluator<'a>,
+    interpreter_directive_sigil: char,
 }
 
-impl<'a> ReplState for InterpreterState<'a> {
+impl<'a> Repl<'a> {
+    fn new(trace_evaluation: bool) -> Repl<'a> {
+        Repl {
+            show_tokens: false,
+            show_parse: false,
+            show_eval: false,
+            input_history: vec![],
+            output_history: vec![],
+            evaluator: Evaluator::new_with_opts(None, trace_evaluation),
+            interpreter_directive_sigil: '.',
+        }
+    }
+    fn run(&mut self) {
+        use linefeed::ReadResult::*;
+        println!("Schala v 0.02");
+        let mut reader = linefeed::Reader::new("oi").unwrap();
+        reader.set_prompt(">> ");
+        loop {
+            match reader.read_line() {
+                Err(e) => {
+                    println!("Terminal read error: {:?}", e);
+                    break;
+                },
+                Ok(Eof) => {
+                    println!("Exiting...");
+                    break;
+                }
+                Ok(Input(ref input)) => {
+                    let output = self.input_handler(input);
+                    println!("{}", output);
+                }
+                Ok(Signal(signal)) => {
+                    println!("Received signal: {:?}", signal);
+                },
+            }
+        }
+    }
+
+    fn input_handler(&mut self, input: &str) -> String {
+        let mut result = String::new();
+
+        let tokens = match tokenize(input) {
+            Err(e) => return format!("Tokenization error: {}", e.msg),
+            Ok(t) => t,
+        };
+
+        if self.show_tokens {
+            result.push_str(&format!("Tokens: {:?}\n", tokens));
+        }
+
+        let ast = match parse(&tokens, &[]) {
+            Ok(ast) => ast,
+            Err(err) => return format!("Parse error: {}", err.msg),
+        };
+
+        if self.show_parse {
+            result.push_str(&format!("AST: {:?}\n", ast));
+        }
+
+        let mut output: Vec<String> = self.evaluator.run(ast);
+
+        // for now only handle last output
+        let interpreter_result = output.pop().unwrap_or("".to_string());
+        result.push_str(&interpreter_result);
+        result
+    }
+
+    fn handle_interpreter_directive(&mut self, input: &str) -> bool {
+        match input.chars().nth(0) {
+            Some(ch) if ch == self.interpreter_directive_sigil => (),
+            _ => return false
+        }
+
+        let trimmed_sigil: String = input.chars()
+            .skip(1)
+            .collect();
+        let commands: Vec<&str> =  trimmed_sigil
+            .split_whitespace()
+            .collect();
+
+        let cmd: &str = match commands.get(0).clone() { None => return true, Some(s) => s };
+
+        match cmd {
+            "exit" | "quit"  => process::exit(0),
+            "history"  => {
+                println!("history:");
+                for cmd in self.input_history.iter() {
+                    println!("{}", cmd);
+                }
+            },
+            "output_history" => {
+                println!("output history:");
+                for cmd in self.output_history.iter() {
+                    println!("{}", cmd);
+                }
+            },
+            _ => {
+                self.update_state(&commands);
+            }
+        }
+        return true;
+    }
+
     fn update_state(&mut self, input: &Vec<&str>) {
         match input[..] {
             ["set", "show", "tokens", "true"] => {
@@ -129,31 +223,3 @@ impl<'a> ReplState for InterpreterState<'a> {
     }
 }
 
-fn repl_handler(input: &str, state: &mut InterpreterState) -> String {
-    let mut result = String::new();
-
-    let tokens = match tokenize(input) {
-        Err(e) => return format!("Tokenization error: {}", e.msg),
-        Ok(t) => t,
-    };
-
-    if state.show_tokens {
-        result.push_str(&format!("Tokens: {:?}\n", tokens));
-    }
-
-    let ast = match parse(&tokens, &[]) {
-        Ok(ast) => ast,
-        Err(err) => return format!("Parse error: {}", err.msg),
-    };
-
-    if state.show_parse {
-        result.push_str(&format!("AST: {:?}\n", ast));
-    }
-
-    let mut output: Vec<String> = state.evaluator.run(ast);
-
-    // for now only handle last output
-    let interpreter_result = output.pop().unwrap_or("".to_string());
-    result.push_str(&interpreter_result);
-    result
-}
