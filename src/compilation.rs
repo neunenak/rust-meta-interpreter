@@ -148,30 +148,7 @@ impl CodeGen for Expression {
             BinExp(ref op, ref left, ref right) => {
                 let lhs = left.codegen(data);
                 let rhs = right.codegen(data);
-                macro_rules! simple_binop {
-                    ($fnname: expr, $name: expr) => {
-                        $fnname(data.builder, lhs, rhs, $name)
-                    }
-                }
-                match *op {
-                    Add => simple_binop!(LLVMWrap::BuildAdd, "addtemp"),
-                    Sub => simple_binop!(LLVMWrap::BuildSub, "subtemp"),
-                    Mul => simple_binop!(LLVMWrap::BuildMul, "multemp"),
-                    Div => simple_binop!(LLVMWrap::BuildUDiv, "divtemp"),
-                    Mod => simple_binop!(LLVMWrap::BuildSRem, "remtemp"),
-                    Less => {
-                        let pred: LLVMValueRef = LLVMWrap::BuildICmp(data.builder,
-                                                       LLVMIntPredicate::LLVMIntULT,
-                                                       lhs,
-                                                       rhs,
-                                                       "tmp");
-                        LLVMWrap::BuildZExt(data.builder, pred, int_type, "temp")
-                        // god damn it this was probably failing because of the int_type
-                        // this assumes everything is a FP
-                        //LLVMWrap::BuildUIToFP(data.builder, pred, int_type, "temp")
-                    }
-                    _ => panic!("Bad operator {:?}", op),
-                }
+                op.codegen_with_ops(data, lhs, rhs)
             }
             Number(ref n) => {
                 let native_val = *n as u64;
@@ -224,3 +201,34 @@ impl CodeGen for Expression {
         }
     }
 }
+
+impl BinOp {
+    fn codegen_with_ops(&self, data: &CompilationData, lhs: LLVMValueRef, rhs: LLVMValueRef) -> LLVMValueRef {
+        use self::BinOp::*;
+        macro_rules! simple_binop {
+            ($fnname: expr, $name: expr) => {
+                $fnname(data.builder, lhs, rhs, $name)
+            }
+        }
+        let int_type = LLVMWrap::Int64TypeInContext(data.context);
+        match *self {
+            Add => simple_binop!(LLVMWrap::BuildAdd, "addtemp"),
+            Sub => simple_binop!(LLVMWrap::BuildSub, "subtemp"),
+            Mul => simple_binop!(LLVMWrap::BuildMul, "multemp"),
+            Div => simple_binop!(LLVMWrap::BuildUDiv, "divtemp"),
+            Mod => simple_binop!(LLVMWrap::BuildSRem, "remtemp"),
+            Less => {
+                let pred: LLVMValueRef =
+                    LLVMWrap::BuildICmp(data.builder, LLVMIntPredicate::LLVMIntULT, lhs, rhs, "tmp");
+                LLVMWrap::BuildZExt(data.builder, pred, int_type, "temp")
+            }
+            Greater => {
+                let pred: LLVMValueRef =
+                    LLVMWrap::BuildICmp(data.builder, LLVMIntPredicate::LLVMIntUGT, lhs, rhs, "tmp");
+                LLVMWrap::BuildZExt(data.builder, pred, int_type, "temp")
+            }
+            ref unknown => panic!("Bad operator {:?}", unknown),
+        }
+    }
+}
+
