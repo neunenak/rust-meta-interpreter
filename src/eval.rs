@@ -2,7 +2,7 @@ extern crate take_mut;
 
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use parser::{AST, Statement, Expression, Function, Callable};
+use parser::{AST, Statement, Expression, Function, Callable, BinOp};
 use std::rc::Rc;
 use std::io::{Write, Stdout, BufWriter};
 use std::convert::From;
@@ -125,10 +125,11 @@ impl Expression {
     }
 }
 
-fn is_assignment(op: &str) -> bool {
-    match op {
-        "=" | "+=" | "-=" |
-        "*=" | "/=" => true,
+fn is_assignment(op: &BinOp) -> bool {
+    use self::BinOp::*;
+    match *op {
+        Assign | AddAssign | SubAssign |
+        MulAssign | DivAssign => true,
         _ => false,
     }
 }
@@ -221,7 +222,7 @@ impl<'a> Evaluator<'a> {
                     return (BinExp(op, left, right), side_effect);
                 }
 
-                if *op == "=" {
+                if let BinOp::Assign = op {
                     return match *left {
                         Variable(var) => {
                             let reduced_value: ReducedValue = ReducedValue::from(*right);
@@ -232,17 +233,18 @@ impl<'a> Evaluator<'a> {
                     };
                 }
 
-                if is_assignment(&*op) {
-                    let new_op = Rc::new(String::from(match &op[..] {
-                        "+=" => "+", 
-                        "-=" => "-",
-                        "*=" => "*",
-                        "/=" => "/",
+                if is_assignment(&op) {
+                    use self::BinOp::*;
+                    let new_op = match op {
+                        AddAssign => Add,
+                        SubAssign => Sub,
+                        MulAssign => Mul,
+                        DivAssign => Div,
                         _ => unreachable!(),
-                    }));
+                    };
 
                     let reduction =
-                        BinExp(Rc::new(String::from("=")),
+                        BinExp(BinOp::Assign,
                                Box::new(*left.clone()),
                                Box::new(BinExp(new_op, left, right))
                               );
@@ -316,26 +318,27 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    fn reduce_binop(&mut self, op: Rc<String>, left: Expression, right: Expression) -> Expression {
+    fn reduce_binop(&mut self, op: BinOp, left: Expression, right: Expression) -> Expression {
+        use self::BinOp::*;
         let truthy = Number(1.0);
         let falsy = Null;
-        match (&op[..], left, right) {
-            ("+", Number(l), Number(r)) => Number(l + r),
-            ("+", StringLiteral(s1), StringLiteral(s2)) => StringLiteral(Rc::new(format!("{}{}", *s1, *s2))),
-            ("+", StringLiteral(s1), Number(r)) => StringLiteral(Rc::new(format!("{}{}", *s1, r))),
-            ("+", Number(l), StringLiteral(s1)) => StringLiteral(Rc::new(format!("{}{}", l, *s1))),
-            ("-", Number(l), Number(r)) => Number(l - r),
-            ("*", Number(l), Number(r)) => Number(l * r),
-            ("/", Number(l), Number(r)) if r != 0.0 => Number(l / r),
-            ("%", Number(l), Number(r)) => Number(l % r),
-            ("<", Number(l), Number(r)) => if l < r { truthy } else { falsy },
-            ("<=", Number(l), Number(r)) => if l <= r { truthy } else { falsy },
-            (">", Number(l), Number(r)) => if l > r { truthy } else { falsy },
-            (">=", Number(l), Number(r)) => if l >= r { truthy } else { falsy },
-            ("==", Number(l), Number(r)) => if l == r { truthy } else { falsy },
-            ("==", Null, Null) => truthy,
-            ("==", StringLiteral(s1), StringLiteral(s2)) => if s1 == s2 { truthy } else { falsy },
-            ("==", _, _) => falsy,
+        match (op, left, right) {
+            (Add, Number(l), Number(r)) => Number(l + r),
+            (Add, StringLiteral(s1), StringLiteral(s2)) => StringLiteral(Rc::new(format!("{}{}", *s1, *s2))),
+            (Add, StringLiteral(s1), Number(r)) => StringLiteral(Rc::new(format!("{}{}", *s1, r))),
+            (Add, Number(l), StringLiteral(s1)) => StringLiteral(Rc::new(format!("{}{}", l, *s1))),
+            (Sub, Number(l), Number(r)) => Number(l - r),
+            (Mul, Number(l), Number(r)) => Number(l * r),
+            (Div, Number(l), Number(r)) if r != 0.0 => Number(l / r),
+            (Mod, Number(l), Number(r)) => Number(l % r),
+            (Less, Number(l), Number(r)) => if l < r { truthy } else { falsy },
+            (LessEq, Number(l), Number(r)) => if l <= r { truthy } else { falsy },
+            (Greater, Number(l), Number(r)) => if l > r { truthy } else { falsy },
+            (GreaterEq, Number(l), Number(r)) => if l >= r { truthy } else { falsy },
+            (Equal, Number(l), Number(r)) => if l == r { truthy } else { falsy },
+            (Equal, Null, Null) => truthy,
+            (Equal, StringLiteral(s1), StringLiteral(s2)) => if s1 == s2 { truthy } else { falsy },
+            (Equal, _, _) => falsy,
             _ => falsy,
         }
     }

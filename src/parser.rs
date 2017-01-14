@@ -64,7 +64,7 @@ pub enum Expression {
     StringLiteral(Rc<String>),
     Number(f64),
     Variable(Rc<String>),
-    BinExp(Rc<String>, Box<Expression>, Box<Expression>),
+    BinExp(BinOp, Box<Expression>, Box<Expression>),
     Call(Callable, Vec<Expression>),
     Conditional(Box<Expression>, Box<Expression>, Option<Box<Expression>>),
     Lambda(Function),
@@ -94,7 +94,7 @@ impl fmt::Display for Expression {
 }
 
 #[derive(Debug, Clone)]
-pub enum Op {
+pub enum BinOp {
     Add,
     AddAssign,
     Sub,
@@ -113,10 +113,10 @@ pub enum Op {
     Custom(String),
 }
 
-impl<'a> From<&'a str> for Op {
-    fn from(s: &'a str) -> Op {
-        use self::Op::*;
-        match s {
+impl From<OpTok> for BinOp {
+    fn from(token: OpTok) -> BinOp {
+        use self::BinOp::*;
+        match &token.0[..] {
             "+" => Add,
             "+=" => AddAssign,
             "-" => Sub,
@@ -132,7 +132,7 @@ impl<'a> From<&'a str> for Op {
             ">=" => GreaterEq,
             "==" => Equal,
             "=" => Assign,
-            op =>  Custom(op.to_string()),
+            op => Custom(op.to_string()),
         }
     }
 }
@@ -380,7 +380,7 @@ impl Parser {
                 }
             }
 
-            lhs = Expression::BinExp(op.0, Box::new(lhs), Box::new(rhs));
+            lhs = Expression::BinExp(op.into(), Box::new(lhs), Box::new(rhs));
         }
         Ok(lhs)
     }
@@ -569,17 +569,17 @@ mod tests {
     fn expression_parse_test() {
         parsetest!("a", &[ExprNode(Variable(ref s))], **s == "a");
         parsetest!("a + b",
-            &[ExprNode(BinExp(ref plus, box Variable(ref a), box Variable(ref b)))],
-            **plus == "+" && **a == "a" && **b == "b");
+            &[ExprNode(BinExp(Op::Plus, box Variable(ref a), box Variable(ref b)))],
+            **a == "a" && **b == "b");
         parsetest!("a + b * c",
-            &[ExprNode(BinExp(ref plus, box Variable(ref a), box BinExp(ref mul, box Variable(ref b), box Variable(ref c))))],
-            **plus == "+" && **mul == "*" && **a == "a" && **b == "b" && **c == "c");
+            &[ExprNode(BinExp(Op::Plus, box Variable(ref a), box BinExp(Op::Mul, box Variable(ref b), box Variable(ref c))))],
+            **a == "a" && **b == "b" && **c == "c");
         parsetest!("a * b + c",
-            &[ExprNode(BinExp(ref plus, box BinExp(ref mul, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
-            **plus == "+" && **mul == "*" && **a == "a" && **b == "b" && **c == "c");
+            &[ExprNode(BinExp(Op::Plus, box BinExp(Op::Mul, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
+            **a == "a" && **b == "b" && **c == "c");
         parsetest!("(a + b) * c",
-            &[ExprNode(BinExp(ref mul, box BinExp(ref plus, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
-            **plus == "+" && **mul == "*" && **a == "a" && **b == "b" && **c == "c");
+            &[ExprNode(BinExp(Op::Mul, box BinExp(Op::Plus, box Variable(ref a), box Variable(ref b)), box Variable(ref c)))],
+            **a == "a" && **b == "b" && **c == "c");
     }
 
     #[test]

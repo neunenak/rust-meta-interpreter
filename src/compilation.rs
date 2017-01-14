@@ -3,7 +3,7 @@ extern crate llvm_sys;
 use std::collections::HashMap;
 
 use self::llvm_sys::prelude::*;
-use parser::{AST, Statement, Function, Expression};
+use parser::{AST, Statement, Function, Expression, BinOp};
 
 use llvm_wrap as LLVMWrap;
 
@@ -128,6 +128,7 @@ impl CodeGen for Function {
 
 impl CodeGen for Expression {
     fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
+        use self::BinOp::*;
         use self::Expression::*;
 
         let int_type = LLVMWrap::Int64TypeInContext(data.context);
@@ -135,7 +136,7 @@ impl CodeGen for Expression {
 
         match *self {
             Variable(ref name) => *data.variables.get(&**name).unwrap(),
-            BinExp(ref op, ref left, ref right) if **op == "=" => {
+            BinExp(Assign, ref left, ref right) => {
                 if let Variable(ref name) = **left {
                     let new_value = right.codegen(data);
                     data.variables.insert((**name).clone(), new_value);
@@ -147,13 +148,13 @@ impl CodeGen for Expression {
             BinExp(ref op, ref left, ref right) => {
                 let lhs = left.codegen(data);
                 let rhs = right.codegen(data);
-                let generator = match op.as_ref().as_ref() {
-                    "+" => LLVMWrap::BuildAdd,
-                    "-" => LLVMWrap::BuildSub,
-                    "*" => LLVMWrap::BuildMul,
-                    "/" => LLVMWrap::BuildUDiv,
-                    "%" => LLVMWrap::BuildSRem,
-                    _ => panic!("Bad operator {}", op),
+                let generator = match *op {
+                    Add => LLVMWrap::BuildAdd,
+                    Sub => LLVMWrap::BuildSub,
+                    Mul => LLVMWrap::BuildMul,
+                    Div => LLVMWrap::BuildUDiv,
+                    Mod => LLVMWrap::BuildSRem,
+                    _ => panic!("Bad operator {:?}", op),
                 };
 
                 generator(data.builder, lhs, rhs, "temp")
