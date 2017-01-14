@@ -48,7 +48,7 @@ struct CompilationData {
     module: LLVMModuleRef,
     builder: LLVMBuilderRef,
     variables: VariableMap,
-    func: Option<LLVMValueRef>,
+    main_function: LLVMValueRef,
 }
 
 fn compile_ast(ast: AST, filename: &str) {
@@ -59,21 +59,19 @@ fn compile_ast(ast: AST, filename: &str) {
     let module = LLVMWrap::module_create_with_name("example module");
     let builder = LLVMWrap::CreateBuilderInContext(context);
 
+    let program_return_type = LLVMWrap::Int64TypeInContext(context);
+    let main_function_type = LLVMWrap::FunctionType(program_return_type, &Vec::new(), false);
+    let main_function: LLVMValueRef = LLVMWrap::AddFunction(module, "main", main_function_type);
+
     let mut data = CompilationData {
         context: context,
         builder: builder,
         module: module,
         variables: names,
-        func: None,
+        main_function: main_function,
     };
 
-    let int_type = LLVMWrap::Int64TypeInContext(data.context);
-    let function_type = LLVMWrap::FunctionType(int_type, &Vec::new(), false);
-    let function = LLVMWrap::AddFunction(data.module, "main", function_type);
-
-    data.func = Some(function);
-
-    let bb = LLVMWrap::AppendBasicBlockInContext(data.context, function, "entry");
+    let bb = LLVMWrap::AppendBasicBlockInContext(data.context, data.main_function, "entry");
     LLVMWrap::PositionBuilderAtEnd(builder, bb);
 
     let value = ast.codegen(&mut data);
@@ -189,7 +187,7 @@ impl CodeGen for Expression {
                                         zero,
                                         "is_nonzero");
 
-                let func: LLVMValueRef = data.func.expect("lol no function here");
+                let func: LLVMValueRef = data.main_function;
                 let then_block =
                     LLVMWrap::AppendBasicBlockInContext(data.context, func, "entry");
                 let else_block =
