@@ -133,30 +133,28 @@ impl<'a> Repl<'a> {
 
     fn input_handler(&mut self, input: &str) -> String {
         let mut result = String::new();
-
-        let tokens = match tokenize(input) {
-            Err(e) => return format!("Tokenization error: {}", e.msg),
-            Ok(t) => t,
+        let intermediate: Result<String, String> =
+            tokenize(input)
+            .map_err(|e| format!("Tokenization error: {}", e.msg))
+            .and_then(
+                |tokens| {
+                    if self.show_tokens {
+                        result.push_str(&format!("Tokens: {:?}\n", tokens));
+                    }
+                    parse(&tokens, &[]).map_err(|e| format!("Parse error: {}", e.msg))
+                })
+        .and_then(
+            |ast| {
+                if self.show_parse {
+                    result.push_str(&format!("AST: {:?}\n", ast));
+                }
+                // for now only handle last output
+                let mut full_output: Vec<String> = self.evaluator.run(ast);
+                Ok(full_output.pop().unwrap_or("".to_string()))
+            });
+        match intermediate {
+            Ok(s) | Err(s) => result.push_str(&s),
         };
-
-        if self.show_tokens {
-            result.push_str(&format!("Tokens: {:?}\n", tokens));
-        }
-
-        let ast = match parse(&tokens, &[]) {
-            Ok(ast) => ast,
-            Err(err) => return format!("Parse error: {}", err.msg),
-        };
-
-        if self.show_parse {
-            result.push_str(&format!("AST: {:?}\n", ast));
-        }
-
-        let mut output: Vec<String> = self.evaluator.run(ast);
-
-        // for now only handle last output
-        let interpreter_result = output.pop().unwrap_or("".to_string());
-        result.push_str(&interpreter_result);
         result
     }
 
@@ -205,7 +203,7 @@ impl<'a> Repl<'a> {
                     }
                 }
             },
-            _ => (),
+            e => println!("Unknown command: {}", e)
         }
         return true;
     }
