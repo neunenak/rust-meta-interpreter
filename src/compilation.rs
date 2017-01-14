@@ -3,6 +3,8 @@ extern crate llvm_sys;
 use std::collections::HashMap;
 
 use self::llvm_sys::prelude::*;
+use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
+
 use parser::{AST, Statement, Function, Expression, BinOp};
 
 use llvm_wrap as LLVMWrap;
@@ -149,16 +151,24 @@ impl CodeGen for Expression {
                 let lhs = left.codegen(data);
                 let rhs = right.codegen(data);
                 macro_rules! simple_binop {
-                    ($fnname: expr) => {
-                        $fnname(data.builder, lhs, rhs, "temp")
+                    ($fnname: expr, $name: expr) => {
+                        $fnname(data.builder, lhs, rhs, $name)
                     }
                 }
                 match *op {
-                    Add => simple_binop!(LLVMWrap::BuildAdd),
-                    Sub => simple_binop!(LLVMWrap::BuildSub),
-                    Mul => simple_binop!(LLVMWrap::BuildMul),
-                    Div => simple_binop!(LLVMWrap::BuildUDiv),
-                    Mod => simple_binop!(LLVMWrap::BuildSRem),
+                    Add => simple_binop!(LLVMWrap::BuildAdd, "addtemp"),
+                    Sub => simple_binop!(LLVMWrap::BuildSub, "subtemp"),
+                    Mul => simple_binop!(LLVMWrap::BuildMul, "multemp"),
+                    Div => simple_binop!(LLVMWrap::BuildUDiv, "divtemp"),
+                    Mod => simple_binop!(LLVMWrap::BuildSRem, "remtemp"),
+                    Less => {
+                        let pred = LLVMWrap::BuildICmp(data.builder,
+                                                       LLVMIntPredicate::LLVMIntULT,
+                                                       lhs,
+                                                       rhs,
+                                                       "tmp");
+                        LLVMWrap::BuildUIToFP(data.builder, pred, int_type, "temp")
+                    }
                     _ => panic!("Bad operator {:?}", op),
                 }
             }
@@ -171,7 +181,7 @@ impl CodeGen for Expression {
                 let condition_value = test.codegen(data);
                 let is_nonzero =
                     LLVMWrap::BuildICmp(data.builder,
-                                        llvm_sys::LLVMIntPredicate::LLVMIntNE,
+                                        LLVMIntPredicate::LLVMIntNE,
                                         condition_value,
                                         zero,
                                         "is_nonzero");

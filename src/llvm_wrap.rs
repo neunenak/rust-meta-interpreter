@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 extern crate llvm_sys;
 
-use self::llvm_sys::LLVMIntPredicate;
+use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::core;
 use std::ptr;
@@ -160,6 +160,26 @@ pub fn AddIncoming(phi: LLVMValueRef, incoming_values: *mut LLVMValueRef, incomi
                    count: u32) {
 
     unsafe { core::LLVMAddIncoming(phi, incoming_values, incoming_blocks, count) }
+}
+
+pub fn BuildFCmp(builder: LLVMBuilderRef,
+                 op: LLVMRealPredicate,
+                 lhs: LLVMValueRef,
+                 rhs: LLVMValueRef,
+                 name: &str) -> LLVMValueRef {
+    let name = CString::new(name).unwrap();
+    unsafe { core::LLVMBuildFCmp(builder, op, lhs, rhs, name.as_ptr()) }
+}
+
+pub fn BuildUIToFP(builder: LLVMBuilderRef,
+                       val: LLVMValueRef,
+                       dest_type: LLVMTypeRef,
+                       name: &str) -> LLVMValueRef {
+
+    let name = CString::new(name).unwrap();
+    unsafe { let p = name.as_ptr();
+        println!("Pointer {:?}", p);
+        core::LLVMBuildUIToFP(builder, val, dest_type, p) }
 }
 
 pub fn BuildICmp(builder: LLVMBuilderRef,
