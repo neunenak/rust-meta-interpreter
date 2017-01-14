@@ -59,8 +59,8 @@ fn compile_ast(ast: AST, filename: &str) {
 
     let mut data = CompilationData {
         context: context,
-        module: module,
         builder: builder,
+        module: module,
         variables: names,
         func: None,
     };
@@ -148,16 +148,19 @@ impl CodeGen for Expression {
             BinExp(ref op, ref left, ref right) => {
                 let lhs = left.codegen(data);
                 let rhs = right.codegen(data);
-                let generator = match *op {
-                    Add => LLVMWrap::BuildAdd,
-                    Sub => LLVMWrap::BuildSub,
-                    Mul => LLVMWrap::BuildMul,
-                    Div => LLVMWrap::BuildUDiv,
-                    Mod => LLVMWrap::BuildSRem,
+                macro_rules! simple_binop {
+                    ($fnname: expr) => {
+                        $fnname(data.builder, lhs, rhs, "temp")
+                    }
+                }
+                match *op {
+                    Add => simple_binop!(LLVMWrap::BuildAdd),
+                    Sub => simple_binop!(LLVMWrap::BuildSub),
+                    Mul => simple_binop!(LLVMWrap::BuildMul),
+                    Div => simple_binop!(LLVMWrap::BuildUDiv),
+                    Mod => simple_binop!(LLVMWrap::BuildSRem),
                     _ => panic!("Bad operator {:?}", op),
-                };
-
-                generator(data.builder, lhs, rhs, "temp")
+                }
             }
             Number(ref n) => {
                 let native_val = *n as u64;
