@@ -89,7 +89,6 @@ type LineReader = linefeed::Reader<linefeed::terminal::DefaultTerminal>;
 struct Repl<'a> {
     show_tokens: bool,
     show_parse: bool,
-    show_eval: bool,
     evaluator: Evaluator<'a>,
     interpreter_directive_sigil: char,
     reader: LineReader,
@@ -102,7 +101,6 @@ impl<'a> Repl<'a> {
         Repl {
             show_tokens: false,
             show_parse: false,
-            show_eval: false,
             evaluator: Evaluator::new_with_opts(None, trace_evaluation),
             interpreter_directive_sigil: '.',
             reader: reader,
@@ -168,50 +166,47 @@ impl<'a> Repl<'a> {
             _ => return false
         }
 
-        let trimmed_sigil: String = input.chars()
-            .skip(1)
-            .collect();
-        let commands: Vec<&str> =  trimmed_sigil
+        let mut iter = input.chars();
+        iter.next();
+        let trimmed_sigil: &str = iter.as_str();
+
+        let commands: Vec<&str> = trimmed_sigil
             .split_whitespace()
             .collect();
 
-        let cmd: &str = match commands.get(0).clone() { None => return true, Some(s) => s };
+        let cmd: &str = match commands.get(0).clone() {
+            None => return true,
+            Some(s) => s
+        };
 
         match cmd {
             "exit" | "quit"  => process::exit(0),
             "history"  => {
+                for item in self.reader.history() {
+                    println!("{}", item);
+                }
             },
-            "output_history" => {
+            "set" => {
+                let show = match commands[1] {
+                    "show" => true,
+                    "hide" => false,
+                    e => {
+                        println!("Bad `set` argument: {}", e);
+                        return true;
+                    }
+                };
+                match commands[2] {
+                    "tokens" => self.show_tokens = show,
+                    "parse" => self.show_parse = show,
+                    "eval" => self.evaluator.trace_evaluation = show,
+                    e => {
+                        println!("Bad `show`/`hide` argument: {}", e);
+                        return true;
+                    }
+                }
             },
-            _ => {
-                self.update_state(&commands);
-            }
+            _ => (),
         }
         return true;
     }
-
-    fn update_state(&mut self, input: &Vec<&str>) {
-        match input[..] {
-            ["set", "show", "tokens", "true"] => {
-                self.show_tokens = true;
-            }
-            ["set", "show", "tokens", "false"] => {
-                self.show_tokens = false;
-            }
-            ["set", "show", "parse", "true"] => {
-                self.show_parse = true;
-            }
-            ["set", "show", "parse", "false"] => {
-                self.show_parse = false;
-            }
-            ["set", "show", "eval", "true"] => {
-                self.evaluator.trace_evaluation = true;
-            }
-            ["set", "show", "eval", "false"] => {
-                self.evaluator.trace_evaluation = false;
-            }
-            _ => (),
-        }
-    }
 }
-
