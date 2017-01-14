@@ -162,12 +162,15 @@ impl CodeGen for Expression {
                     Div => simple_binop!(LLVMWrap::BuildUDiv, "divtemp"),
                     Mod => simple_binop!(LLVMWrap::BuildSRem, "remtemp"),
                     Less => {
-                        let pred = LLVMWrap::BuildICmp(data.builder,
+                        let pred: LLVMValueRef = LLVMWrap::BuildICmp(data.builder,
                                                        LLVMIntPredicate::LLVMIntULT,
                                                        lhs,
                                                        rhs,
                                                        "tmp");
-                        LLVMWrap::BuildUIToFP(data.builder, pred, int_type, "temp")
+                        LLVMWrap::BuildZExt(data.builder, pred, int_type, "temp")
+                        // god damn it this was probably failing because of the int_type
+                        // this assumes everything is a FP
+                        //LLVMWrap::BuildUIToFP(data.builder, pred, int_type, "temp")
                     }
                     _ => panic!("Bad operator {:?}", op),
                 }

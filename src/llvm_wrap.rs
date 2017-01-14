@@ -171,15 +171,21 @@ pub fn BuildFCmp(builder: LLVMBuilderRef,
     unsafe { core::LLVMBuildFCmp(builder, op, lhs, rhs, name.as_ptr()) }
 }
 
+pub fn BuildZExt(builder: LLVMBuilderRef,
+                       val: LLVMValueRef,
+                       dest_type: LLVMTypeRef,
+                       name: &str) -> LLVMValueRef {
+    let name = CString::new(name).unwrap();
+    unsafe { core::LLVMBuildZExt(builder, val, dest_type, name.as_ptr()) }
+}
+
 pub fn BuildUIToFP(builder: LLVMBuilderRef,
                        val: LLVMValueRef,
                        dest_type: LLVMTypeRef,
                        name: &str) -> LLVMValueRef {
 
     let name = CString::new(name).unwrap();
-    unsafe { let p = name.as_ptr();
-        println!("Pointer {:?}", p);
-        core::LLVMBuildUIToFP(builder, val, dest_type, p) }
+    unsafe { core::LLVMBuildUIToFP(builder, val, dest_type, name.as_ptr()) }
 }
 
 pub fn BuildICmp(builder: LLVMBuilderRef,
