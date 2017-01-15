@@ -34,17 +34,30 @@ pub fn AddFunction(module: LLVMModuleRef, name: &str, function_type: LLVMTypeRef
     unsafe { core::LLVMAddFunction(module, c_name.as_ptr(), function_type) }
 }
 
-// NOTE this is incomplete
 pub fn FunctionType(return_type: LLVMTypeRef,
-                    param_types: &[LLVMTypeRef],
+                    mut param_types: Vec<LLVMTypeRef>,
                     is_var_rag: bool)
                     -> LLVMTypeRef {
     let len = param_types.len();
     unsafe {
+        let pointer = param_types.as_mut_ptr();
         core::LLVMFunctionType(return_type,
-                               ptr::null_mut(),
+                               pointer,
                                len as u32,
                                if is_var_rag { 1 } else { 0 })
+    }
+}
+
+pub fn GetNamedFunction(module: LLVMModuleRef,
+                        name: &str) -> Option<LLVMValueRef> {
+
+    let c_name = CString::new(name).unwrap();
+    let ret = unsafe { core::LLVMGetNamedFunction(module, c_name.as_ptr()) };
+
+    if ret.is_null() {
+        None
+    } else {
+        Some(ret)
     }
 }
 

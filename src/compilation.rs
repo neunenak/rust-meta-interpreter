@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
 
-use parser::{AST, Statement, Function, Expression, BinOp};
+use parser::{AST, Statement, Function, Prototype, Expression, BinOp};
 
 use llvm_wrap as LLVMWrap;
 
@@ -60,7 +60,7 @@ fn compile_ast(ast: AST, filename: &str) {
     let builder = LLVMWrap::CreateBuilderInContext(context);
 
     let program_return_type = LLVMWrap::Int64TypeInContext(context);
-    let main_function_type = LLVMWrap::FunctionType(program_return_type, &Vec::new(), false);
+    let main_function_type = LLVMWrap::FunctionType(program_return_type, Vec::new(), false);
     let main_function: LLVMValueRef = LLVMWrap::AddFunction(module, "main", main_function_type);
 
     let mut data = CompilationData {
@@ -116,13 +116,42 @@ impl CodeGen for Statement {
 
 impl CodeGen for Function {
     fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
+
+        let function = self.prototype.codegen(data);
         let ref body = self.body;
-        let int_type = LLVMWrap::Int64TypeInContext(data.context);
-        let mut ret = LLVMWrap::ConstInt(int_type, 0, false);
+
+        let return_type = LLVMWrap::Int64TypeInContext(data.context);
+        let mut ret = LLVMWrap::ConstInt(return_type, 0, false);
+
+        println!("Getting here");
+
         for expr in body {
             ret = expr.codegen(data);
         }
         ret
+    }
+}
+
+impl CodeGen for Prototype {
+    fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
+        let num_args = self.parameters.len();
+        let return_type = LLVMWrap::Int64TypeInContext(data.context);
+        let mut arguments: Vec<LLVMTypeRef> = vec![];
+
+        for _ in 0..num_args {
+            arguments.push(LLVMWrap::Int64TypeInContext(data.context));
+        }
+        
+        let function_type =
+            LLVMWrap::FunctionType(return_type,
+                                   arguments,
+                                   false);
+
+        let function = LLVMWrap::AddFunction(data.module,
+                                             &*self.name,
+                                             function_type);
+
+        function
     }
 }
 
