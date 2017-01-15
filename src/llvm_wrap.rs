@@ -6,7 +6,8 @@ use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::core;
 use std::ptr;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
+use std::os::raw::c_char;
 
 pub fn create_context() -> LLVMContextRef {
     unsafe { core::LLVMContextCreate() }
@@ -173,6 +174,34 @@ pub fn AddIncoming(phi: LLVMValueRef, incoming_values: *mut LLVMValueRef, incomi
                    count: u32) {
 
     unsafe { core::LLVMAddIncoming(phi, incoming_values, incoming_blocks, count) }
+}
+
+pub fn SetValueName(value: LLVMValueRef, name: &str) {
+    let name = CString::new(name).unwrap();
+    unsafe {
+        core::LLVMSetValueName(value, name.as_ptr())
+    }
+}
+
+pub fn GetValueName(value: LLVMValueRef) -> String {
+    unsafe { 
+        let name_ptr: *const c_char = core::LLVMGetValueName(value);
+        CStr::from_ptr(name_ptr).to_string_lossy().into_owned()
+    }
+}
+
+pub fn GetParams(function: LLVMValueRef) -> Vec<LLVMValueRef> {
+    let size = CountParams(function);
+    unsafe {
+        let mut container = Vec::with_capacity(size);
+        let p = container.as_mut_ptr();
+        core::LLVMGetParams(function, p);
+        Vec::from_raw_parts(p, size, size)
+    }
+}
+
+pub fn CountParams(function: LLVMValueRef) -> usize {
+    unsafe { core::LLVMCountParams(function) as usize }
 }
 
 pub fn BuildFCmp(builder: LLVMBuilderRef,

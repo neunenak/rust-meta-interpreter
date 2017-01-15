@@ -117,13 +117,21 @@ impl CodeGen for Statement {
 impl CodeGen for Function {
     fn codegen(&self, data: &mut CompilationData) -> LLVMValueRef {
 
+        /* should have a check here for function already being defined */
         let function = self.prototype.codegen(data);
         let ref body = self.body;
 
         let return_type = LLVMWrap::Int64TypeInContext(data.context);
         let mut ret = LLVMWrap::ConstInt(return_type, 0, false);
 
-        println!("Getting here");
+        let block = LLVMWrap::AppendBasicBlockInContext(data.context, function, "entry");
+        LLVMWrap::PositionBuilderAtEnd(data.builder, block);
+
+        //insert function params into variables
+        for value in LLVMWrap::GetParams(function) {
+            let name = LLVMWrap::GetValueName(value);
+            data.variables.insert(name, value);
+        }
 
         for expr in body {
             ret = expr.codegen(data);
@@ -151,6 +159,11 @@ impl CodeGen for Prototype {
                                              &*self.name,
                                              function_type);
 
+        for (index, param) in LLVMWrap::GetParams(function).iter().enumerate() {
+            let name = self.parameters.get(index).expect(&format!("Failed this check at index {}", index));
+            LLVMWrap::SetValueName(*param, name);
+        }
+
         function
     }
 }
@@ -164,7 +177,7 @@ impl CodeGen for Expression {
         let zero = LLVMWrap::ConstInt(int_type, 0, false);
 
         match *self {
-            Variable(ref name) => *data.variables.get(&**name).unwrap(),
+            Variable(ref name) => *data.variables.get(&**name).expect(&format!("Can't find variable {}", name)),
             BinExp(Assign, ref left, ref right) => {
                 if let Variable(ref name) = **left {
                     let new_value = right.codegen(data);
