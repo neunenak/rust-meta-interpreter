@@ -1,5 +1,5 @@
 [package]
-name = "null_only_language"
+name = "schala"
 version = "0.1.0"
 authors = ["greg <greg.shuflin@protonmail.com>"]
 
