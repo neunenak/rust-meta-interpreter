@@ -178,6 +178,7 @@ pub fn AddIncoming(phi: LLVMValueRef, incoming_values: *mut LLVMValueRef, incomi
 
 pub fn SetValueName(value: LLVMValueRef, name: &str) {
     let name = CString::new(name).unwrap();
+    println!("Value: {:?}", value);
     unsafe {
         core::LLVMSetValueName(value, name.as_ptr())
     }
@@ -237,6 +238,20 @@ pub fn BuildICmp(builder: LLVMBuilderRef,
                  name: &str) -> LLVMValueRef {
     let name = CString::new(name).unwrap();
     unsafe { core::LLVMBuildICmp(builder, op, lhs, rhs, name.as_ptr()) }
+}
+
+pub fn GetBasicBlocks(function: LLVMValueRef) -> Vec<LLVMBasicBlockRef> {
+    let size = CountBasicBlocks(function);
+    unsafe { 
+        let mut container = Vec::with_capacity(size);
+        let p = container.as_mut_ptr();
+        core::LLVMGetBasicBlocks(function, p);
+        Vec::from_raw_parts(p, size, size)
+    }
+}
+
+pub fn CountBasicBlocks(function: LLVMValueRef) -> usize {
+    unsafe { core::LLVMCountBasicBlocks(function) as usize }
 }
 
 pub fn PrintModuleToFile(module: LLVMModuleRef, filename: &str) -> LLVMBool {

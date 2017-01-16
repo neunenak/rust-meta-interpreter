@@ -3,5 +3,9 @@ fn hella(a, b) {
     a + b
 }
 
+fn paha(x, y, z) {
+    x * y * z
+}
+
 
 2 + 8

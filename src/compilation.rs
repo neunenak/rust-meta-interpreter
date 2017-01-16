@@ -136,6 +136,10 @@ impl CodeGen for Function {
         for expr in body {
             ret = expr.codegen(data);
         }
+
+        // get basic block of main
+        let main_bb = LLVMWrap::GetBasicBlocks(data.main_function).get(0).expect("Couldn't get first block of main").clone();
+        LLVMWrap::PositionBuilderAtEnd(data.builder, main_bb);
         ret
     }
 }
@@ -159,9 +163,14 @@ impl CodeGen for Prototype {
                                              &*self.name,
                                              function_type);
 
-        for (index, param) in LLVMWrap::GetParams(function).iter().enumerate() {
+        let function_params = LLVMWrap::GetParams(function);
+        println!("Params: {:?}", function_params);
+        for (index, param) in function_params.iter().enumerate() {
             let name = self.parameters.get(index).expect(&format!("Failed this check at index {}", index));
-            LLVMWrap::SetValueName(*param, name);
+            println!("Gonna set value name for : {}, value is {:?}", name, param);
+            let new = *param;
+
+            LLVMWrap::SetValueName(new, name);
         }
 
         function
@@ -198,6 +207,7 @@ impl CodeGen for Expression {
                 int_value
             }
             Conditional(ref test, ref then_expr, ref else_expr) => {
+                /*
                 let condition_value = test.codegen(data);
                 let is_nonzero =
                     LLVMWrap::BuildICmp(data.builder,
@@ -228,6 +238,8 @@ impl CodeGen for Expression {
                 LLVMWrap::BuildBr(data.builder, merge_block);
                 LLVMWrap::PositionBuilderAtEnd(data.builder, merge_block);
                 zero
+                */
+                unreachable!()
             }
             Block(ref exprs) => {
                 let mut ret = zero;
