@@ -180,6 +180,10 @@ mod tests {
                    [NumLiteral(2.3), Operator(OpTok(ref a)), NumLiteral(49.2)],
                    **a == "*");
 
+        token_test!("a+3",
+                    [Identifier(ref a), NumLiteral(3.0)],
+                    **a == "a+");
+
         assert!(tokenize("2.4.5").is_err());
 
         token_test!("fn my_func(a) { a ? 3[1] }",
