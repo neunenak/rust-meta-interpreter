@@ -195,9 +195,9 @@ pub fn GetParams(function: LLVMValueRef) -> Vec<LLVMValueRef> {
     let size = CountParams(function);
     unsafe {
         let mut container = Vec::with_capacity(size);
-        let p = container.as_mut_ptr();
-        core::LLVMGetParams(function, p);
-        Vec::from_raw_parts(p, size, size)
+        container.set_len(size);
+        core::LLVMGetParams(function, container.as_mut_ptr());
+        container
     }
 }
 
@@ -244,9 +244,9 @@ pub fn GetBasicBlocks(function: LLVMValueRef) -> Vec<LLVMBasicBlockRef> {
     let size = CountBasicBlocks(function);
     unsafe { 
         let mut container = Vec::with_capacity(size);
-        let p = container.as_mut_ptr();
-        core::LLVMGetBasicBlocks(function, p);
-        Vec::from_raw_parts(p, size, size)
+        container.set_len(size);
+        core::LLVMGetBasicBlocks(function, container.as_mut_ptr());
+        container
     }
 }
 
