@@ -20,7 +20,7 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         _ => panic!("Bad filename {}", sourcefile),
     };
 
-    compile_ast(ast, ll_filename);
+    compile_ast(ast, ll_filename, false);
     let llc_output = Command::new("llc")
         .arg("-filetype=obj")
         .arg(ll_filename)
@@ -57,7 +57,7 @@ struct CompilationData {
     main_function: LLVMValueRef,
 }
 
-fn compile_ast(ast: AST, filename: &str) {
+pub fn compile_ast(ast: AST, filename: &str, return_string: bool) -> Option<String> {
     println!("Compiling!");
     let names: VariableMap = HashMap::new();
 
@@ -84,13 +84,21 @@ fn compile_ast(ast: AST, filename: &str) {
 
     LLVMWrap::BuildRet(builder, value);
 
-    println!("Printing {} to file", filename);
-    LLVMWrap::PrintModuleToFile(module, filename);
+    println!("Compilation process finished for {}", filename);
+    let ret = if return_string {
+        let s =  LLVMWrap::PrintModuleToString(module);
+        Some(s)
+    } else {
+        LLVMWrap::PrintModuleToFile(module, filename);
+        None
+    };
 
     // Clean up. Values created in the context mostly get cleaned up there.
     LLVMWrap::DisposeBuilder(builder);
     LLVMWrap::DisposeModule(module);
     LLVMWrap::ContextDispose(context);
+
+    ret
 }
 
 trait CodeGen {
@@ -172,10 +180,8 @@ impl CodeGen for Prototype {
                                              function_type);
 
         let function_params = LLVMWrap::GetParams(function);
-        println!("Params: {:?}", function_params);
         for (index, param) in function_params.iter().enumerate() {
             let name = self.parameters.get(index).expect(&format!("Failed this check at index {}", index));
-            println!("Gonna set value name for : {}, value is {:?}", name, param);
             let new = *param;
 
             LLVMWrap::SetValueName(new, name);

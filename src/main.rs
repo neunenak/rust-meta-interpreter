@@ -16,7 +16,7 @@ mod parser;
 use eval::Evaluator;
 mod eval;
 
-use compilation::compilation_sequence;
+use compilation::{compilation_sequence, compile_ast};
 mod compilation;
 mod llvm_wrap;
 
@@ -89,6 +89,7 @@ type LineReader = linefeed::Reader<linefeed::terminal::DefaultTerminal>;
 struct Repl<'a> {
     show_tokens: bool,
     show_parse: bool,
+    show_llvm_ir: bool,
     evaluator: Evaluator<'a>,
     interpreter_directive_sigil: char,
     reader: LineReader,
@@ -101,6 +102,7 @@ impl<'a> Repl<'a> {
         Repl {
             show_tokens: false,
             show_parse: false,
+            show_llvm_ir: false,
             evaluator: Evaluator::new_with_opts(None, trace_evaluation),
             interpreter_directive_sigil: '.',
             reader: reader,
@@ -132,30 +134,41 @@ impl<'a> Repl<'a> {
     }
 
     fn input_handler(&mut self, input: &str) -> String {
-        let mut result = String::new();
-        let intermediate: Result<String, String> =
-            tokenize(input)
-            .map_err(|e| format!("Tokenization error: {}", e.msg))
-            .and_then(
-                |tokens| {
-                    if self.show_tokens {
-                        result.push_str(&format!("Tokens: {:?}\n", tokens));
-                    }
-                    parse(&tokens, &[]).map_err(|e| format!("Parse error: {}", e.msg))
-                })
-        .and_then(
-            |ast| {
-                if self.show_parse {
-                    result.push_str(&format!("AST: {:?}\n", ast));
-                }
-                // for now only handle last output
-                let mut full_output: Vec<String> = self.evaluator.run(ast);
-                Ok(full_output.pop().unwrap_or("".to_string()))
-            });
-        match intermediate {
-            Ok(s) | Err(s) => result.push_str(&s),
+        let mut output = String::new();
+
+        let tokens = match tokenize(input) {
+            Ok(tokens) => tokens,
+            Err(err) => {
+                output.push_str(&format!("Tokenization error: {}\n", err.msg));
+                return output;
+            }
         };
-        result
+
+        if self.show_tokens {
+            output.push_str(&format!("Tokens: {:?}\n", tokens));
+        }
+
+        let ast = match parse(&tokens, &[]) {
+            Ok(ast) => ast,
+            Err(err) => {
+                output.push_str(&format!("Parse error: {:?}\n", err.msg));
+                return output;
+            }
+        };
+
+        if self.show_parse {
+            output.push_str(&format!("AST: {:?}\n", ast));
+        }
+
+        if self.show_llvm_ir {
+            let s = compile_ast(ast, "«repl llvm»", true).unwrap();
+            output.push_str(&s);
+        } else {
+            // for now only handle last output
+            let mut full_output: Vec<String> = self.evaluator.run(ast);
+            output.push_str(&full_output.pop().unwrap_or("".to_string()));
+        }
+        output
     }
 
     fn handle_interpreter_directive(&mut self, input: &str) -> bool {
@@ -197,6 +210,7 @@ impl<'a> Repl<'a> {
                     "tokens" => self.show_tokens = show,
                     "parse" => self.show_parse = show,
                     "eval" => self.evaluator.trace_evaluation = show,
+                    "llvm" => self.show_llvm_ir = show,
                     e => {
                         println!("Bad `show`/`hide` argument: {}", e);
                         return true;
