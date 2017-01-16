@@ -30,9 +30,10 @@ fn main() {
             }
         };
     let trace = option_matches.opt_present("t");
+    let show_llvm = option_matches.opt_present("l");
     match option_matches.free[..] {
         [] | [_] => {
-            let mut repl = Repl::new(trace);
+            let mut repl = Repl::new(trace, show_llvm);
             repl.run();
         }
         [_, ref filename, _..] => {
@@ -49,6 +50,9 @@ fn program_options() -> getopts::Options {
     options.optflag("t",
                     "trace-evaluation",
                     "Print out trace of evaluation");
+    options.optflag("l",
+                    "llvm-in-repl",
+                    "Show LLVM IR in REPL");
     options
 }
 
@@ -96,13 +100,13 @@ struct Repl<'a> {
 }
 
 impl<'a> Repl<'a> {
-    fn new(trace_evaluation: bool) -> Repl<'a> {
+    fn new(trace_evaluation: bool, show_llvm: bool) -> Repl<'a> {
         let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Schala").unwrap();
         reader.set_prompt(">> ");
         Repl {
             show_tokens: false,
             show_parse: false,
-            show_llvm_ir: false,
+            show_llvm_ir: show_llvm,
             evaluator: Evaluator::new_with_opts(None, trace_evaluation),
             interpreter_directive_sigil: '.',
             reader: reader,
