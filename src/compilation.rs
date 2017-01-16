@@ -143,6 +143,8 @@ impl CodeGen for Function {
             ret = expr.codegen(data);
         }
 
+        LLVMWrap::BuildRet(data.builder, ret);
+
         // get basic block of main
         let main_bb = LLVMWrap::GetBasicBlocks(data.main_function).get(0).expect("Couldn't get first block of main").clone();
         LLVMWrap::PositionBuilderAtEnd(data.builder, main_bb);

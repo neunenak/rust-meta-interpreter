@@ -7,5 +7,7 @@ fn paha(x, y, z) {
     x * y * z
 }
 
+q = 4
 
-2 + 8
+q + 1
+
