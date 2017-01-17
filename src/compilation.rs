@@ -55,6 +55,7 @@ struct CompilationData {
     builder: LLVMBuilderRef,
     variables: VariableMap,
     main_function: LLVMValueRef,
+    current_function: Option<LLVMValueRef>,
 }
 
 pub fn compile_ast(ast: AST, filename: &str, return_string: bool) -> Option<String> {
@@ -75,6 +76,7 @@ pub fn compile_ast(ast: AST, filename: &str, return_string: bool) -> Option<Stri
         module: module,
         variables: names,
         main_function: main_function,
+        current_function: None,
     };
 
     let bb = LLVMWrap::AppendBasicBlockInContext(data.context, data.main_function, "entry");
@@ -135,6 +137,8 @@ impl CodeGen for Function {
         let function = self.prototype.codegen(data);
         let ref body = self.body;
 
+        data.current_function = Some(function);
+
         let return_type = LLVMWrap::Int64TypeInContext(data.context);
         let mut ret = LLVMWrap::ConstInt(return_type, 0, false);
 
@@ -156,6 +160,9 @@ impl CodeGen for Function {
         // get basic block of main
         let main_bb = LLVMWrap::GetBasicBlocks(data.main_function).get(0).expect("Couldn't get first block of main").clone();
         LLVMWrap::PositionBuilderAtEnd(data.builder, main_bb);
+
+        data.current_function = None;
+
         ret
     }
 }
@@ -169,7 +176,7 @@ impl CodeGen for Prototype {
         for _ in 0..num_args {
             arguments.push(LLVMWrap::Int64TypeInContext(data.context));
         }
-        
+
         let function_type =
             LLVMWrap::FunctionType(return_type,
                                    arguments,
@@ -221,39 +228,53 @@ impl CodeGen for Expression {
                 int_value
             }
             Conditional(ref test, ref then_expr, ref else_expr) => {
-                /*
                 let condition_value = test.codegen(data);
                 let is_nonzero =
                     LLVMWrap::BuildICmp(data.builder,
                                         LLVMIntPredicate::LLVMIntNE,
                                         condition_value,
                                         zero,
-                                        "is_nonzero");
+                                        "ifcond");
 
-                let func: LLVMValueRef = data.main_function;
-                let then_block =
-                    LLVMWrap::AppendBasicBlockInContext(data.context, func, "entry");
-                let else_block =
-                    LLVMWrap::AppendBasicBlockInContext(data.context, func, "entry");
+                let func = LLVMWrap::GetBasicBlockParent(LLVMWrap::GetInsertBlock(data.builder));
+
+                let mut then_block =
+                    LLVMWrap::AppendBasicBlockInContext(data.context, func, "then_block");
+                let mut else_block =
+                    LLVMWrap::AppendBasicBlockInContext(data.context, func, "else_block");
                 let merge_block =
-                    LLVMWrap::AppendBasicBlockInContext(data.context, func, "entry");
+                    LLVMWrap::AppendBasicBlockInContext(data.context, func, "ifcont");
 
+                // add conditional branch to ifcond block
                 LLVMWrap::BuildCondBr(data.builder, is_nonzero, then_block, else_block);
+
+                // start inserting into then block
                 LLVMWrap::PositionBuilderAtEnd(data.builder, then_block);
 
+                // then-block codegen
                 let then_return = then_expr.codegen(data);
                 LLVMWrap::BuildBr(data.builder, merge_block);
 
+                // update then block b/c recursive codegen() call may have changed the notion of
+                // the current block
+                then_block = LLVMWrap::GetInsertBlock(data.builder);
+
+                // then do the same stuff again for the else branch
+                //
                 LLVMWrap::PositionBuilderAtEnd(data.builder, else_block);
                 let else_return = match *else_expr {
                     Some(ref e) => e.codegen(data),
                     None => zero,
                 };
                 LLVMWrap::BuildBr(data.builder, merge_block);
+                else_block = LLVMWrap::GetInsertBlock(data.builder);
+
                 LLVMWrap::PositionBuilderAtEnd(data.builder, merge_block);
+
+                let phi = LLVMWrap::BuildPhi(data.builder, int_type, "phinnode");
+
+
                 zero
-                */
-                unreachable!()
             }
             Block(ref exprs) => {
                 let mut ret = zero;

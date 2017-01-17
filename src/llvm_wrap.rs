@@ -239,6 +239,10 @@ pub fn BuildICmp(builder: LLVMBuilderRef,
     unsafe { core::LLVMBuildICmp(builder, op, lhs, rhs, name.as_ptr()) }
 }
 
+pub fn GetBasicBlockParent(block: LLVMBasicBlockRef) -> LLVMValueRef {
+    unsafe { core::LLVMGetBasicBlockParent(block) }
+}
+
 pub fn GetBasicBlocks(function: LLVMValueRef) -> Vec<LLVMBasicBlockRef> {
     let size = CountBasicBlocks(function);
     unsafe { 
@@ -257,6 +261,26 @@ pub fn PrintModuleToString(module: LLVMModuleRef) -> String {
     unsafe {
         let str_ptr: *const c_char = core::LLVMPrintModuleToString(module);
         CStr::from_ptr(str_ptr).to_string_lossy().into_owned()
+    }
+}
+
+pub fn BuildPhi(builder: LLVMBuilderRef, ty: LLVMTypeRef, name: &str) ->  LLVMValueRef {
+    unsafe {
+        let name = CString::new(name).unwrap();
+        unsafe { core::LLVMBuildPhi(builder, ty, name.as_ptr()) }
+    }
+}
+
+pub fn AddIncoming(phi_node: LLVMValueRef, incoming_values: Vec<LLVMValueRef>,
+                   incoming_blocks: Vec<LLVMBasicBlockRef>) {
+
+    let count = incoming_blocks.len();
+    if incoming_values.len() != count {
+        panic!("Bad invocation of AddIncoming");
+    }
+    unsafe {
+        //core::LLVMAddIncoming(phi_node);
+
     }
 }
 
