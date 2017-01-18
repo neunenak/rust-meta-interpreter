@@ -33,15 +33,20 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         .output()
         .expect("Failed to run llc");
 
-    println!("{}", String::from_utf8_lossy(&llc_output.stderr));
+
+    if !llc_output.status.success() {
+        println!("{}", String::from_utf8_lossy(&llc_output.stderr));
+    }
 
     let gcc_output = Command::new("gcc")
         .args(&["-o", bin_filename, &obj_filename])
         .output()
         .expect("failed to run gcc");
 
-    println!("{}", String::from_utf8_lossy(&gcc_output.stdout));
-    println!("{}", String::from_utf8_lossy(&gcc_output.stderr));
+    if !gcc_output.status.success() {
+        println!("{}", String::from_utf8_lossy(&gcc_output.stdout));
+        println!("{}", String::from_utf8_lossy(&gcc_output.stderr));
+    }
 
     for filename in [obj_filename].iter() {
         Command::new("rm")
