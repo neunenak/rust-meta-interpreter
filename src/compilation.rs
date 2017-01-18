@@ -1,6 +1,8 @@
 extern crate llvm_sys;
 
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
 
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
@@ -20,7 +22,12 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         _ => panic!("Bad filename {}", sourcefile),
     };
 
-    compile_ast(ast, ll_filename, false);
+    let llvm_code = compile_ast(ast);
+    println!("Compilation process finished for {}", ll_filename);
+    File::create(ll_filename)
+        .and_then(|mut f| f.write_all(llvm_code.as_bytes()))
+        .expect("Error writing file");
+
     let llc_output = Command::new("llc")
         .arg("-filetype=obj")
         .arg(ll_filename)
@@ -58,7 +65,7 @@ struct CompilationData {
     current_function: Option<LLVMValueRef>,
 }
 
-pub fn compile_ast(ast: AST, filename: &str, return_string: bool) -> Option<String> {
+pub fn compile_ast(ast: AST) -> String {
     println!("Compiling!");
     let names: VariableMap = HashMap::new();
 
@@ -86,20 +93,12 @@ pub fn compile_ast(ast: AST, filename: &str, return_string: bool) -> Option<Stri
 
     LLVMWrap::BuildRet(builder, value);
 
-    println!("Compilation process finished for {}", filename);
-    let ret = if return_string {
-        let s =  LLVMWrap::PrintModuleToString(module);
-        Some(s)
-    } else {
-        LLVMWrap::PrintModuleToFile(module, filename);
-        None
-    };
+    let ret = LLVMWrap::PrintModuleToString(module);
 
     // Clean up. Values created in the context mostly get cleaned up there.
     LLVMWrap::DisposeBuilder(builder);
     LLVMWrap::DisposeModule(module);
     LLVMWrap::ContextDispose(context);
-
     ret
 }
 

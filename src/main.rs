@@ -165,7 +165,7 @@ impl<'a> Repl<'a> {
         }
 
         if self.show_llvm_ir {
-            let s = compile_ast(ast, "«repl llvm»", true).unwrap();
+            let s = compile_ast(ast);
             output.push_str(&s);
         } else {
             // for now only handle last output
