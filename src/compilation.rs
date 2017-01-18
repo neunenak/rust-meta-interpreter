@@ -29,17 +29,14 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         .expect("Error writing file");
 
     let llc_output = Command::new("llc")
-        .arg("-filetype=obj")
-        .arg(ll_filename)
+        .args(&["-filetype=obj", ll_filename, "-o", obj_filename])
         .output()
         .expect("Failed to run llc");
 
-    println!("{}", String::from_utf8_lossy(&llc_output.stdout));
     println!("{}", String::from_utf8_lossy(&llc_output.stderr));
 
     let gcc_output = Command::new("gcc")
-        .arg(format!("-o{}", bin_filename))
-        .arg(obj_filename)
+        .args(&["-o", bin_filename, &obj_filename])
         .output()
         .expect("failed to run gcc");
 
