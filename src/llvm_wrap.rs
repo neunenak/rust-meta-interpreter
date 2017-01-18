@@ -170,12 +170,6 @@ pub fn BuildPhi(builder: LLVMBuilderRef, ty: LLVMTypeRef, name: &str) -> LLVMVal
     unsafe { core::LLVMBuildPhi(builder, ty, name.as_ptr()) }
 }
 
-pub fn AddIncoming(phi: LLVMValueRef, incoming_values: *mut LLVMValueRef, incoming_blocks: *mut LLVMBasicBlockRef,
-                   count: u32) {
-
-    unsafe { core::LLVMAddIncoming(phi, incoming_values, incoming_blocks, count) }
-}
-
 pub fn SetValueName(value: LLVMValueRef, name: &str) {
     let name = CString::new(name).unwrap();
     unsafe {
@@ -264,23 +258,18 @@ pub fn PrintModuleToString(module: LLVMModuleRef) -> String {
     }
 }
 
-pub fn BuildPhi(builder: LLVMBuilderRef, ty: LLVMTypeRef, name: &str) ->  LLVMValueRef {
-    unsafe {
-        let name = CString::new(name).unwrap();
-        unsafe { core::LLVMBuildPhi(builder, ty, name.as_ptr()) }
-    }
-}
+pub fn AddIncoming(phi_node: LLVMValueRef, mut incoming_values: Vec<LLVMValueRef>,
+                   mut incoming_blocks: Vec<LLVMBasicBlockRef>) {
 
-pub fn AddIncoming(phi_node: LLVMValueRef, incoming_values: Vec<LLVMValueRef>,
-                   incoming_blocks: Vec<LLVMBasicBlockRef>) {
-
-    let count = incoming_blocks.len();
-    if incoming_values.len() != count {
+    let count = incoming_blocks.len() as u32;
+    if incoming_values.len() as u32 != count {
         panic!("Bad invocation of AddIncoming");
     }
-    unsafe {
-        //core::LLVMAddIncoming(phi_node);
 
+    unsafe {
+        let vals = incoming_values.as_mut_ptr();
+        let blocks = incoming_blocks.as_mut_ptr();
+        core::LLVMAddIncoming(phi_node, vals, blocks, count)
     }
 }
 

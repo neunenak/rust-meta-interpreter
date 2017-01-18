@@ -271,10 +271,11 @@ impl CodeGen for Expression {
 
                 LLVMWrap::PositionBuilderAtEnd(data.builder, merge_block);
 
-                let phi = LLVMWrap::BuildPhi(data.builder, int_type, "phinnode");
-
-
-                zero
+                let phi = LLVMWrap::BuildPhi(data.builder, int_type, "phinode");
+                let values = vec![then_return, else_return];
+                let blocks = vec![then_block, else_block];
+                LLVMWrap::AddIncoming(phi, values, blocks);
+                phi
             }
             Block(ref exprs) => {
                 let mut ret = zero;

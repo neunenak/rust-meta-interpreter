@@ -7,7 +7,14 @@ fn paha(x, y, z) {
     x * y * z
 }
 
-q = 4
+a = 0
 
-q + 1
+c = if a {
+    10
+} else {
+    20
+}
+
+q = 4
+q + 1 + c
 
