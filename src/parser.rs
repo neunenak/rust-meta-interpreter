@@ -15,8 +15,9 @@ use std::convert::From;
 // exprlist  := Expression (Comma Expression)* | e
 //
 // expression := primary_expression (op primary_expression)*
-// primary_expression :=  Number | String | identifier_expr | paren_expr | conditional_expr |
+// primary_expression :=  number_expr | String | identifier_expr | paren_expr | conditional_expr |
 //                        while_expr | lambda_expr
+// number_expr := (PLUS | MINUS ) number_expr | Number
 // identifier_expr := call_expression | Variable
 // call_expr := Identifier LParen exprlist RParen
 // while_expr := WHILE primary_expression LCurlyBrace (expression delimiter)* RCurlyBrace
@@ -391,10 +392,8 @@ impl Parser {
                 self.next();
                 Expression::Null
             }
-            Some(NumLiteral(n)) => {
-                self.next();
-                Expression::Number(n)
-            }
+            Some(NumLiteral(_)) => try!(self.number_expression()),
+            Some(Operator(OpTok(ref a))) if **a == "+" || **a == "-" => try!(self.number_expression()),
             Some(StrLiteral(s)) => {
                 self.next();
                 Expression::StringLiteral(s)
@@ -411,6 +410,33 @@ impl Parser {
             }
             None => return ParseError::result_from_str("Expected primary expression received EoI"),
         })
+    }
+
+    fn number_expression(&mut self) -> ParseResult<Expression> {
+        let mut multiplier = 1;
+        loop {
+            match self.peek() {
+                Some(NumLiteral(n)) => {
+                    self.next();
+                    return Ok(Expression::Number(n * multiplier as f64));
+                }
+                Some(Operator(OpTok(ref a))) if **a == "+" => {
+                    self.next();
+                }
+                Some(Operator(OpTok(ref a))) if **a == "-" => {
+                    multiplier *= -1;
+                    self.next();
+                }
+                Some(e) => {
+                    return ParseError::result_from_str(
+                            &format!("Expected +, - or number, got {:?}", e));
+                }
+                None => {
+                    return ParseError::result_from_str(
+                            &format!("Expected +, - or number, got EoI"));
+                }
+            }
+        }
     }
 
     fn lambda_expr(&mut self) -> ParseResult<Expression> {
