@@ -248,7 +248,7 @@ impl ProgrammingLanguage for Schala {
     }
 
     fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
-        unimplemented!()
+        parser::parse(&input, &[]).map_err(|x| ParseError { msg: x.msg })
     }
     fn evaluate(input: &Self::AST) {
         unimplemented!()
