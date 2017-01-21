@@ -16,6 +16,9 @@ mod parser;
 use eval::Evaluator;
 mod eval;
 
+use language::{ProgrammingLanguage, ParseError, TokenError};
+mod language;
+
 use compilation::{compilation_sequence, compile_ast};
 mod compilation;
 mod llvm_wrap;
@@ -137,6 +140,13 @@ impl<'a> Repl<'a> {
         println!("Exiting...");
     }
 
+    fn new_input_handler(input: &str) -> String {
+
+        let language = Schala {};
+
+        unimplemented!()
+    }
+
     fn input_handler(&mut self, input: &str) -> String {
         let mut output = String::new();
 
@@ -226,3 +236,25 @@ impl<'a> Repl<'a> {
         return true;
     }
 }
+
+struct Schala { }
+
+impl ProgrammingLanguage for Schala {
+    type Token = tokenizer::Token;
+    type AST = parser::AST;
+
+    fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
+        tokenizer::tokenize(input).map_err(|x| TokenError { msg: x.msg })
+    }
+
+    fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
+        unimplemented!()
+    }
+    fn evaluate(input: &Self::AST) {
+        unimplemented!()
+    }
+    fn compile(input: &Self::AST) {
+        unimplemented!()
+    }
+}
+
