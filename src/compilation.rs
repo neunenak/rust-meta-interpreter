@@ -11,7 +11,7 @@ use parser::{AST, Statement, Function, Prototype, Expression, BinOp};
 
 use llvm_wrap as LLVMWrap;
 
-pub fn compilation_sequence(ast: AST, sourcefile: &str) {
+pub fn compilation_sequence(llvm_code: String, sourcefile: &str) {
     use std::process::Command;
 
     let ll_filename = "out.ll";
@@ -22,7 +22,6 @@ pub fn compilation_sequence(ast: AST, sourcefile: &str) {
         _ => panic!("Bad filename {}", sourcefile),
     };
 
-    let llvm_code = compile_ast(ast);
     println!("Compilation process finished for {}", ll_filename);
     File::create(ll_filename)
         .and_then(|mut f| f.write_all(llvm_code.as_bytes()))

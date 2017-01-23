@@ -14,6 +14,6 @@ pub trait ProgrammingLanguage<Evaluator> {
 
     fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError>;
     fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError>;
-    fn evaluate(input: Self::AST, evaluator: &mut Evaluator) -> Vec<String>;
-    fn compile(input: &Self::AST);
+    fn evaluate(ast: Self::AST, evaluator: &mut Evaluator) -> Vec<String>;
+    fn compile(ast: Self::AST) -> String;
 }

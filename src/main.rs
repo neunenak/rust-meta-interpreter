@@ -7,10 +7,7 @@ use std::fs::File;
 use std::io::Read;
 use std::process;
 
-use tokenizer::tokenize;
 mod tokenizer;
-
-use parser::parse;
 mod parser;
 
 use eval::Evaluator;
@@ -40,7 +37,8 @@ fn main() {
             repl.run();
         }
         [_, ref filename, _..] => {
-            run_noninteractive(filename, !option_matches.opt_present("i"), trace);
+            let language = Schala { };
+            run_noninteractive(filename, !option_matches.opt_present("i"), trace, &language);
         }
     };
 }
@@ -59,12 +57,12 @@ fn program_options() -> getopts::Options {
     options
 }
 
-fn run_noninteractive(filename: &str, compile: bool, trace_evaluation: bool) {
+fn run_noninteractive<'a, T: ProgrammingLanguage<eval::Evaluator<'a>>>(filename: &str, compile: bool, trace_evaluation: bool, language: &T) {
     let mut source_file = File::open(&Path::new(filename)).unwrap();
     let mut buffer = String::new();
     source_file.read_to_string(&mut buffer).unwrap();
 
-    let tokens = match tokenize(&buffer) {
+    let tokens = match T::tokenize(&buffer) {
         Ok(t) => t,
         Err(e) => {
             println!("Tokenization error: {}", e.msg);
@@ -72,20 +70,20 @@ fn run_noninteractive(filename: &str, compile: bool, trace_evaluation: bool) {
         }
     };
 
-    let ast = match parse(&tokens, &[]) {
+    let ast = match T::parse(tokens) {
         Ok(ast) => ast,
         Err(err) => {
             println!("Parse error: {:?}", err.msg);
-            println!("Remaining tokens: {:?}", err.remaining_tokens);
+            /*println!("Remaining tokens: {:?}", err.remaining_tokens);*/
             std::process::exit(1)
         }
     };
 
     if compile {
-        compilation_sequence(ast, filename);
+        compilation_sequence(T::compile(ast), filename);
     } else {
         let mut evaluator = Evaluator::new_with_opts(None, trace_evaluation);
-        let results = evaluator.run(ast);
+        let results = T::evaluate(ast, &mut evaluator);
         for result in results.iter() {
             println!("{}", result);
         }
@@ -140,13 +138,6 @@ impl<'a> Repl<'a> {
         println!("Exiting...");
     }
 
-    fn new_input_handler(input: &str) -> String {
-
-        let language = Schala {};
-
-        unimplemented!()
-    }
-
     fn input_handler(&mut self, input: &str) -> String {
         let schala = Schala { };
         self.input_handler_new(input, schala)
@@ -179,12 +170,9 @@ impl<'a> Repl<'a> {
             output.push_str(&format!("AST: {:?}\n", ast));
         }
 
-        /*
         if self.show_llvm_ir {
-            let s = compile_ast(ast);
+            let s = T::compile(ast);
             output.push_str(&s);
-            */
-        if false {
         } else {
             // for now only handle last output
             let mut full_output: Vec<String> = T::evaluate(ast, &mut self.evaluator);
@@ -258,11 +246,11 @@ impl<'a> ProgrammingLanguage<eval::Evaluator<'a>> for Schala {
     fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
         parser::parse(&input, &[]).map_err(|x| ParseError { msg: x.msg })
     }
-    fn evaluate(input: Self::AST, evaluator: &mut Evaluator) -> Vec<String> {
-        evaluator.run(input)
+    fn evaluate(ast: Self::AST, evaluator: &mut Evaluator) -> Vec<String> {
+        evaluator.run(ast)
     }
-    fn compile(input: &Self::AST) {
-        unimplemented!()
+    fn compile(ast: Self::AST) -> String {
+        compile_ast(ast)
     }
 }
 
