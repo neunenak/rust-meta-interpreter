@@ -1,6 +1,6 @@
 use std::fmt;
-use tokenizer::{Token, Kw, OpTok};
-use tokenizer::Token::*;
+use schala_lang::tokenizer::{Token, Kw, OpTok};
+use schala_lang::tokenizer::Token::*;
 use std::collections::VecDeque;
 use std::rc::Rc;
 use std::convert::From;

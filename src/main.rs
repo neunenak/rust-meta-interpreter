@@ -7,17 +7,14 @@ use std::fs::File;
 use std::io::Read;
 use std::process;
 
-mod tokenizer;
-mod parser;
-
-use eval::Evaluator;
-mod eval;
+mod schala_lang;
+use schala_lang::eval::Evaluator;
+use schala_lang::compilation::compilation_sequence;
+use schala_lang::Schala;
 
 use language::{ProgrammingLanguage, ParseError, TokenError};
 mod language;
 
-use compilation::{compilation_sequence, compile_ast};
-mod compilation;
 mod llvm_wrap;
 
 fn main() {
@@ -57,7 +54,7 @@ fn program_options() -> getopts::Options {
     options
 }
 
-fn run_noninteractive<'a, T: ProgrammingLanguage<eval::Evaluator<'a>>>(filename: &str, compile: bool, trace_evaluation: bool, language: &T) {
+fn run_noninteractive<'a, T: ProgrammingLanguage<Evaluator<'a>>>(filename: &str, compile: bool, trace_evaluation: bool, language: &T) {
     let mut source_file = File::open(&Path::new(filename)).unwrap();
     let mut buffer = String::new();
     source_file.read_to_string(&mut buffer).unwrap();
@@ -143,7 +140,7 @@ impl<'a> Repl<'a> {
         self.input_handler_new(input, schala)
     }
 
-    fn input_handler_new<T: ProgrammingLanguage<eval::Evaluator<'a>>>(&mut self, input: &str, language: T) -> String {
+    fn input_handler_new<T: ProgrammingLanguage<Evaluator<'a>>>(&mut self, input: &str, language: T) -> String {
         let mut output = String::new();
 
         let tokens = match T::tokenize(input) {
@@ -230,27 +227,6 @@ impl<'a> Repl<'a> {
             e => println!("Unknown command: {}", e)
         }
         return true;
-    }
-}
-
-struct Schala { }
-
-impl<'a> ProgrammingLanguage<eval::Evaluator<'a>> for Schala {
-    type Token = tokenizer::Token;
-    type AST = parser::AST;
-
-    fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
-        tokenizer::tokenize(input).map_err(|x| TokenError { msg: x.msg })
-    }
-
-    fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
-        parser::parse(&input, &[]).map_err(|x| ParseError { msg: x.msg })
-    }
-    fn evaluate(ast: Self::AST, evaluator: &mut Evaluator) -> Vec<String> {
-        evaluator.run(ast)
-    }
-    fn compile(ast: Self::AST) -> String {
-        compile_ast(ast)
     }
 }
 

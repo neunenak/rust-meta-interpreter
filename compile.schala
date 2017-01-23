@@ -7,7 +7,7 @@ fn paha(x, y, z) {
     x * y * z
 }
 
-a = 0
+a = 1
 
 c = if a {
     10

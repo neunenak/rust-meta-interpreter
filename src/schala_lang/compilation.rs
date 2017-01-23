@@ -7,7 +7,7 @@ use std::io::Write;
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
 
-use parser::{AST, Statement, Function, Prototype, Expression, BinOp};
+use schala_lang::parser::{AST, Statement, Function, Prototype, Expression, BinOp};
 
 use llvm_wrap as LLVMWrap;
 
