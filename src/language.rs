@@ -8,12 +8,12 @@ pub struct ParseError {
     pub msg: String,
 }
 
-pub trait ProgrammingLanguage {
+pub trait ProgrammingLanguage<Evaluator> {
     type Token: Debug;
     type AST: Debug;
 
     fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError>;
     fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError>;
-    fn evaluate(input: &Self::AST);
+    fn evaluate(input: Self::AST, evaluator: &mut Evaluator) -> Vec<String>;
     fn compile(input: &Self::AST);
 }

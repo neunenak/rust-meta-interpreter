@@ -148,9 +148,14 @@ impl<'a> Repl<'a> {
     }
 
     fn input_handler(&mut self, input: &str) -> String {
+        let schala = Schala { };
+        self.input_handler_new(input, schala)
+    }
+
+    fn input_handler_new<T: ProgrammingLanguage<eval::Evaluator<'a>>>(&mut self, input: &str, language: T) -> String {
         let mut output = String::new();
 
-        let tokens = match tokenize(input) {
+        let tokens = match T::tokenize(input) {
             Ok(tokens) => tokens,
             Err(err) => {
                 output.push_str(&format!("Tokenization error: {}\n", err.msg));
@@ -162,7 +167,7 @@ impl<'a> Repl<'a> {
             output.push_str(&format!("Tokens: {:?}\n", tokens));
         }
 
-        let ast = match parse(&tokens, &[]) {
+        let ast = match T::parse(tokens) {
             Ok(ast) => ast,
             Err(err) => {
                 output.push_str(&format!("Parse error: {:?}\n", err.msg));
@@ -174,12 +179,15 @@ impl<'a> Repl<'a> {
             output.push_str(&format!("AST: {:?}\n", ast));
         }
 
+        /*
         if self.show_llvm_ir {
             let s = compile_ast(ast);
             output.push_str(&s);
+            */
+        if false {
         } else {
             // for now only handle last output
-            let mut full_output: Vec<String> = self.evaluator.run(ast);
+            let mut full_output: Vec<String> = T::evaluate(ast, &mut self.evaluator);
             output.push_str(&full_output.pop().unwrap_or("".to_string()));
         }
         output
@@ -239,7 +247,7 @@ impl<'a> Repl<'a> {
 
 struct Schala { }
 
-impl ProgrammingLanguage for Schala {
+impl<'a> ProgrammingLanguage<eval::Evaluator<'a>> for Schala {
     type Token = tokenizer::Token;
     type AST = parser::AST;
 
@@ -250,8 +258,8 @@ impl ProgrammingLanguage for Schala {
     fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
         parser::parse(&input, &[]).map_err(|x| ParseError { msg: x.msg })
     }
-    fn evaluate(input: &Self::AST) {
-        unimplemented!()
+    fn evaluate(input: Self::AST, evaluator: &mut Evaluator) -> Vec<String> {
+        evaluator.run(input)
     }
     fn compile(input: &Self::AST) {
         unimplemented!()
