@@ -1,6 +1,9 @@
-use std::fmt;
+
 use schala_lang::tokenizer::{Token, Kw, OpTok};
 use schala_lang::tokenizer::Token::*;
+use language::ProgrammingLanguage;
+
+use std::fmt;
 use std::collections::VecDeque;
 use std::rc::Rc;
 use std::convert::From;
@@ -551,7 +554,7 @@ pub fn parse(tokens: &[Token], _parsed_tree: &[Statement]) -> ParseResult<AST> {
 
 #[cfg(test)]
 mod tests {
-    use tokenizer;
+    use schala_lang::tokenizer;
     use super::*;
     use super::Statement::*;
     use super::Expression::*;
@@ -610,7 +613,7 @@ mod tests {
 
     #[test]
     fn lambda_parse_test() {
-        use tokenizer;
+        use schala_lang::tokenizer;
         let t1 = "(fn(x) { x + 2 })";
         let tokens1 = tokenizer::tokenize(t1).unwrap();
         match parse(&tokens1, &[]).unwrap()[..] {
@@ -624,7 +627,7 @@ mod tests {
 
     #[test]
     fn conditional_parse_test() {
-        use tokenizer;
+        use schala_lang::tokenizer;
         let t1 = "if null { 20 } else { 40 }";
         let tokens = tokenizer::tokenize(t1).unwrap();
         match parse(&tokens, &[]).unwrap()[..] {

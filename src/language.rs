@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+#[derive(Debug)]
 pub struct TokenError {
     pub msg: String,
 }
@@ -10,6 +11,7 @@ impl TokenError {
     }
 }
 
+#[derive(Debug)]
 pub struct ParseError {
     pub msg: String,
 }
