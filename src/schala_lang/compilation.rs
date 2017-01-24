@@ -1,7 +1,6 @@
 extern crate llvm_sys;
 
 use std::collections::HashMap;
-use std::fs::File;
 
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};

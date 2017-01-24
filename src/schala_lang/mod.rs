@@ -12,7 +12,7 @@ impl<'a> ProgrammingLanguage<eval::Evaluator<'a>> for Schala {
     type AST = parser::AST;
 
     fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
-        tokenizer::tokenize(input).map_err(|x| TokenError { msg: x.msg })
+        tokenizer::tokenize(input)
     }
 
     fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {

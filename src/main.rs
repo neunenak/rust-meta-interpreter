@@ -12,7 +12,7 @@ mod schala_lang;
 use schala_lang::eval::Evaluator;
 use schala_lang::Schala;
 
-use language::{ProgrammingLanguage, ParseError, TokenError, LLVMCodeString};
+use language::{ProgrammingLanguage, LLVMCodeString};
 mod language;
 
 mod llvm_wrap;

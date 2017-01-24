@@ -5,6 +5,8 @@ use std::str::Chars;
 use self::itertools::Itertools;
 use std::rc::Rc;
 
+use language::TokenError;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Newline,
@@ -38,18 +40,7 @@ pub enum Kw {
     Null,
 }
 
-pub type TokenizeResult = Result<Vec<Token>, TokenizeError>;
-
-#[derive(Debug)]
-pub struct TokenizeError {
-    pub msg: String,
-}
-
-impl TokenizeError {
-    fn new(msg: &str) -> TokenizeError {
-        TokenizeError { msg: msg.to_string() }
-    }
-}
+pub type TokenizeResult = Result<Vec<Token>, TokenError>;
 
 fn is_digit(c: &char) -> bool {
     c.is_digit(10)
@@ -89,27 +80,27 @@ pub fn tokenize(input: &str) -> TokenizeResult {
     Ok(tokens)
 }
 
-fn tokenize_str(iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
+fn tokenize_str(iter: &mut Peekable<Chars>) -> Result<Token, TokenError> {
     let mut buffer = String::new();
     loop {
         // TODO handle string escapes, interpolation
         match iter.next() {
             Some(x) if x == '"' => break,
             Some(x) => buffer.push(x),
-            None => return Err(TokenizeError::new("Unclosed quote")),
+            None => return Err(TokenError::new("Unclosed quote")),
         }
     }
     Ok(Token::StrLiteral(Rc::new(buffer)))
 }
 
-fn tokenize_operator(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
+fn tokenize_operator(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenError> {
     let mut buffer = String::new();
     buffer.push(c);
     buffer.extend(iter.peeking_take_while(|x| !char::is_alphanumeric(*x) && !char::is_whitespace(*x))); 
     Ok(Token::Operator(OpTok(Rc::new(buffer))))
 }
 
-fn tokenize_number_or_period(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
+fn tokenize_number_or_period(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenError> {
     if c == '.' && !iter.peek().map_or(false, is_digit) {
         return Ok(Token::Period);
     }
@@ -120,11 +111,11 @@ fn tokenize_number_or_period(c: char, iter: &mut Peekable<Chars>) -> Result<Toke
 
     match buffer.parse::<f64>() {
         Ok(f) => Ok(Token::NumLiteral(f)),
-        Err(_) => Err(TokenizeError::new("Failed to parse digit")),
+        Err(_) => Err(TokenError::new("Failed to parse digit")),
     }
 }
 
-fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenizeError> {
+fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, TokenError> {
     fn ends_identifier(c: &char) -> bool {
         let c = *c;
         char::is_whitespace(c) || is_digit(&c) || c == ';' || c == '(' || c == ')' ||

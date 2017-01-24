@@ -4,6 +4,12 @@ pub struct TokenError {
     pub msg: String,
 }
 
+impl TokenError {
+    pub fn new(msg: &str) -> TokenError {
+        TokenError { msg: msg.to_string() }
+    }
+}
+
 pub struct ParseError {
     pub msg: String,
 }
