@@ -6,13 +6,13 @@ use std::path::Path;
 use std::fs::File;
 use std::io::Read;
 use std::process;
+use std::io::Write;
 
 mod schala_lang;
 use schala_lang::eval::Evaluator;
-use schala_lang::compilation::compilation_sequence;
 use schala_lang::Schala;
 
-use language::{ProgrammingLanguage, ParseError, TokenError};
+use language::{ProgrammingLanguage, ParseError, TokenError, LLVMCodeString};
 mod language;
 
 mod llvm_wrap;
@@ -168,7 +168,7 @@ impl<'a> Repl<'a> {
         }
 
         if self.show_llvm_ir {
-            let s = T::compile(ast);
+            let LLVMCodeString(s) = T::compile(ast);
             output.push_str(&s);
         } else {
             // for now only handle last output
@@ -227,6 +227,52 @@ impl<'a> Repl<'a> {
             e => println!("Unknown command: {}", e)
         }
         return true;
+    }
+}
+
+pub fn compilation_sequence(llvm_code: LLVMCodeString, sourcefile: &str) {
+    use std::process::Command;
+
+    let ll_filename = "out.ll";
+    let obj_filename = "out.o";
+    let q: Vec<&str> = sourcefile.split('.').collect();
+    let bin_filename = match &q[..] {
+        &[name, "schala"] => name,
+        _ => panic!("Bad filename {}", sourcefile),
+    };
+
+    let LLVMCodeString(llvm_str) = llvm_code;
+
+    println!("Compilation process finished for {}", ll_filename);
+    File::create(ll_filename)
+        .and_then(|mut f| f.write_all(llvm_str.as_bytes()))
+        .expect("Error writing file");
+
+    let llc_output = Command::new("llc")
+        .args(&["-filetype=obj", ll_filename, "-o", obj_filename])
+        .output()
+        .expect("Failed to run llc");
+
+
+    if !llc_output.status.success() {
+        println!("{}", String::from_utf8_lossy(&llc_output.stderr));
+    }
+
+    let gcc_output = Command::new("gcc")
+        .args(&["-o", bin_filename, &obj_filename])
+        .output()
+        .expect("failed to run gcc");
+
+    if !gcc_output.status.success() {
+        println!("{}", String::from_utf8_lossy(&gcc_output.stdout));
+        println!("{}", String::from_utf8_lossy(&gcc_output.stderr));
+    }
+
+    for filename in [obj_filename].iter() {
+        Command::new("rm")
+            .arg(filename)
+            .output()
+            .expect(&format!("failed to run rm {}", filename));
     }
 }
 

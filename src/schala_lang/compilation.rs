@@ -2,58 +2,14 @@ extern crate llvm_sys;
 
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Write;
 
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
 
 use schala_lang::parser::{AST, Statement, Function, Prototype, Expression, BinOp};
+use language::LLVMCodeString;
 
 use llvm_wrap as LLVMWrap;
-
-pub fn compilation_sequence(llvm_code: String, sourcefile: &str) {
-    use std::process::Command;
-
-    let ll_filename = "out.ll";
-    let obj_filename = "out.o";
-    let q: Vec<&str> = sourcefile.split('.').collect();
-    let bin_filename = match &q[..] {
-        &[name, "schala"] => name,
-        _ => panic!("Bad filename {}", sourcefile),
-    };
-
-    println!("Compilation process finished for {}", ll_filename);
-    File::create(ll_filename)
-        .and_then(|mut f| f.write_all(llvm_code.as_bytes()))
-        .expect("Error writing file");
-
-    let llc_output = Command::new("llc")
-        .args(&["-filetype=obj", ll_filename, "-o", obj_filename])
-        .output()
-        .expect("Failed to run llc");
-
-
-    if !llc_output.status.success() {
-        println!("{}", String::from_utf8_lossy(&llc_output.stderr));
-    }
-
-    let gcc_output = Command::new("gcc")
-        .args(&["-o", bin_filename, &obj_filename])
-        .output()
-        .expect("failed to run gcc");
-
-    if !gcc_output.status.success() {
-        println!("{}", String::from_utf8_lossy(&gcc_output.stdout));
-        println!("{}", String::from_utf8_lossy(&gcc_output.stderr));
-    }
-
-    for filename in [obj_filename].iter() {
-        Command::new("rm")
-            .arg(filename)
-            .output()
-            .expect(&format!("failed to run rm {}", filename));
-    }
-}
 
 type VariableMap = HashMap<String, LLVMValueRef>;
 
@@ -66,7 +22,7 @@ struct CompilationData {
     current_function: Option<LLVMValueRef>,
 }
 
-pub fn compile_ast(ast: AST) -> String {
+pub fn compile_ast(ast: AST) -> LLVMCodeString {
     println!("Compiling!");
     let names: VariableMap = HashMap::new();
 
@@ -100,7 +56,7 @@ pub fn compile_ast(ast: AST) -> String {
     LLVMWrap::DisposeBuilder(builder);
     LLVMWrap::DisposeModule(module);
     LLVMWrap::ContextDispose(context);
-    ret
+    LLVMCodeString(ret)
 }
 
 trait CodeGen {

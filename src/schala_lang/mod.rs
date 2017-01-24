@@ -3,7 +3,7 @@ pub mod parser;
 pub mod eval;
 pub mod compilation;
 
-use language::{ProgrammingLanguage, ParseError, TokenError};
+use language::{ProgrammingLanguage, ParseError, TokenError, LLVMCodeString};
 
 pub struct Schala { }
 
@@ -21,7 +21,7 @@ impl<'a> ProgrammingLanguage<eval::Evaluator<'a>> for Schala {
     fn evaluate(ast: Self::AST, evaluator: &mut eval::Evaluator) -> Vec<String> {
         evaluator.run(ast)
     }
-    fn compile(ast: Self::AST) -> String {
+    fn compile(ast: Self::AST) -> LLVMCodeString {
         compilation::compile_ast(ast)
     }
 }
