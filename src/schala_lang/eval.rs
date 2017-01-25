@@ -54,11 +54,6 @@ pub struct Evaluator<'a> {
 }
 
 impl<'a> Evaluator<'a> {
-    pub fn new_with_opts(parent: Option<&'a Evaluator>, trace_evaluation: bool) -> Evaluator<'a> {
-        let mut e = Evaluator::new(parent);
-        e.trace_evaluation = trace_evaluation;
-        e
-    }
     pub fn new(parent: Option<&'a Evaluator>) -> Evaluator<'a> {
         Evaluator {
             variables: HashMap::new(),

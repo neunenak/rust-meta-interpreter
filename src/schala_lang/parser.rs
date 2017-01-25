@@ -1,7 +1,6 @@
 
 use schala_lang::tokenizer::{Token, Kw, OpTok};
 use schala_lang::tokenizer::Token::*;
-use language::ProgrammingLanguage;
 
 use std::fmt;
 use std::collections::VecDeque;

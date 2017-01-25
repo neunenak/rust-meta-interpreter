@@ -9,11 +9,11 @@ use std::process;
 use std::io::Write;
 
 mod schala_lang;
-use schala_lang::eval::Evaluator;
+use schala_lang::SchalaEvaluator;
 use schala_lang::Schala;
 
-use language::{ProgrammingLanguage, LLVMCodeString};
 mod language;
+use language::{ProgrammingLanguage, LLVMCodeString, EvaluationMachine};
 
 mod llvm_wrap;
 
@@ -54,7 +54,7 @@ fn program_options() -> getopts::Options {
     options
 }
 
-fn run_noninteractive<'a, T: ProgrammingLanguage<Evaluator<'a>>>(filename: &str, compile: bool, trace_evaluation: bool, language: &T) {
+fn run_noninteractive<'a, T: ProgrammingLanguage<SchalaEvaluator<'a>>>(filename: &str, compile: bool, trace_evaluation: bool, language: &T) {
     let mut source_file = File::open(&Path::new(filename)).unwrap();
     let mut buffer = String::new();
     source_file.read_to_string(&mut buffer).unwrap();
@@ -79,7 +79,10 @@ fn run_noninteractive<'a, T: ProgrammingLanguage<Evaluator<'a>>>(filename: &str,
     if compile {
         compilation_sequence(T::compile(ast), filename);
     } else {
-        let mut evaluator = Evaluator::new_with_opts(None, trace_evaluation);
+        let mut evaluator = <SchalaEvaluator as EvaluationMachine>::new();
+        if trace_evaluation {
+            evaluator.set_option("trace_evaluation", true);
+        }
         let results = T::evaluate(ast, &mut evaluator);
         for result in results.iter() {
             println!("{}", result);
@@ -92,7 +95,7 @@ struct Repl<'a> {
     show_tokens: bool,
     show_parse: bool,
     show_llvm_ir: bool,
-    evaluator: Evaluator<'a>,
+    evaluator: SchalaEvaluator<'a>,
     interpreter_directive_sigil: char,
     reader: LineReader,
 }
@@ -101,11 +104,15 @@ impl<'a> Repl<'a> {
     fn new(trace_evaluation: bool, show_llvm: bool) -> Repl<'a> {
         let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Schala").unwrap();
         reader.set_prompt(">> ");
+
+        let mut evaluator = <SchalaEvaluator as EvaluationMachine>::new();
+        evaluator.set_option("trace_evaluation", trace_evaluation);
+
         Repl {
             show_tokens: false,
             show_parse: false,
             show_llvm_ir: show_llvm,
-            evaluator: Evaluator::new_with_opts(None, trace_evaluation),
+            evaluator: evaluator,
             interpreter_directive_sigil: '.',
             reader: reader,
         }
@@ -140,7 +147,7 @@ impl<'a> Repl<'a> {
         self.input_handler_new(input, schala)
     }
 
-    fn input_handler_new<T: ProgrammingLanguage<Evaluator<'a>>>(&mut self, input: &str, language: T) -> String {
+    fn input_handler_new<T: ProgrammingLanguage<SchalaEvaluator<'a>>>(&mut self, input: &str, language: T) -> String {
         let mut output = String::new();
 
         let tokens = match T::tokenize(input) {
@@ -216,7 +223,7 @@ impl<'a> Repl<'a> {
                 match commands[2] {
                     "tokens" => self.show_tokens = show,
                     "parse" => self.show_parse = show,
-                    "eval" => self.evaluator.trace_evaluation = show,
+                    "eval" => { self.evaluator.set_option("trace_evaluation", show); },
                     "llvm" => self.show_llvm_ir = show,
                     e => {
                         println!("Bad `show`/`hide` argument: {}", e);

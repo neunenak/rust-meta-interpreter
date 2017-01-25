@@ -3,7 +3,9 @@ pub mod parser;
 pub mod eval;
 pub mod compilation;
 
-use language::{ProgrammingLanguage, ParseError, TokenError, LLVMCodeString};
+use language::{ProgrammingLanguage, EvaluationMachine, ParseError, TokenError, LLVMCodeString};
+
+pub use self::eval::Evaluator as SchalaEvaluator;
 
 pub struct Schala { }
 
@@ -26,3 +28,17 @@ impl<'a> ProgrammingLanguage<eval::Evaluator<'a>> for Schala {
     }
 }
 
+impl<'a> EvaluationMachine for SchalaEvaluator<'a> {
+    fn set_option(&mut self, option: &str, value: bool) -> bool {
+        if option == "trace_evaluation" {
+            self.trace_evaluation = value;
+            return true;
+        }
+
+        false
+    }
+
+    fn new() -> SchalaEvaluator<'a> {
+        SchalaEvaluator::new(None)
+    }
+}
