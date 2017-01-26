@@ -12,6 +12,8 @@ mod schala_lang;
 use schala_lang::SchalaEvaluator;
 use schala_lang::Schala;
 
+mod maaru_lang;
+
 mod language;
 use language::{ProgrammingLanguage, LLVMCodeString, EvaluationMachine};
 
