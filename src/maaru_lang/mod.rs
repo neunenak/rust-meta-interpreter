@@ -9,10 +9,10 @@ pub struct MaaruEvaluator {
 }
 
 #[derive(Debug)]
-struct Token { }
+pub struct Token { }
 
 #[derive(Debug)]
-struct AST { }
+pub struct AST { }
 
 impl ProgrammingLanguage<MaaruEvaluator> for Maaru {
     type Token = Token;
