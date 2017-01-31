@@ -1,3 +1,4 @@
+use ::std::marker::PhantomData;
 pub mod tokenizer;
 pub mod parser;
 pub mod eval;
@@ -7,20 +8,25 @@ use language::{ProgrammingLanguage, EvaluationMachine, ParseError, TokenError, L
 
 pub use self::eval::Evaluator as SchalaEvaluator;
 
-pub struct Schala { }
+pub struct Schala<'a> { marker: PhantomData<&'a ()> }
+impl<'a> Schala<'a> {
+    pub fn new() -> Schala<'a> {
+        Schala { marker: PhantomData }
+    }
+}
 
-impl<'a> ProgrammingLanguage<eval::Evaluator<'a>> for Schala {
+impl<'a> ProgrammingLanguage for Schala<'a> {
     type Token = tokenizer::Token;
     type AST = parser::AST;
+    type Evaluator = SchalaEvaluator<'a>;
 
     fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
         tokenizer::tokenize(input)
     }
-
     fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
         parser::parse(&input, &[]).map_err(|x| ParseError { msg: x.msg })
     }
-    fn evaluate(ast: Self::AST, evaluator: &mut eval::Evaluator) -> Vec<String> {
+    fn evaluate(ast: Self::AST, evaluator: &mut Self::Evaluator) -> Vec<String> {
         evaluator.run(ast)
     }
     fn compile(ast: Self::AST) -> LLVMCodeString {

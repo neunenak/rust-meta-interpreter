@@ -15,7 +15,7 @@ use schala_lang::Schala;
 mod maaru_lang;
 
 mod language;
-use language::{ProgrammingLanguage, LLVMCodeString, EvaluationMachine};
+use language::{ProgrammingLanguage, LanguageWrapper, LLVMCodeString, EvaluationMachine};
 
 mod llvm_wrap;
 
@@ -36,7 +36,7 @@ fn main() {
             repl.run();
         }
         [_, ref filename, _..] => {
-            let language = Schala { };
+            let language = Schala::new();
             run_noninteractive(filename, !option_matches.opt_present("i"), trace, &language);
         }
     };
@@ -56,7 +56,7 @@ fn program_options() -> getopts::Options {
     options
 }
 
-fn run_noninteractive<'a, T: ProgrammingLanguage<SchalaEvaluator<'a>>>(filename: &str, compile: bool, trace_evaluation: bool, language: &T) {
+fn run_noninteractive<'a, T: ProgrammingLanguage>(filename: &str, compile: bool, trace_evaluation: bool, language: &T) {
     let mut source_file = File::open(&Path::new(filename)).unwrap();
     let mut buffer = String::new();
     source_file.read_to_string(&mut buffer).unwrap();
@@ -81,7 +81,7 @@ fn run_noninteractive<'a, T: ProgrammingLanguage<SchalaEvaluator<'a>>>(filename:
     if compile {
         compilation_sequence(T::compile(ast), filename);
     } else {
-        let mut evaluator = <SchalaEvaluator as EvaluationMachine>::new();
+        let mut evaluator = <T as ProgrammingLanguage>::Evaluator::new();
         if trace_evaluation {
             evaluator.set_option("trace_evaluation", true);
         }
@@ -97,6 +97,7 @@ struct Repl<'a> {
     show_tokens: bool,
     show_parse: bool,
     show_llvm_ir: bool,
+    languages: Vec<Box<LanguageWrapper>>,
     evaluator: SchalaEvaluator<'a>,
     interpreter_directive_sigil: char,
     reader: LineReader,
@@ -114,6 +115,7 @@ impl<'a> Repl<'a> {
             show_tokens: false,
             show_parse: false,
             show_llvm_ir: show_llvm,
+            languages: vec![Box::new(Schala::new())],
             evaluator: evaluator,
             interpreter_directive_sigil: '.',
             reader: reader,
@@ -145,11 +147,12 @@ impl<'a> Repl<'a> {
     }
 
     fn input_handler(&mut self, input: &str) -> String {
-        let schala = Schala { };
-        self.input_handler_new(input, schala)
+        let schala = Schala::new();
+        let mut evaluator = <SchalaEvaluator as EvaluationMachine>::new();
+        self.input_handler_new(input, schala, &mut evaluator)
     }
 
-    fn input_handler_new<T: ProgrammingLanguage<SchalaEvaluator<'a>>>(&mut self, input: &str, language: T) -> String {
+    fn input_handler_new<T: ProgrammingLanguage>(&mut self, input: &str, language: T, mut evaluator: &mut T::Evaluator) -> String {
         let mut output = String::new();
 
         let tokens = match T::tokenize(input) {
@@ -181,7 +184,7 @@ impl<'a> Repl<'a> {
             output.push_str(&s);
         } else {
             // for now only handle last output
-            let mut full_output: Vec<String> = T::evaluate(ast, &mut self.evaluator);
+            let mut full_output: Vec<String> = T::evaluate(ast, &mut evaluator);
             output.push_str(&full_output.pop().unwrap_or("".to_string()));
         }
         output

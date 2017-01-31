@@ -14,9 +14,10 @@ pub struct Token { }
 #[derive(Debug)]
 pub struct AST { }
 
-impl ProgrammingLanguage<MaaruEvaluator> for Maaru {
+impl ProgrammingLanguage for Maaru {
     type Token = Token;
     type AST = AST;
+    type Evaluator = MaaruEvaluator;
 
     fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
         Ok(vec![Token { }])
@@ -25,7 +26,7 @@ impl ProgrammingLanguage<MaaruEvaluator> for Maaru {
     fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
         Ok(AST { })
     }
-    fn evaluate(ast: Self::AST, evaluator: &mut MaaruEvaluator) -> Vec<String> {
+    fn evaluate(ast: Self::AST, evaluator: &mut Self::Evaluator) -> Vec<String> {
         vec!["Unimplemented".to_string()]
     }
     fn compile(ast: Self::AST) -> LLVMCodeString {
