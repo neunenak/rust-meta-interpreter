@@ -1,3 +1,4 @@
+use std::default::Default;
 use std::fmt::Debug;
 
 #[derive(Debug)]
@@ -34,9 +35,54 @@ pub trait EvaluationMachine {
     fn new() -> Self;
 }
 
-pub trait LanguageWrapper {
+#[derive(Default)]
+pub struct LanguageInterfaceOptions {
+    pub show_parse: bool,
+    pub show_tokens: bool,
+    pub show_llvm_ir: bool,
 }
 
-impl<X, T, A, E> LanguageWrapper for X where X: ProgrammingLanguage<Token=T, AST=A, Evaluator=E>, T: Debug, A: Debug, E: EvaluationMachine {
+pub trait LanguageInterface {
+    fn evaluate_in_repl(&mut self, input: &str, options: LanguageInterfaceOptions) -> String;
+}
 
+impl<PL, T, A, E> LanguageInterface for PL where PL: ProgrammingLanguage<Token=T, AST=A, Evaluator=E>, T: Debug, A: Debug, E: EvaluationMachine {
+    fn evaluate_in_repl(&mut self, input: &str, options: LanguageInterfaceOptions) -> String {
+        let mut output = String::new();
+
+        let tokens = match PL::tokenize(input) {
+            Ok(tokens) => tokens,
+            Err(err) => {
+                output.push_str(&format!("Tokenization error: {}\n", err.msg));
+                return output;
+            }
+        };
+
+        if options.show_tokens {
+            output.push_str(&format!("Tokens: {:?}\n", tokens));
+        }
+
+        let ast = match PL::parse(tokens) {
+            Ok(ast) => ast,
+            Err(err) => {
+                output.push_str(&format!("Parse error: {:?}\n", err.msg));
+                return output;
+            }
+        };
+
+        if options.show_parse {
+            output.push_str(&format!("AST: {:?}\n", ast));
+        }
+
+        if options.show_llvm_ir {
+            let LLVMCodeString(s) = PL::compile(ast);
+            output.push_str(&s);
+        } else {
+            // for now only handle last output
+            let mut evaluator = PL::Evaluator::new();
+            let mut full_output: Vec<String> = PL::evaluate(ast, &mut evaluator);
+            output.push_str(&full_output.pop().unwrap_or("".to_string()));
+        }
+        output
+    }
 }

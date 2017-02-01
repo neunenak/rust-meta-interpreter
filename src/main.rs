@@ -7,6 +7,7 @@ use std::fs::File;
 use std::io::Read;
 use std::process;
 use std::io::Write;
+use std::default::Default;
 
 mod schala_lang;
 use schala_lang::SchalaEvaluator;
@@ -15,7 +16,7 @@ use schala_lang::Schala;
 mod maaru_lang;
 
 mod language;
-use language::{ProgrammingLanguage, LanguageWrapper, LLVMCodeString, EvaluationMachine};
+use language::{ProgrammingLanguage, LanguageInterface, LLVMCodeString, EvaluationMachine};
 
 mod llvm_wrap;
 
@@ -97,7 +98,7 @@ struct Repl<'a> {
     show_tokens: bool,
     show_parse: bool,
     show_llvm_ir: bool,
-    languages: Vec<Box<LanguageWrapper>>,
+    languages: Vec<Box<LanguageInterface>>,
     evaluator: SchalaEvaluator<'a>,
     interpreter_directive_sigil: char,
     reader: LineReader,
@@ -147,47 +148,8 @@ impl<'a> Repl<'a> {
     }
 
     fn input_handler(&mut self, input: &str) -> String {
-        let schala = Schala::new();
-        let mut evaluator = <SchalaEvaluator as EvaluationMachine>::new();
-        self.input_handler_new(input, schala, &mut evaluator)
-    }
-
-    fn input_handler_new<T: ProgrammingLanguage>(&mut self, input: &str, language: T, mut evaluator: &mut T::Evaluator) -> String {
-        let mut output = String::new();
-
-        let tokens = match T::tokenize(input) {
-            Ok(tokens) => tokens,
-            Err(err) => {
-                output.push_str(&format!("Tokenization error: {}\n", err.msg));
-                return output;
-            }
-        };
-
-        if self.show_tokens {
-            output.push_str(&format!("Tokens: {:?}\n", tokens));
-        }
-
-        let ast = match T::parse(tokens) {
-            Ok(ast) => ast,
-            Err(err) => {
-                output.push_str(&format!("Parse error: {:?}\n", err.msg));
-                return output;
-            }
-        };
-
-        if self.show_parse {
-            output.push_str(&format!("AST: {:?}\n", ast));
-        }
-
-        if self.show_llvm_ir {
-            let LLVMCodeString(s) = T::compile(ast);
-            output.push_str(&s);
-        } else {
-            // for now only handle last output
-            let mut full_output: Vec<String> = T::evaluate(ast, &mut evaluator);
-            output.push_str(&full_output.pop().unwrap_or("".to_string()));
-        }
-        output
+        let ref mut language = self.languages[0];
+        language.evaluate_in_repl(input, language::LanguageInterfaceOptions::default())
     }
 
     fn handle_interpreter_directive(&mut self, input: &str) -> bool {
