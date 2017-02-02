@@ -1,7 +1,12 @@
 use language::{ProgrammingLanguage, EvaluationMachine, ParseError, TokenError, LLVMCodeString};
 
 pub struct Maaru {
+}
 
+impl Maaru {
+    pub fn new() -> Maaru {
+        Maaru { }
+    }
 }
 
 pub struct MaaruEvaluator {

@@ -22,7 +22,11 @@ mod llvm_wrap;
 
 fn main() {
 
-    let languages: Vec<Box<LanguageInterface>> = vec![Box::new((Schala::new(), SchalaEvaluator::new(None)))];
+    let languages: Vec<Box<LanguageInterface>> =
+        vec![
+            Box::new((Schala::new(), SchalaEvaluator::new(None))),
+            Box::new((maaru_lang::Maaru::new(), maaru_lang::MaaruEvaluator::new())),
+        ];
 
     let option_matches =
         match program_options().parse(std::env::args()) {
