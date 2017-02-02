@@ -343,8 +343,6 @@ impl<'a> Evaluator<'a> {
             return res;
         }
 
-        println!("Reduce call, callable {:?} args: {:?}", callable, arguments);
-
         let function = match callable {
             Callable::Lambda(func) => func.clone(),
             Callable::NamedFunction(name) => {

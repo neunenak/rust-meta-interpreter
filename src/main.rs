@@ -21,7 +21,6 @@ use language::{ProgrammingLanguage, LanguageInterface, LLVMCodeString, Evaluatio
 mod llvm_wrap;
 
 fn main() {
-
     let languages: Vec<Box<LanguageInterface>> =
         vec![
             Box::new((Schala::new(), SchalaEvaluator::new(None))),
