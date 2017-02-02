@@ -42,7 +42,7 @@ fn main() {
         std::process::exit(1);
     }
 
-    let show_llvm_ir = option_matches.opt_present("l");
+    let show_llvm_ir = option_matches.opt_present("v");
     let compile = !option_matches.opt_present("i");
     let trace_evaluation = option_matches.opt_present("t");
 
@@ -67,7 +67,7 @@ fn program_options() -> getopts::Options {
     options.optflag("t",
                     "trace-evaluation",
                     "Print out trace of evaluation");
-    options.optflag("l",
+    options.optflag("v",
                     "llvm-in-repl",
                     "Show LLVM IR in REPL");
     options.optflag("",
