@@ -94,30 +94,25 @@ fn run_noninteractive<'a, T: ProgrammingLanguage>(filename: &str, compile: bool,
 }
 
 type LineReader = linefeed::Reader<linefeed::terminal::DefaultTerminal>;
-struct Repl<'a> {
+struct Repl {
     show_tokens: bool,
     show_parse: bool,
     show_llvm_ir: bool,
     languages: Vec<Box<LanguageInterface>>,
-    evaluator: SchalaEvaluator<'a>,
     interpreter_directive_sigil: char,
     reader: LineReader,
 }
 
-impl<'a> Repl<'a> {
-    fn new(trace_evaluation: bool, show_llvm: bool) -> Repl<'a> {
+impl Repl {
+    fn new(trace_evaluation: bool, show_llvm: bool) -> Repl {
         let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Schala").unwrap();
         reader.set_prompt(">> ");
-
-        let mut evaluator = <SchalaEvaluator as EvaluationMachine>::new();
-        evaluator.set_option("trace_evaluation", trace_evaluation);
 
         Repl {
             show_tokens: false,
             show_parse: false,
             show_llvm_ir: show_llvm,
             languages: vec![Box::new((Schala::new(), SchalaEvaluator::new(None)))],
-            evaluator: evaluator,
             interpreter_directive_sigil: '.',
             reader: reader,
         }
@@ -190,7 +185,7 @@ impl<'a> Repl<'a> {
                 match commands[2] {
                     "tokens" => self.show_tokens = show,
                     "parse" => self.show_parse = show,
-                    "eval" => { self.evaluator.set_option("trace_evaluation", show); },
+                    "eval" => { /*self.evaluator.set_option("trace_evaluation", show);*/ },
                     "llvm" => self.show_llvm_ir = show,
                     e => {
                         println!("Bad `show`/`hide` argument: {}", e);
