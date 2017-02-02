@@ -46,7 +46,7 @@ pub trait LanguageInterface {
     fn evaluate_in_repl(&mut self, input: &str, options: LanguageInterfaceOptions) -> String;
 }
 
-impl<PL, T, A, E> LanguageInterface for PL where PL: ProgrammingLanguage<Token=T, AST=A, Evaluator=E>, T: Debug, A: Debug, E: EvaluationMachine {
+impl<PL, T, A, E> LanguageInterface for (PL, PL::Evaluator) where PL: ProgrammingLanguage<Token=T, AST=A, Evaluator=E>, T: Debug, A: Debug, E: EvaluationMachine {
     fn evaluate_in_repl(&mut self, input: &str, options: LanguageInterfaceOptions) -> String {
         let mut output = String::new();
 
@@ -79,8 +79,8 @@ impl<PL, T, A, E> LanguageInterface for PL where PL: ProgrammingLanguage<Token=T
             output.push_str(&s);
         } else {
             // for now only handle last output
-            let mut evaluator = PL::Evaluator::new();
-            let mut full_output: Vec<String> = PL::evaluate(ast, &mut evaluator);
+            let ref mut evaluator = self.1;
+            let mut full_output: Vec<String> = PL::evaluate(ast, evaluator);
             output.push_str(&full_output.pop().unwrap_or("".to_string()));
         }
         output

@@ -116,7 +116,7 @@ impl<'a> Repl<'a> {
             show_tokens: false,
             show_parse: false,
             show_llvm_ir: show_llvm,
-            languages: vec![Box::new(Schala::new())],
+            languages: vec![Box::new((Schala::new(), SchalaEvaluator::new(None)))],
             evaluator: evaluator,
             interpreter_directive_sigil: '.',
             reader: reader,
