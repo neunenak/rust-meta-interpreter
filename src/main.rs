@@ -136,7 +136,7 @@ impl Repl {
     }
     fn run(&mut self) {
         use linefeed::ReadResult::*;
-        println!("Schala v 0.02");
+        println!("MetaInterpreter v 0.05");
         loop {
             match self.reader.read_line() {
                 Err(e) => {
@@ -203,9 +203,11 @@ impl Repl {
                     },
                     Some(&"next") => {
                         self.current_language_index = (self.current_language_index + 1) % self.languages.len();
+                        println!("Switching to {}", self.languages[self.current_language_index].get_language_name());
                     }
                     Some(&"prev") | Some(&"previous") => {
-                        self.current_language_index = if self.current_language_index == 0 { self.languages.len() - 1 } else { self.current_language_index - 1 }
+                        self.current_language_index = if self.current_language_index == 0 { self.languages.len() - 1 } else { self.current_language_index - 1 };
+                        println!("Switching to {}", self.languages[self.current_language_index].get_language_name());
                     },
                     Some(e) => println!("Bad `lang` argument: {}", e),
                     None => println!("`lang` - valid arguments `show`, `next`, `prev`|`previous`"),
