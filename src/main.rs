@@ -115,6 +115,7 @@ struct Repl {
     show_parse: bool,
     show_llvm_ir: bool,
     languages: Vec<Box<LanguageInterface>>,
+    current_language_index: usize,
     interpreter_directive_sigil: char,
     reader: LineReader,
 }
@@ -129,6 +130,7 @@ impl Repl {
             show_parse: false,
             show_llvm_ir: false,
             languages: languages,
+            current_language_index: 0,
             interpreter_directive_sigil: '.',
             reader: reader,
         }
@@ -159,7 +161,7 @@ impl Repl {
     }
 
     fn input_handler(&mut self, input: &str) -> String {
-        let ref mut language = self.languages[0];
+        let ref mut language = self.languages[self.current_language_index];
         language.evaluate_in_repl(input, language::LanguageInterfaceOptions::default())
     }
 
@@ -187,6 +189,26 @@ impl Repl {
             "history"  => {
                 for item in self.reader.history() {
                     println!("{}", item);
+                }
+            },
+            "lang" => {
+                match commands[1] {
+                    "show" => {
+                        for (i, lang) in self.languages.iter().enumerate() {
+                            if i == self.current_language_index {
+                                println!("* {}", lang.get_language_name());
+                            } else {
+                                println!("{}", lang.get_language_name());
+                            }
+                        }
+                    },
+                    "next" => {
+                        self.current_language_index = (self.current_language_index + 1) % self.languages.len();
+                    }
+                    "prev" | "previous" => {
+                        self.current_language_index = if self.current_language_index == 0 { self.languages.len() - 1 } else { self.current_language_index - 1 }
+                    },
+                    e  => println!("Bad `lang` argument: {}", e),
                 }
             },
             "set" => {
