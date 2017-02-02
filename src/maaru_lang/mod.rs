@@ -19,6 +19,10 @@ impl ProgrammingLanguage for Maaru {
     type AST = AST;
     type Evaluator = MaaruEvaluator;
 
+    fn name() -> String {
+        "Maaru".to_string()
+    }
+
     fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
         Ok(vec![Token { }])
     }

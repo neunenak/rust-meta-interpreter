@@ -24,6 +24,7 @@ pub trait ProgrammingLanguage {
     type AST: Debug;
     type Evaluator: EvaluationMachine;
 
+    fn name() -> String;
     fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError>;
     fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError>;
     fn evaluate(ast: Self::AST, evaluator: &mut Self::Evaluator) -> Vec<String>;
@@ -44,9 +45,13 @@ pub struct LanguageInterfaceOptions {
 
 pub trait LanguageInterface {
     fn evaluate_in_repl(&mut self, input: &str, options: LanguageInterfaceOptions) -> String;
+    fn get_language_name(&self) -> String;
 }
 
 impl<PL, T, A, E> LanguageInterface for (PL, PL::Evaluator) where PL: ProgrammingLanguage<Token=T, AST=A, Evaluator=E>, T: Debug, A: Debug, E: EvaluationMachine {
+    fn get_language_name(&self) -> String {
+        PL::name()
+    }
     fn evaluate_in_repl(&mut self, input: &str, options: LanguageInterfaceOptions) -> String {
         let mut output = String::new();
 

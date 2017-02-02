@@ -21,6 +21,9 @@ use language::{ProgrammingLanguage, LanguageInterface, LLVMCodeString, Evaluatio
 mod llvm_wrap;
 
 fn main() {
+
+    let languages: Vec<Box<LanguageInterface>> = vec![Box::new((Schala::new(), SchalaEvaluator::new(None)))];
+
     let option_matches =
         match program_options().parse(std::env::args()) {
             Ok(o) => o,
@@ -29,11 +32,17 @@ fn main() {
                 std::process::exit(1);
             }
         };
+    if option_matches.opt_present("list-languages") {
+        for lang in languages {
+            println!("{}", lang.get_language_name());
+        }
+        std::process::exit(1);
+    }
     let trace = option_matches.opt_present("t");
     let show_llvm = option_matches.opt_present("l");
     match option_matches.free[..] {
         [] | [_] => {
-            let mut repl = Repl::new(trace, show_llvm);
+            let mut repl = Repl::new(languages);
             repl.run();
         }
         [_, ref filename, _..] => {
@@ -54,6 +63,9 @@ fn program_options() -> getopts::Options {
     options.optflag("l",
                     "llvm-in-repl",
                     "Show LLVM IR in REPL");
+    options.optflag("",
+                    "list-languages",
+                    "Show a list of all supported languages");
     options
 }
 
@@ -104,15 +116,15 @@ struct Repl {
 }
 
 impl Repl {
-    fn new(trace_evaluation: bool, show_llvm: bool) -> Repl {
+    fn new(languages: Vec<Box<LanguageInterface>>) -> Repl {
         let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Schala").unwrap();
         reader.set_prompt(">> ");
 
         Repl {
             show_tokens: false,
             show_parse: false,
-            show_llvm_ir: show_llvm,
-            languages: vec![Box::new((Schala::new(), SchalaEvaluator::new(None)))],
+            show_llvm_ir: false,
+            languages: languages,
             interpreter_directive_sigil: '.',
             reader: reader,
         }

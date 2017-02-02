@@ -20,6 +20,10 @@ impl<'a> ProgrammingLanguage for Schala<'a> {
     type AST = parser::AST;
     type Evaluator = SchalaEvaluator<'a>;
 
+    fn name() -> String {
+        "Schala".to_string()
+    }
+
     fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
         tokenizer::tokenize(input)
     }
