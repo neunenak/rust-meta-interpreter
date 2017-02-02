@@ -41,16 +41,20 @@ fn main() {
         }
         std::process::exit(1);
     }
-    let trace = option_matches.opt_present("t");
-    let show_llvm = option_matches.opt_present("l");
+
+    let show_llvm_ir = option_matches.opt_present("l");
+    let compile = !option_matches.opt_present("i");
+    let trace_evaluation = option_matches.opt_present("t");
+
     match option_matches.free[..] {
         [] | [_] => {
             let mut repl = Repl::new(languages);
+            repl.show_llvm_ir = show_llvm_ir;
             repl.run();
         }
         [_, ref filename, _..] => {
             let language = Schala::new();
-            run_noninteractive(filename, !option_matches.opt_present("i"), trace, &language);
+            run_noninteractive(filename, &language, trace_evaluation, compile);
         }
     };
 }
@@ -72,7 +76,7 @@ fn program_options() -> getopts::Options {
     options
 }
 
-fn run_noninteractive<'a, T: ProgrammingLanguage>(filename: &str, compile: bool, trace_evaluation: bool, language: &T) {
+fn run_noninteractive<'a, T: ProgrammingLanguage>(filename: &str, _language: &T, trace_evaluation: bool, compile: bool) {
     let mut source_file = File::open(&Path::new(filename)).unwrap();
     let mut buffer = String::new();
     source_file.read_to_string(&mut buffer).unwrap();
@@ -110,9 +114,9 @@ fn run_noninteractive<'a, T: ProgrammingLanguage>(filename: &str, compile: bool,
 
 type LineReader = linefeed::Reader<linefeed::terminal::DefaultTerminal>;
 struct Repl {
-    show_tokens: bool,
-    show_parse: bool,
-    show_llvm_ir: bool,
+    pub show_tokens: bool,
+    pub show_parse: bool,
+    pub show_llvm_ir: bool,
     languages: Vec<Box<LanguageInterface>>,
     current_language_index: usize,
     interpreter_directive_sigil: char,

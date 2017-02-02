@@ -28,17 +28,17 @@ impl ProgrammingLanguage for Maaru {
         "Maaru".to_string()
     }
 
-    fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
+    fn tokenize(_input: &str) -> Result<Vec<Self::Token>, TokenError> {
         Ok(vec![Token { }])
     }
 
-    fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
+    fn parse(_input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
         Ok(AST { })
     }
-    fn evaluate(ast: Self::AST, evaluator: &mut Self::Evaluator) -> Vec<String> {
+    fn evaluate(_ast: Self::AST, _evaluator: &mut Self::Evaluator) -> Vec<String> {
         vec!["Unimplemented".to_string()]
     }
-    fn compile(ast: Self::AST) -> LLVMCodeString {
+    fn compile(_ast: Self::AST) -> LLVMCodeString {
         unimplemented!()
     }
 }
