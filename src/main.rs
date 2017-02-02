@@ -192,8 +192,8 @@ impl Repl {
                 }
             },
             "lang" => {
-                match commands[1] {
-                    "show" => {
+                match commands.get(1) {
+                    Some(&"show") => {
                         for (i, lang) in self.languages.iter().enumerate() {
                             if i == self.current_language_index {
                                 println!("* {}", lang.get_language_name());
@@ -202,31 +202,40 @@ impl Repl {
                             }
                         }
                     },
-                    "next" => {
+                    Some(&"next") => {
                         self.current_language_index = (self.current_language_index + 1) % self.languages.len();
                     }
-                    "prev" | "previous" => {
+                    Some(&"prev") | Some(&"previous") => {
                         self.current_language_index = if self.current_language_index == 0 { self.languages.len() - 1 } else { self.current_language_index - 1 }
                     },
-                    e  => println!("Bad `lang` argument: {}", e),
+                    Some(e) => println!("Bad `lang` argument: {}", e),
+                    None => println!("`lang` - valid arguments `show`, `next`, `prev`|`previous`"),
                 }
             },
             "set" => {
-                let show = match commands[1] {
-                    "show" => true,
-                    "hide" => false,
-                    e => {
+                let show = match commands.get(1) {
+                    Some(&"show") => true,
+                    Some(&"hide") => false,
+                    Some(e) => {
                         println!("Bad `set` argument: {}", e);
                         return true;
                     }
+                    None => {
+                        println!("`set` - valid arguments `show {{option}}`, `hide {{option}}`");
+                        return true;
+                    }
                 };
-                match commands[2] {
-                    "tokens" => self.show_tokens = show,
-                    "parse" => self.show_parse = show,
-                    "eval" => { /*self.evaluator.set_option("trace_evaluation", show);*/ },
-                    "llvm" => self.show_llvm_ir = show,
-                    e => {
+                match commands.get(2) {
+                    Some(&"tokens") => self.show_tokens = show,
+                    Some(&"parse") => self.show_parse = show,
+                    Some(&"eval") => { /*self.evaluator.set_option("trace_evaluation", show);*/ },
+                    Some(&"llvm") => self.show_llvm_ir = show,
+                    Some(e) => {
                         println!("Bad `show`/`hide` argument: {}", e);
+                        return true;
+                    }
+                    None => {
+                        println!("`show`/`hide` requires an argument");
                         return true;
                     }
                 }
