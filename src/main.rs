@@ -184,7 +184,13 @@ impl Repl {
 
     fn input_handler(&mut self, input: &str) -> String {
         let ref mut language = self.languages[self.current_language_index];
-        language.evaluate_in_repl(input, language::LanguageInterfaceOptions::default())
+
+        let mut options = language::LanguageInterfaceOptions::default();
+        options.show_tokens = self.show_tokens;
+        options.show_parse = self.show_parse;
+        options.show_llvm_ir = self.show_llvm_ir;
+
+        language.evaluate_in_repl(input, options)
     }
 
     fn handle_interpreter_directive(&mut self, input: &str) -> bool {
