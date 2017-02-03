@@ -42,13 +42,24 @@ fn main() {
         std::process::exit(1);
     }
 
+    if option_matches.opt_present("h") {
+        println!("{}", program_options().usage("Schala metainterpreter"));
+        std::process::exit(1);
+    }
+
+    let language_names: Vec<String> = languages.iter().map(|lang| {lang.get_language_name()}).collect();
+    let initial_index: usize =
+        option_matches.opt_str("l")
+            .and_then(|lang| { language_names.iter().position(|x| { *x == lang }) })
+            .unwrap_or(0);
+
     let show_llvm_ir = option_matches.opt_present("v");
     let compile = !option_matches.opt_present("i");
     let trace_evaluation = option_matches.opt_present("t");
 
     match option_matches.free[..] {
         [] | [_] => {
-            let mut repl = Repl::new(languages);
+            let mut repl = Repl::new(languages, initial_index);
             repl.show_llvm_ir = show_llvm_ir;
             repl.run();
         }
@@ -73,6 +84,13 @@ fn program_options() -> getopts::Options {
     options.optflag("",
                     "list-languages",
                     "Show a list of all supported languages");
+    options.optopt("l",
+                    "lang",
+                    "Start up REPL in a language",
+                    "LANGUAGE");
+    options.optflag("h",
+                    "help",
+                    "Show help text");
     options
 }
 
@@ -124,16 +142,16 @@ struct Repl {
 }
 
 impl Repl {
-    fn new(languages: Vec<Box<LanguageInterface>>) -> Repl {
-        let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Schala").unwrap();
+    fn new(languages: Vec<Box<LanguageInterface>>, initial_index: usize) -> Repl {
+        let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Metainterpreter").unwrap();
         reader.set_prompt(">> ");
-
+        let i = if initial_index < languages.len() { initial_index } else { 0 };
         Repl {
             show_tokens: false,
             show_parse: false,
             show_llvm_ir: false,
             languages: languages,
-            current_language_index: 0,
+            current_language_index: i,
             interpreter_directive_sigil: '.',
             reader: reader,
         }
@@ -141,6 +159,7 @@ impl Repl {
     fn run(&mut self) {
         use linefeed::ReadResult::*;
         println!("MetaInterpreter v 0.05");
+        println!("Using language: {}", self.languages[self.current_language_index].get_language_name());
         loop {
             match self.reader.read_line() {
                 Err(e) => {
