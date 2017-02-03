@@ -57,6 +57,7 @@ pub fn tokenize(input: &str) -> TokenizeResult {
                     break;
                 }
             }
+            continue;
         }
         let cur_tok = match c {
             c if char::is_whitespace(c) && c != '\n' => continue,
