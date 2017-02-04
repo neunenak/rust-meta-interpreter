@@ -43,8 +43,18 @@ pub enum Number {
     FloatRep(String)
 }
 
+pub type AST = Vec<ASTNode>;
+
 #[derive(Debug)]
-pub struct AST { }
+pub enum ASTNode {
+    FunctionDefinition(String, Expression),
+    ImportStatement(String),
+}
+
+#[derive(Debug)]
+pub enum Expression {
+
+}
 
 impl ProgrammingLanguage for Maaru {
     type Token = Token;
@@ -131,7 +141,7 @@ impl ProgrammingLanguage for Maaru {
     }
 
     fn parse(_input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
-        Ok(AST { })
+        Ok(vec!())
     }
     fn evaluate(_ast: Self::AST, _evaluator: &mut Self::Evaluator) -> Vec<String> {
         vec!["Unimplemented".to_string()]
