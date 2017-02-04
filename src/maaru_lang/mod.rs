@@ -19,6 +19,7 @@ pub struct MaaruEvaluator {
 #[derive(Debug)]
 pub enum Token {
     StrLiteral(String),
+    Backtick,
     Newline,
     LParen,
     RParen,
@@ -26,7 +27,11 @@ pub enum Token {
     RBracket,
     LBrace,
     RBrace,
+    Period,
     Comma,
+    Colon,
+    Semicolon,
+    SingleQuote,
     Identifier(String),
     Operator(String),
     NumLiteral(Number),
@@ -34,7 +39,8 @@ pub enum Token {
 
 #[derive(Debug)]
 pub enum Number {
-    Integer(u64),
+    IntegerRep(String),
+    FloatRep(String)
 }
 
 #[derive(Debug)]
@@ -72,13 +78,51 @@ impl ProgrammingLanguage for Maaru {
                 '{' => LBrace,
                 '}' => RBrace,
                 ',' => Comma,
+                ':' => Colon,
+                ';' => Semicolon,
+                '.' => Period,
+                '`' => Backtick,
+                '\'' => SingleQuote,
+                '"' => {
+                    let mut buffer = String::new();
+                    loop {
+                        match iter.next() {
+                            Some(x) if x == '"' => break,
+                            Some(x) => buffer.push(x),
+                            None => return Err(TokenError::new("Unclosed quote")),
+                        }
+                    }
+                    StrLiteral(buffer)
+                }
+                c if c.is_digit(10) => {
+                    let mut integer = true;
+                    let mut buffer = String::new();
+                    buffer.push(c);
+                    buffer.extend(iter.peeking_take_while(|x| x.is_digit(10)));
+                    if let Some(&'.') = iter.peek() {
+                        buffer.push(iter.next().unwrap());
+                        integer = false;
+                    }
+                    buffer.extend(iter.peeking_take_while(|x| x.is_digit(10)));
+                    let inner = if integer {
+                        Number::IntegerRep(buffer)
+                    } else {
+                        Number::FloatRep(buffer)
+                    };
+                    NumLiteral(inner)
+                },
                 c if char::is_alphanumeric(c) => {
                     let mut buffer = String::new();
                     buffer.push(c);
-                    buffer.extend(iter.peeking_take_while(|x| char::is_whitespace(*x)));
+                    buffer.extend(iter.peeking_take_while(|x| char::is_alphanumeric(*x)));
                     Identifier(buffer)
                 },
-                _ => unimplemented!(),
+                c => {
+                    let mut buffer = String::new();
+                    buffer.push(c);
+                    buffer.extend(iter.peeking_take_while(|x| !char::is_whitespace(*x)));
+                    Operator(buffer)
+                }
             };
             tokens.push(cur_tok);
         }
