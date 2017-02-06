@@ -258,7 +258,10 @@ impl Repl {
                 match commands.get(2) {
                     Some(&"tokens") => self.show_tokens = show,
                     Some(&"parse") => self.show_parse = show,
-                    Some(&"eval") => { /*self.evaluator.set_option("trace_evaluation", show);*/ },
+                    Some(&"eval") => {
+                        let ref mut language = self.languages[self.current_language_index];
+                        language.set_option("trace_evaluation", show);
+                    },
                     Some(&"llvm") => self.show_llvm_ir = show,
                     Some(e) => {
                         println!("Bad `show`/`hide` argument: {}", e);

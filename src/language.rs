@@ -45,9 +45,13 @@ pub struct LanguageInterfaceOptions {
 pub trait LanguageInterface {
     fn evaluate_in_repl(&mut self, input: &str, options: LanguageInterfaceOptions) -> String;
     fn get_language_name(&self) -> String;
+    fn set_option(&mut self, option: &str, value: bool) -> bool;
 }
 
 impl<PL, T, A, E> LanguageInterface for (PL, PL::Evaluator) where PL: ProgrammingLanguage<Token=T, AST=A, Evaluator=E>, T: Debug, A: Debug, E: EvaluationMachine {
+    fn set_option(&mut self, option: &str, value: bool) -> bool {
+        self.1.set_option(option, value)
+    }
     fn get_language_name(&self) -> String {
         PL::name()
     }
