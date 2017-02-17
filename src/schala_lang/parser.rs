@@ -1,4 +1,3 @@
-
 use schala_lang::tokenizer::{Token, Kw, OpTok};
 use schala_lang::tokenizer::Token::*;
 
@@ -16,18 +15,18 @@ use std::convert::From;
 // identlist := Ident (Comma Ident)* | e
 // exprlist  := Expression (Comma Expression)* | e
 //
-// expression := primary_expression (op primary_expression)*
-// primary_expression :=  number_expr | String | identifier_expr | paren_expr | conditional_expr |
-//                        while_expr | lambda_expr
+// expression := postop_expression (op postop_expression)*
+// postop_expression := primary_expression postop
+// primary_expression :=  number_expr | String | identifier_expr | paren_expr | conditional_expr | while_expr | lambda_expr
 // number_expr := (PLUS | MINUS ) number_expr | Number
 // identifier_expr := call_expression | Variable
-// call_expr := Identifier LParen exprlist RParen
+// call_expression := Identifier LParen exprlist RParen
 // while_expr := WHILE primary_expression LCurlyBrace (expression delimiter)* RCurlyBrace
 // paren_expr := LParen expression RParen
 // conditional_expr := IF expression LCurlyBrace (expression delimiter)* RCurlyBrace (LCurlyBrace (expresion delimiter)* RCurlyBrace)?
 // lambda_expr := FN LParen identlist RParen LCurlyBrace (expression delimiter)* RCurlyBrace
-//                lambda_call
-// lambda_call := ε | LParen exprlist RParen
+// lambda_call :=  | LParen exprlist RParen
+// postop := ε | LParen exprlist RParen | LBracket expression RBracket
 // op := '+', '-', etc.
 //
 
@@ -358,7 +357,7 @@ impl Parser {
     }
 
     fn expression(&mut self) -> ParseResult<Expression> {
-        let lhs: Expression = try!(self.primary_expression());
+        let lhs: Expression = try!(self.postop_expression());
         self.precedence_expr(lhs, 0)
     }
 
@@ -372,7 +371,7 @@ impl Parser {
                 break;
             }
             self.next();
-            let mut rhs = try!(self.primary_expression());
+            let mut rhs = try!(self.postop_expression());
             while let Some(Operator(ref op)) = self.peek() {
                 if self.get_precedence(op) > precedence {
                     let new_prec = self.get_precedence(op);
@@ -386,6 +385,30 @@ impl Parser {
             lhs = Expression::BinExp(op.into(), Box::new(lhs), Box::new(rhs));
         }
         Ok(lhs)
+    }
+
+    fn postop_expression(&mut self) -> ParseResult<Expression> {
+        use self::Expression::*;
+        let expr = try!(self.primary_expression());
+        let ret = match self.peek() {
+            Some(LParen) => {
+                let args = try!(self.call_expression());
+                match expr {
+                    Lambda(f) => Call(Callable::Lambda(f), args),
+                    e => {
+                        let err = format!("Expected lambda expression before a call, got {:?}", e);
+                        return ParseError::result_from_str(&err);
+                    },
+                }
+            },
+            Some(LSquareBracket) => {
+                unimplemented!()
+            },
+            _ => {
+                expr
+            }
+        };
+        Ok(ret)
     }
 
     fn primary_expression(&mut self) -> ParseResult<Expression> {
@@ -463,13 +486,7 @@ impl Parser {
             body: body,
         };
 
-        match self.peek() {
-            Some(LParen) => {
-                let args = try!(self.call_expr());
-                Ok(Call(Callable::Lambda(function), args))
-            },
-            _ => Ok(Lambda(function))
-        }
+        Ok(Lambda(function))
     }
 
     fn while_expr(&mut self) -> ParseResult<Expression> {
@@ -523,7 +540,7 @@ impl Parser {
         let name = expect_identifier!(self);
         let expr = match self.peek() {
             Some(LParen) => {
-                let args = try!(self.call_expr());
+                let args = try!(self.call_expression());
                 Expression::Call(Callable::NamedFunction(name), args)
             }
             __ => Expression::Variable(name),
@@ -531,7 +548,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn call_expr(&mut self) -> ParseResult<Vec<Expression>> {
+    fn call_expression(&mut self) -> ParseResult<Vec<Expression>> {
         expect!(self, LParen);
         let args: Vec<Expression> = try!(self.exprlist());
         expect!(self, RParen);
@@ -622,6 +639,12 @@ mod tests {
         let t2 = "fn(x) { x + 2 }";
         let tokens2 = tokenizer::tokenize(t2).unwrap();
         assert!(parse(&tokens2, &[]).is_err());
+
+        let t3 = "(fn(x) { x + 10 })(20)";
+        let tokens3 = tokenizer::tokenize(t3).unwrap();
+        match parse(&tokens3, &[]).unwrap() {
+            _ => (),
+        };
     }
 
     #[test]
