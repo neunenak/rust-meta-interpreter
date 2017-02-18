@@ -120,7 +120,7 @@ fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, Tok
     fn ends_identifier(c: &char) -> bool {
         let c = *c;
         char::is_whitespace(c) || is_digit(&c) || c == ';' || c == '(' || c == ')' ||
-        c == ',' || c == '.' || c == ',' || c == ':'
+        c == ',' || c == '.' || c == ',' || c == ':' || c == '[' || c == ']'
     }
 
     use self::Token::*;

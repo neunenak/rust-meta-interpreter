@@ -72,6 +72,7 @@ pub enum Expression {
     Lambda(Function),
     Block(VecDeque<Expression>),
     While(Box<Expression>, Vec<Expression>),
+    Index(Box<Expression>, Box<Expression>),
 }
 
 #[derive(Clone, Debug)]
@@ -402,7 +403,10 @@ impl Parser {
                 }
             },
             Some(LSquareBracket) => {
-                unimplemented!()
+                expect!(self, LSquareBracket);
+                let index_expr = self.expression()?;
+                expect!(self, RSquareBracket);
+                Index(Box::new(expr), Box::new(index_expr))
             },
             _ => {
                 expr

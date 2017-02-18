@@ -310,6 +310,9 @@ impl<'a> Evaluator<'a> {
                     }
                 }
             }
+            Index(box expr, box index_expr) => {
+                (Null, None)
+            }
         }
     }
 
