@@ -290,8 +290,8 @@ impl Parser {
 
     fn statement(&mut self) -> ParseResult<Statement> {
         let node: Statement = match self.peek() {
-            Some(Keyword(Kw::Fn)) => try!(self.declaration()),
-            Some(_) => Statement::ExprNode(try!(self.expression())),
+            Some(Keyword(Kw::Fn)) => self.declaration()?,
+            Some(_) => Statement::ExprNode(self.expression()?),
             None => panic!("Unexpected end of tokens"),
         };
         Ok(node)
@@ -299,9 +299,9 @@ impl Parser {
 
     fn declaration(&mut self) -> ParseResult<Statement> {
         expect!(self, Keyword(Kw::Fn));
-        let prototype = try!(self.prototype());
+        let prototype = self.prototype()?;
         expect!(self, LCurlyBrace);
-        let body = try!(self.body());
+        let body = self.body()?;
         expect!(self, RCurlyBrace);
         Ok(Statement::FuncDefNode(Function {
             prototype: prototype,
@@ -312,7 +312,7 @@ impl Parser {
     fn prototype(&mut self) -> ParseResult<Prototype> {
         let name = expect_identifier!(self);
         expect!(self, LParen);
-        let parameters = try!(self.identlist());
+        let parameters = self.identlist()?;
         expect!(self, RParen);
         Ok(Prototype {
             name: name,
@@ -339,7 +339,7 @@ impl Parser {
             if let Some(RParen) = self.peek() {
                 break;
             }
-            let exp = try!(self.expression());
+            let exp = self.expression()?;
             exprs.push(exp);
             match self.peek() {
                 Some(Comma) => {self.next();},
@@ -359,7 +359,7 @@ impl Parser {
     }
 
     fn expression(&mut self) -> ParseResult<Expression> {
-        let lhs: Expression = try!(self.postop_expression());
+        let lhs: Expression = self.postop_expression()?;
         self.precedence_expr(lhs, 0)
     }
 
@@ -373,11 +373,11 @@ impl Parser {
                 break;
             }
             self.next();
-            let mut rhs = try!(self.postop_expression());
+            let mut rhs = self.postop_expression()?;
             while let Some(Operator(ref op)) = self.peek() {
                 if self.get_precedence(op) > precedence {
                     let new_prec = self.get_precedence(op);
-                    rhs = try!(self.precedence_expr(rhs, new_prec));
+                    rhs = self.precedence_expr(rhs, new_prec)?;
 
                 } else {
                     break;
@@ -391,10 +391,10 @@ impl Parser {
 
     fn postop_expression(&mut self) -> ParseResult<Expression> {
         use self::Expression::*;
-        let expr = try!(self.primary_expression());
+        let expr = self.primary_expression()?;
         let ret = match self.peek() {
             Some(LParen) => {
-                let args = try!(self.call_expression());
+                let args = self.call_expression()?;
                 match expr {
                     Lambda(f) => Call(Callable::Lambda(f), args),
                     e => {
@@ -422,18 +422,18 @@ impl Parser {
                 self.next();
                 Expression::Null
             }
-            Some(NumLiteral(_)) => try!(self.number_expression()),
-            Some(Operator(OpTok(ref a))) if **a == "+" || **a == "-" => try!(self.number_expression()),
+            Some(NumLiteral(_)) => self.number_expression()?,
+            Some(Operator(OpTok(ref a))) if **a == "+" || **a == "-" => self.number_expression()?,
             Some(StrLiteral(s)) => {
                 self.next();
                 Expression::StringLiteral(s)
             }
-            Some(Keyword(Kw::If)) => try!(self.conditional_expr()),
-            Some(Keyword(Kw::While)) => try!(self.while_expr()),
-            Some(Identifier(_)) => try!(self.identifier_expr()),
-            Some(Token::LParen) => try!(self.paren_expr()),
-            Some(Keyword(Kw::Fn)) => try!(self.lambda_expr()),
-            Some(Token::LSquareBracket) => try!(self.list_expr()),
+            Some(Keyword(Kw::If)) => self.conditional_expr()?,
+            Some(Keyword(Kw::While)) => self.while_expr()?,
+            Some(Identifier(_)) => self.identifier_expr()?,
+            Some(Token::LParen) => self.paren_expr()?,
+            Some(Keyword(Kw::Fn)) => self.lambda_expr()?,
+            Some(Token::LSquareBracket) => self.list_expr()?,
             Some(e) => {
                 return ParseError::result_from_str(&format!("Expected primary expression, got \
                                                              {:?}",
@@ -479,11 +479,11 @@ impl Parser {
         expect!(self, Keyword(Kw::Fn));
         skip_whitespace!(self);
         expect!(self, LParen);
-        let parameters = try!(self.identlist());
+        let parameters = self.identlist()?;
         expect!(self, RParen);
         skip_whitespace!(self);
         expect!(self, LCurlyBrace);
-        let body = try!(self.body());
+        let body = self.body()?;
         expect!(self, RCurlyBrace);
 
         let prototype = Prototype {
@@ -502,7 +502,7 @@ impl Parser {
     fn while_expr(&mut self) -> ParseResult<Expression> {
         use self::Expression::*;
         expect!(self, Keyword(Kw::While));
-        let test = try!(self.expression());
+        let test = self.expression()?;
         expect!(self, LCurlyBrace);
         let body = delimiter_block!(
             self,
@@ -516,7 +516,7 @@ impl Parser {
     fn conditional_expr(&mut self) -> ParseResult<Expression> {
         use self::Expression::*;
         expect!(self, Keyword(Kw::If));
-        let test = try!(self.expression());
+        let test = self.expression()?;
         skip_whitespace!(self);
         expect!(self, LCurlyBrace);
         skip_whitespace!(self);
@@ -550,7 +550,7 @@ impl Parser {
         let name = expect_identifier!(self);
         let expr = match self.peek() {
             Some(LParen) => {
-                let args = try!(self.call_expression());
+                let args = self.call_expression()?;
                 Expression::Call(Callable::NamedFunction(name), args)
             }
             __ => Expression::Variable(name),
@@ -560,14 +560,14 @@ impl Parser {
 
     fn call_expression(&mut self) -> ParseResult<Vec<Expression>> {
         expect!(self, LParen);
-        let args: Vec<Expression> = try!(self.exprlist());
+        let args: Vec<Expression> = self.exprlist()?;
         expect!(self, RParen);
         Ok(args)
     }
 
     fn paren_expr(&mut self) -> ParseResult<Expression> {
         expect!(self, Token::LParen);
-        let expr = try!(self.expression());
+        let expr = self.expression()?;
         expect!(self, Token::RParen);
         Ok(expr)
     }
