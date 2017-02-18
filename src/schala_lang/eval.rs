@@ -104,6 +104,9 @@ impl Evaluable for Expression {
             StringLiteral(_) => false,
             Lambda(_) => false,
             Number(_) => false,
+            ListLiteral(ref items) => {
+                items.iter().any(|x| x.is_reducible())
+            }
             _ => true,
         }
     }
@@ -327,6 +330,20 @@ impl<'a> Evaluator<'a> {
                     _ => (Null, None)
                 }
             }
+            ListLiteral(mut exprs) => {
+                let mut side_effect = None;
+                for expr in exprs.iter_mut() {
+                    if expr.is_reducible() {
+                        take_mut::take(expr, |expr| {
+                            let (a, b) = self.reduce_expr(expr);
+                            side_effect = b;
+                            a
+                        });
+                        break;
+                    }
+                }
+                (ListLiteral(exprs), side_effect)
+            },
         }
     }
 

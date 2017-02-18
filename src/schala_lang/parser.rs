@@ -74,6 +74,7 @@ pub enum Expression {
     Block(VecDeque<Expression>),
     While(Box<Expression>, Vec<Expression>),
     Index(Box<Expression>, Box<Expression>),
+    ListLiteral(VecDeque<Expression>),
 }
 
 #[derive(Clone, Debug)]
@@ -91,6 +92,9 @@ impl fmt::Display for Expression {
             Number(n) => write!(f, "{}", n),
             Lambda(Function { prototype: Prototype { ref name, ref parameters, .. }, .. }) => {
                 write!(f, "«function: {}, {} arg(s)»", name, parameters.len())
+            }
+            ListLiteral(ref items) => {
+                write!(f, "[ <a list> ]")
             }
             _ => write!(f, "UNIMPLEMENTED"),
         }
@@ -444,7 +448,11 @@ impl Parser {
     }
 
     fn list_expr(&mut self) -> ParseResult<Expression> {
-        unimplemented!()
+        expect!(self, LSquareBracket);
+        let exprlist: Vec<Expression> = self.exprlist()?;
+        expect!(self, RSquareBracket);
+
+        Ok(Expression::ListLiteral(VecDeque::from(exprlist)))
     }
 
     fn number_expression(&mut self) -> ParseResult<Expression> {
