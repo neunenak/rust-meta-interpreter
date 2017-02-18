@@ -310,8 +310,22 @@ impl<'a> Evaluator<'a> {
                     }
                 }
             }
-            Index(box expr, box index_expr) => {
-                (Null, None)
+            Index(mut expr, mut index_expr) => {
+                if index_expr.is_reducible() {
+                    let mut side_effect = None;
+                    take_mut::take(index_expr.as_mut(), |expr| { let (a, b) = self.reduce_expr(expr); side_effect = b; a});
+                    return (Index(expr, index_expr), side_effect)
+                }
+
+                if expr.is_reducible() {
+                    let mut side_effect = None;
+                    take_mut::take(expr.as_mut(), |expr| { let (a, b) = self.reduce_expr(expr); side_effect = b; a});
+                    return (Index(expr, index_expr), side_effect);
+                }
+
+                match expr {
+                    _ => (Null, None)
+                }
             }
         }
     }
