@@ -17,9 +17,10 @@ use std::convert::From;
 //
 // expression := postop_expression (op postop_expression)*
 // postop_expression := primary_expression postop
-// primary_expression :=  number_expr | String | identifier_expr | paren_expr | conditional_expr | while_expr | lambda_expr
+// primary_expression :=  number_expr | String | identifier_expr | paren_expr | conditional_expr | while_expr | lambda_expr | list_expr
 // number_expr := (PLUS | MINUS ) number_expr | Number
 // identifier_expr := call_expression | Variable
+// list_expr := LSquareBracket exprlist RSquareBracket
 // call_expression := Identifier LParen exprlist RParen
 // while_expr := WHILE primary_expression LCurlyBrace (expression delimiter)* RCurlyBrace
 // paren_expr := LParen expression RParen
@@ -432,6 +433,7 @@ impl Parser {
             Some(Identifier(_)) => try!(self.identifier_expr()),
             Some(Token::LParen) => try!(self.paren_expr()),
             Some(Keyword(Kw::Fn)) => try!(self.lambda_expr()),
+            Some(Token::LSquareBracket) => try!(self.list_expr()),
             Some(e) => {
                 return ParseError::result_from_str(&format!("Expected primary expression, got \
                                                              {:?}",
@@ -439,6 +441,10 @@ impl Parser {
             }
             None => return ParseError::result_from_str("Expected primary expression received EoI"),
         })
+    }
+
+    fn list_expr(&mut self) -> ParseResult<Expression> {
+        unimplemented!()
     }
 
     fn number_expression(&mut self) -> ParseResult<Expression> {
