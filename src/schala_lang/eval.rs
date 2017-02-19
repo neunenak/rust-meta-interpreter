@@ -15,6 +15,7 @@ type Reduction<T> = (T, Option<SideEffect>);
 #[derive(Debug, Clone)]
 enum ReducedValue {
     StringLiteral(Rc<String>),
+    ListLiteral(VecDeque<Expression>),
     Number(f64),
     Lambda(Function),
 }
@@ -25,6 +26,7 @@ impl From<ReducedValue> for Expression {
             ReducedValue::Number(n) => Expression::Number(n),
             ReducedValue::StringLiteral(n) => Expression::StringLiteral(n),
             ReducedValue::Lambda(f) => Expression::Lambda(f),
+            ReducedValue::ListLiteral(items) => Expression::ListLiteral(items),
         }
     }
 }
@@ -35,6 +37,7 @@ impl From<Expression> for ReducedValue {
             Expression::Number(n) => ReducedValue::Number(n),
             Expression::StringLiteral(n) => ReducedValue::StringLiteral(n),
             Expression::Lambda(f) => ReducedValue::Lambda(f),
+            Expression::ListLiteral(items) => ReducedValue::ListLiteral(items),
             _ => panic!("trying to store a non-fully-reduced variable"),
         }
     }
