@@ -94,11 +94,15 @@ impl fmt::Display for Expression {
                 write!(f, "«function: {}, {} arg(s)»", name, parameters.len())
             }
             ListLiteral(ref items) => {
-                write!(f, "[");
-                for item in items {
-                    write!(f, ", {}", item);
+                write!(f, "[ ");
+                let mut iter = items.iter().peekable();
+                while let Some(item) = iter.next() {
+                    write!(f, "{}", item);
+                    if let Some(_) = iter.peek() {
+                        write!(f, ", ");
+                    }
                 }
-                write!(f, "]")
+                write!(f, " ]")
             }
             _ => write!(f, "UNIMPLEMENTED"),
         }
