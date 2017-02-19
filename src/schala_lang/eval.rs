@@ -43,6 +43,15 @@ impl From<Expression> for ReducedValue {
     }
 }
 
+fn get_indexer(f: f64) -> Option<usize> {
+    if f.fract() == 0.0 {
+        if f.trunc() >= 0.0 {
+            return Some(f.trunc() as usize);
+        }
+    }
+    None
+}
+
 #[derive(Debug)]
 enum SideEffect {
     Print(String),
@@ -329,7 +338,15 @@ impl<'a> Evaluator<'a> {
                     return (Index(expr, index_expr), side_effect);
                 }
 
-                match expr {
+                match (*expr, *index_expr) {
+                    (ListLiteral(list_items), Number(n)) => {
+                        let indexed_expr = get_indexer(n).and_then(|i| list_items.get(i));
+                        if let Some(e) = indexed_expr {
+                            (e.clone(), None)
+                        } else {
+                            (Null, None)
+                        }
+                    }
                     _ => (Null, None)
                 }
             }
