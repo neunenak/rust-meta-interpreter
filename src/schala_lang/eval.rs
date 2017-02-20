@@ -79,6 +79,7 @@ impl<'a> Evaluator<'a> {
         ast.into_iter()
             .map(|astnode| format!("{}", self.reduction_loop(astnode)))
             .collect()
+
     }
 
     fn add_binding(&mut self, var: String, value: ReducedValue) {
