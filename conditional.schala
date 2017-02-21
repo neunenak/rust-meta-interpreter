@@ -1,9 +1,8 @@
-if 20
-then
+if 20 {
     a = 20
     b = 30
     c = 40
     a + b + c
-else 
+} else  {
     Null
-end
+}
