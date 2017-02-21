@@ -124,8 +124,8 @@ fn run_noninteractive<'a, T: ProgrammingLanguage>(filename: &str, _language: &T,
             evaluator.set_option("trace_evaluation", true);
         }
         let results = T::evaluate(ast, &mut evaluator);
-        for result in results.iter() {
-            println!("{}", result);
+        if let Some(r) = results.iter().last() {
+            println!("{}", r);
         }
     }
 }
