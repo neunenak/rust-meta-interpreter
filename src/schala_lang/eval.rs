@@ -16,6 +16,7 @@ type Reduction<T> = (T, Option<SideEffect>);
 enum ReducedValue {
     StringLiteral(Rc<String>),
     ListLiteral(VecDeque<Expression>),
+    StructLiteral(VecDeque<(Rc<String>, Expression)>),
     Number(f64),
     Lambda(Function),
 }
@@ -27,6 +28,7 @@ impl From<ReducedValue> for Expression {
             ReducedValue::StringLiteral(n) => Expression::StringLiteral(n),
             ReducedValue::Lambda(f) => Expression::Lambda(f),
             ReducedValue::ListLiteral(items) => Expression::ListLiteral(items),
+            ReducedValue::StructLiteral(items) => Expression::StructLiteral(items),
         }
     }
 }
@@ -38,6 +40,7 @@ impl From<Expression> for ReducedValue {
             Expression::StringLiteral(n) => ReducedValue::StringLiteral(n),
             Expression::Lambda(f) => ReducedValue::Lambda(f),
             Expression::ListLiteral(items) => ReducedValue::ListLiteral(items),
+            Expression::StructLiteral(items) => ReducedValue::StructLiteral(items),
             _ => panic!("trying to store a non-fully-reduced variable"),
         }
     }
@@ -119,6 +122,9 @@ impl Evaluable for Expression {
             Number(_) => false,
             ListLiteral(ref items) => {
                 items.iter().any(|x| x.is_reducible())
+            }
+            StructLiteral(ref items) => {
+                items.iter().any(|pair| pair.1.is_reducible())
             }
             _ => true,
         }
@@ -214,6 +220,7 @@ impl<'a> Evaluator<'a> {
         }
     }
 
+    //TODO I probably want another Expression variant that holds a ReducedValue
     fn reduce_expr(&mut self, expression: Expression) -> Reduction<Expression> {
         match expression {
             Null => (Null, None),
@@ -348,6 +355,14 @@ impl<'a> Evaluator<'a> {
                             (Null, None)
                         }
                     }
+                    (StructLiteral(items), StringLiteral(s)) => {
+                        for item in items {
+                            if s == item.0 {
+                                return (item.1.clone(), None); //TODO this is hella inefficient
+                            }
+                        }
+                        (Null, None)
+                    },
                     _ => (Null, None)
                 }
             }
@@ -365,6 +380,23 @@ impl<'a> Evaluator<'a> {
                 }
                 (ListLiteral(exprs), side_effect)
             },
+
+            StructLiteral(mut items) => {
+                let mut side_effect = None;
+                for pair in items.iter_mut() {
+                    if pair.1.is_reducible() {
+                        take_mut::take(pair, |pair| {
+                            let (name, expr) = pair;
+                            let (a, b) = self.reduce_expr(expr);
+                            side_effect = b;
+                            (name, a)
+                        });
+                        break;
+                    }
+                }
+
+                (StructLiteral(items), side_effect)
+            }
         }
     }
 

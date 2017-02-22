@@ -12,15 +12,17 @@ use std::convert::From;
 // statement := declaration | expression
 // declaration :=  FN prototype LCurlyBrace (statement)* RCurlyBrace
 // prototype := identifier LParen identlist RParen
-// identlist := Ident (Comma Ident)* | e
-// exprlist  := Expression (Comma Expression)* | e
+// identlist := Ident (Comma Ident)* | ε
+// exprlist  := Expression (Comma Expression)* | ε
+// itemlist  := Ident COLON Expression (Comma Ident COLON Expression)* | ε
 //
 // expression := postop_expression (op postop_expression)*
 // postop_expression := primary_expression postop
-// primary_expression :=  number_expr | String | identifier_expr | paren_expr | conditional_expr | while_expr | lambda_expr | list_expr
+// primary_expression :=  number_expr | String | identifier_expr | paren_expr | conditional_expr | while_expr | lambda_expr | list_expr | struct_expr
 // number_expr := (PLUS | MINUS ) number_expr | Number
 // identifier_expr := call_expression | Variable
 // list_expr := LSquareBracket exprlist RSquareBracket
+// struct_expr := LCurlyBrace itemlist RCurlyBrace
 // call_expression := Identifier LParen exprlist RParen
 // while_expr := WHILE primary_expression LCurlyBrace (expression delimiter)* RCurlyBrace
 // paren_expr := LParen expression RParen
@@ -75,6 +77,7 @@ pub enum Expression {
     While(Box<Expression>, Vec<Expression>),
     Index(Box<Expression>, Box<Expression>),
     ListLiteral(VecDeque<Expression>),
+    StructLiteral(VecDeque<(Rc<String>, Expression)>),
 }
 
 #[derive(Clone, Debug)]
@@ -83,6 +86,7 @@ pub enum Callable {
     Lambda(Function),
 }
 
+//TODO this ought to be ReducedExpression
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Expression::*;
@@ -103,6 +107,17 @@ impl fmt::Display for Expression {
                     }
                 }
                 write!(f, " ]")
+            }
+            StructLiteral(ref items) => {
+                write!(f, "{} ", "{")?;
+                let mut iter = items.iter().peekable();
+                while let Some(pair) = iter.next() {
+                    write!(f, "{}: {}", pair.0, pair.1)?;
+                    if let Some(_) = iter.peek() {
+                        write!(f, ", ")?;
+                    }
+                }
+                write!(f, "{} ", "}")
             }
             _ => write!(f, "UNIMPLEMENTED"),
         }
@@ -361,6 +376,24 @@ impl Parser {
         Ok(exprs)
     }
 
+    fn itemlist(&mut self) -> ParseResult<VecDeque<(Rc<String>, Expression)>> {
+        let mut items = VecDeque::new();
+        loop {
+            if let Some(RCurlyBrace) = self.peek() {
+                break;
+            }
+            let name = expect_identifier!(self);
+            expect!(self, Colon);
+            let expr = self.expression()?;
+            items.push_back((name, expr));
+            match self.peek() {
+                Some(Comma) => {self.next();},
+                _ => break,
+            };
+        }
+        Ok(items)
+    }
+
     fn body(&mut self) -> ParseResult<Vec<Statement>> {
         let statements = delimiter_block!(
             self,
@@ -446,6 +479,7 @@ impl Parser {
             Some(Token::LParen) => self.paren_expr()?,
             Some(Keyword(Kw::Fn)) => self.lambda_expr()?,
             Some(Token::LSquareBracket) => self.list_expr()?,
+            Some(Token::LCurlyBrace) => self.struct_expr()?,
             Some(e) => {
                 return ParseError::result_from_str(&format!("Expected primary expression, got \
                                                              {:?}",
@@ -461,6 +495,13 @@ impl Parser {
         expect!(self, RSquareBracket);
 
         Ok(Expression::ListLiteral(VecDeque::from(exprlist)))
+    }
+
+    fn struct_expr(&mut self) -> ParseResult<Expression> {
+        expect!(self, LCurlyBrace);
+        let struct_items = self.itemlist()?;
+        expect!(self, RCurlyBrace);
+        Ok(Expression::StructLiteral(struct_items))
     }
 
     fn number_expression(&mut self) -> ParseResult<Expression> {
