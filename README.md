@@ -34,6 +34,7 @@ of learning how to write a programming language.
 
 #### Parsing
 http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
+
 [Crafting Interpreters](http://www.craftinginterpreters.com/)
 
 #### LLVM
