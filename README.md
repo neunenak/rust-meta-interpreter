@@ -21,8 +21,10 @@ Over time I became interested in playing around with other sorts
 of programming languages as well, and wanted to make the process
 as general as possible. I changed the name of the project to
 Schala, after the Princess of Zeal from *Chrono Trigger*, because I
-like classic JRPGs and because it sounds sort of like Scala, and I am
-continuing to work on the project as my time permits.
+like classic JRPGs and because it sounds sort of like Scala.
+
+Schala is as yet an incomplete personal project that I continue to work
+on as my time permits.
 
 ### Reference works
 
