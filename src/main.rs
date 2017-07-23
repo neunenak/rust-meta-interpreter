@@ -20,6 +20,9 @@ use language::{ProgrammingLanguage, LanguageInterface, LLVMCodeString, Evaluatio
 
 mod llvm_wrap;
 
+mod virtual_machine;
+use virtual_machine::{run_vm, run_assembler};
+
 fn main() {
     let languages: Vec<Box<LanguageInterface>> =
         vec![
@@ -44,7 +47,19 @@ fn main() {
 
     if option_matches.opt_present("h") {
         println!("{}", program_options().usage("Schala metainterpreter"));
-        std::process::exit(1);
+        std::process::exit(0);
+    }
+
+    if option_matches.opt_present("m") {
+        let file_name = option_matches.free.get(1);
+        run_vm(file_name);
+        std::process::exit(0);
+    }
+
+    if option_matches.opt_present("a") {
+        let file_name = option_matches.free.get(1);
+        run_assembler(file_name);
+        std::process::exit(0);
     }
 
     let language_names: Vec<String> = languages.iter().map(|lang| {lang.get_language_name()}).collect();
@@ -91,8 +106,15 @@ fn program_options() -> getopts::Options {
     options.optflag("h",
                     "help",
                     "Show help text");
+    options.optflag("m",
+                   "virtual-machine",
+                   "Start up a virtual machine instead of an interpreter");
+    options.optflag("a",
+                    "assembler",
+                    "Assemble file into bytecode");
     options
 }
+
 
 fn run_noninteractive<'a, T: ProgrammingLanguage>(filename: &str, _language: &T, trace_evaluation: bool, compile: bool) {
     let mut source_file = File::open(&Path::new(filename)).unwrap();
