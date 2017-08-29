@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use self::llvm_sys::prelude::*;
 use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
 
-use schala_lang::parser::{AST, Statement, Function, Prototype, Expression, BinOp};
+use maaru_lang::parser::{AST, Statement, Function, Prototype, Expression, BinOp};
 use language::LLVMCodeString;
 
 use llvm_wrap as LLVMWrap;

@@ -9,11 +9,14 @@ use std::process;
 use std::io::Write;
 use std::default::Default;
 
+/*
 mod schala_lang;
 use schala_lang::SchalaEvaluator;
 use schala_lang::Schala;
+*/
 
 mod maaru_lang;
+mod robo_lang;
 
 mod language;
 use language::{ProgrammingLanguage, LanguageInterface, LLVMCodeString, EvaluationMachine};
@@ -26,8 +29,8 @@ use virtual_machine::{run_vm, run_assembler};
 fn main() {
     let languages: Vec<Box<LanguageInterface>> =
         vec![
-            Box::new((Schala::new(), SchalaEvaluator::new(None))),
-            Box::new((maaru_lang::Maaru::new(), maaru_lang::MaaruEvaluator::new())),
+            Box::new((maaru_lang::Maaru::new(), maaru_lang::MaaruEvaluator::new(None))),
+            Box::new((robo_lang::Robo::new(), robo_lang::RoboEvaluator::new())),
         ];
 
     let option_matches =
@@ -79,7 +82,7 @@ fn main() {
             repl.run();
         }
         [_, ref filename, _..] => {
-            let language = Schala::new();
+            let language = maaru_lang::Maaru::new();
             run_noninteractive(filename, &language, trace_evaluation, compile);
         }
     };
@@ -308,7 +311,7 @@ pub fn compilation_sequence(llvm_code: LLVMCodeString, sourcefile: &str) {
     let obj_filename = "out.o";
     let q: Vec<&str> = sourcefile.split('.').collect();
     let bin_filename = match &q[..] {
-        &[name, "schala"] => name,
+        &[name, "maaru"] => name,
         _ => panic!("Bad filename {}", sourcefile),
     };
 
