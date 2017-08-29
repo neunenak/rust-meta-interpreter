@@ -21,7 +21,7 @@ impl ProgrammingLanguage for Schala {
   }
 
   fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
-    unimplemented!()
+    parsing::tokenize(input)
   }
   fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
     unimplemented!()
