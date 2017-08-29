@@ -1,12 +1,9 @@
 use language::{ProgrammingLanguage, EvaluationMachine, ParseError, TokenError, LLVMCodeString};
 
+mod parsing;
+
 pub struct Schala { 
 }
-
-#[derive(Debug)]
-enum Token { }
-#[derive(Debug)]
-enum AST { }
 
 impl Schala {
   pub fn new() -> Schala {
@@ -15,8 +12,8 @@ impl Schala {
 }
 
 impl ProgrammingLanguage for Schala {
-  type Token = Token;
-  type AST = AST;
+  type Token = parsing::Token;
+  type AST = parsing::AST;
   type Evaluator = SchalaEvaluator;
 
   fn name() -> String {
