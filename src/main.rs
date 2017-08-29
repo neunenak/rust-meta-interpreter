@@ -15,6 +15,7 @@ use schala_lang::SchalaEvaluator;
 use schala_lang::Schala;
 */
 
+mod schala_lang;
 mod maaru_lang;
 mod robo_lang;
 
@@ -29,6 +30,7 @@ use virtual_machine::{run_vm, run_assembler};
 fn main() {
     let languages: Vec<Box<LanguageInterface>> =
         vec![
+            Box::new((schala_lang::Schala::new(), schala_lang::SchalaEvaluator::new())),
             Box::new((maaru_lang::Maaru::new(), maaru_lang::MaaruEvaluator::new(None))),
             Box::new((robo_lang::Robo::new(), robo_lang::RoboEvaluator::new())),
         ];
