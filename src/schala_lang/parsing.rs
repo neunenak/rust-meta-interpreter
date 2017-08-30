@@ -25,11 +25,40 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, TokenError> {
 }
 
 /*
-Schala grammar
+Schala EBNF grammar
+
+
+ type alias <name> = <other type>
+ 
+type <name> = struct { <field> : <type>,* }
+type <name> = Variant1 | Variant2(type, type) | Variant3 struct { }
+
+
+'' = literal, all other symbols are nonterminals
 
 program := (statement delimiter ?)*
-delimiter := Newline | Semicolon
+delimiter := 'Newline' | ';'
 statement := declaration | expression
+
+declaration := module | function | type_decl
+
+type_decl := 'type' type_format
+type_format := 'alias' '=' type | type_constructor
+type_constructor := capital_ident '=' type_rhs
+type_rhs := struct_decl | type_variant ('|' type_variant)*
+struct_decl := 'struct' '{' (ident ':' type)* '}' 
+type_variant := capital_ident | tuple_type | capital_ident struct_decl
+tuple_type := // something like Variant(a,b)
+type := // something like Type[A[b]]
+
+ascription := expression (':' type)+
+
+function := 'fn' prototype '{' (statement)* '}'
+prototype := identifier '(' identlist ')'
+identlist := identifier (',' identifier)* | ε
+
+
+
 declaration :=  FN prototype LCurlyBrace (statement)* RCurlyBrace
 prototype := identifier LParen identlist RParen
 identlist := Ident (Comma Ident)* | ε
@@ -52,7 +81,6 @@ lambda_call :=  | LParen exprlist RParen
 postop := ε | LParen exprlist RParen | LBracket expression RBracket
 op := '+', '-', etc.
 */
-
 
 #[derive(Debug)]
 pub struct AST { }
