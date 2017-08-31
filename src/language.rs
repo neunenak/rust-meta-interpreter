@@ -98,7 +98,7 @@ impl<PL, T, A, E> LanguageInterface for (PL, PL::Evaluator) where PL: Programmin
 /* below here is new versions of everything */
 
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct EvalOptions {
   pub debug_tokens: bool,
   pub debug_parse: bool,
@@ -109,6 +109,9 @@ pub struct EvalOptions {
 pub trait ProgrammingLanguageInterface {
   fn evaluate_in_repl(&mut self, input: &str, eval_options: EvalOptions) -> Vec<String>;
   fn get_language_name(&self) -> String;
+  fn set_option(&mut self, option: &str, value: bool) -> bool {
+    false
+  }
 }
 
 pub trait CompileableLanguage : ProgrammingLanguageInterface {

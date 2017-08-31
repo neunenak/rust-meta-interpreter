@@ -20,7 +20,7 @@ mod maaru_lang;
 mod robo_lang;
 
 mod language;
-use language::{ProgrammingLanguage, LanguageInterface, LLVMCodeString, EvaluationMachine};
+use language::{ProgrammingLanguage, LanguageInterface, ProgrammingLanguageInterface, LLVMCodeString, EvaluationMachine};
 
 mod llvm_wrap;
 
@@ -28,11 +28,14 @@ mod virtual_machine;
 use virtual_machine::{run_vm, run_assembler};
 
 fn main() {
-    let languages: Vec<Box<LanguageInterface>> =
+    let languages: Vec<Box<ProgrammingLanguageInterface>> =
         vec![
+            Box::new(maaru_lang::NewMaaru::new()),
+            /*
             Box::new((schala_lang::Schala::new(), schala_lang::SchalaEvaluator::new())),
             Box::new((maaru_lang::Maaru::new(), maaru_lang::MaaruEvaluator::new(None))),
             Box::new((robo_lang::Robo::new(), robo_lang::RoboEvaluator::new())),
+            */
         ];
 
     let option_matches =
@@ -162,14 +165,14 @@ struct Repl {
     pub show_tokens: bool,
     pub show_parse: bool,
     pub show_llvm_ir: bool,
-    languages: Vec<Box<LanguageInterface>>,
+    languages: Vec<Box<ProgrammingLanguageInterface>>,
     current_language_index: usize,
     interpreter_directive_sigil: char,
     reader: LineReader,
 }
 
 impl Repl {
-    fn new(languages: Vec<Box<LanguageInterface>>, initial_index: usize) -> Repl {
+    fn new(languages: Vec<Box<ProgrammingLanguageInterface>>, initial_index: usize) -> Repl {
         let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Metainterpreter").unwrap();
         reader.set_prompt(">> ");
         let i = if initial_index < languages.len() { initial_index } else { 0 };
@@ -210,14 +213,22 @@ impl Repl {
     }
 
     fn input_handler(&mut self, input: &str) -> String {
-        let ref mut language = self.languages[self.current_language_index];
+      let ref mut language = self.languages[self.current_language_index];
 
-        let mut options = language::LanguageInterfaceOptions::default();
-        options.show_tokens = self.show_tokens;
-        options.show_parse = self.show_parse;
-        options.show_llvm_ir = self.show_llvm_ir;
+      let mut options = language::EvalOptions::default();
+      /*
+         options.show_tokens = self.show_tokens;
+         options.show_parse = self.show_parse;
+         options.show_llvm_ir = self.show_llvm_ir;
+         */
 
-        language.evaluate_in_repl(input, options)
+
+      let interpretor_output = language.evaluate_in_repl(input, options);
+      let mut acc = String::new();
+      for i in interpretor_output {
+        acc.push_str(&i)
+      }
+      acc
     }
 
     fn handle_interpreter_directive(&mut self, input: &str) -> bool {

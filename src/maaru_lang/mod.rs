@@ -13,7 +13,7 @@ pub struct NewMaaru<'a> {
 }
 
 impl<'a> NewMaaru<'a> {
-  fn new() -> NewMaaru<'a> {
+  pub fn new() -> NewMaaru<'a> {
     NewMaaru {
       evaluator: MaaruEvaluator::new(None),
     }
