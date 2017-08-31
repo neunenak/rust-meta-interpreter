@@ -1,7 +1,7 @@
 extern crate itertools;
 use self::itertools::Itertools;
 
-use language::{ProgrammingLanguageInterface, EvalOptions, ProgrammingLanguage, EvaluationMachine, ParseError, TokenError, LLVMCodeString};
+use language::{ProgrammingLanguageInterface, EvalOptions, ProgrammingLanguage, ParseError, TokenError, LLVMCodeString};
 
 pub struct Robo {
 }
@@ -12,10 +12,7 @@ impl Robo {
     }
 }
 
-pub struct RoboEvaluator {
-    pub trace_evaluation: bool,
-}
-
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Token {
     StrLiteral(String),
@@ -37,20 +34,24 @@ pub enum Token {
     NumLiteral(Number),
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Number {
     IntegerRep(String),
     FloatRep(String)
 }
 
+#[allow(dead_code)]
 pub type AST = Vec<ASTNode>;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum ASTNode {
     FunctionDefinition(String, Expression),
     ImportStatement(String),
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Expression {
 
@@ -151,19 +152,3 @@ impl ProgrammingLanguageInterface for Robo {
   }
 }
 
-impl EvaluationMachine for RoboEvaluator {
-    fn set_option(&mut self, option: &str, value: bool) -> bool {
-        if option == "trace_evaluation" {
-            self.trace_evaluation = value;
-            return true;
-        }
-
-        false
-    }
-
-    fn new() -> RoboEvaluator {
-        RoboEvaluator {
-            trace_evaluation: false,
-        }
-    }
-}

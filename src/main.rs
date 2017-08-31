@@ -20,7 +20,7 @@ mod maaru_lang;
 mod robo_lang;
 
 mod language;
-use language::{ProgrammingLanguage, LanguageInterface, ProgrammingLanguageInterface, EvalOptions, LLVMCodeString, EvaluationMachine};
+use language::{ProgrammingLanguage, LanguageInterface, ProgrammingLanguageInterface, EvalOptions, LLVMCodeString};
 
 mod llvm_wrap;
 
@@ -30,6 +30,7 @@ use virtual_machine::{run_vm, run_assembler};
 fn main() {
     let languages: Vec<Box<ProgrammingLanguageInterface>> =
         vec![
+            Box::new(schala_lang::Schala::new()),
             Box::new(maaru_lang::Maaru::new()),
             Box::new(robo_lang::Robo::new()),
             /*

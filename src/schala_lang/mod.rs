@@ -1,4 +1,4 @@
-use language::{ProgrammingLanguage, EvaluationMachine, ParseError, TokenError, LLVMCodeString};
+use language::{ProgrammingLanguageInterface, EvalOptions, ParseError, TokenError, LLVMCodeString};
 
 mod parsing;
 
@@ -11,38 +11,12 @@ impl Schala {
   }
 }
 
-impl ProgrammingLanguage for Schala {
-  type Token = parsing::Token;
-  type AST = parsing::AST;
-  type Evaluator = SchalaEvaluator;
-
-  fn name() -> String {
+impl ProgrammingLanguageInterface for Schala {
+  fn get_language_name(&self) -> String {
     "Schala".to_string()
   }
 
-  fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
-    parsing::tokenize(input)
-  }
-  fn parse(input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
-    unimplemented!()
-  }
-  fn evaluate(ast: Self::AST, evaluator: &mut Self::Evaluator) -> Vec<String> {
-    unimplemented!()
-  }
-  fn compile(ast: Self::AST) -> LLVMCodeString {
-    unimplemented!()
+  fn evaluate_in_repl(&mut self, input: &str, eval_options: EvalOptions) -> Vec<String> {
+    vec!(format!("evaluation"))
   }
 }
-
-pub struct SchalaEvaluator { }
-
-impl EvaluationMachine for SchalaEvaluator {
-  fn new() -> SchalaEvaluator {
-    SchalaEvaluator { }
-  }
-  fn set_option(&mut self, option: &str, value: bool) -> bool {
-    false
-  }
-}
-
-
