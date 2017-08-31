@@ -103,7 +103,7 @@ pub struct EvalOptions {
   pub debug_tokens: bool,
   pub debug_parse: bool,
   pub debug_type: bool,
-  pub debug_eval: bool,
+  pub trace_evaluation: bool,
 }
 
 pub trait ProgrammingLanguageInterface {

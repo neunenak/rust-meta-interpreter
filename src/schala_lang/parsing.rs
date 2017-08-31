@@ -1,6 +1,7 @@
 use language::{TokenError, ParseError};
 use std::rc::Rc;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Token {
   Newline,
@@ -82,9 +83,11 @@ postop := ε | LParen exprlist RParen | LBracket expression RBracket
 op := '+', '-', etc.
 */
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct AST { }
 
+#[allow(dead_code)]
 pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
   Ok(AST { })
 }

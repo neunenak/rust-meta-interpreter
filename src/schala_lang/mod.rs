@@ -16,7 +16,23 @@ impl ProgrammingLanguageInterface for Schala {
     "Schala".to_string()
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, eval_options: EvalOptions) -> Vec<String> {
-    vec!(format!("evaluation"))
+  fn evaluate_in_repl(&mut self, input: &str, _eval_options: EvalOptions) -> Vec<String> {
+    let mut output = vec!(format!("test eval"));
+
+    let tokens = match parsing::tokenize(input) {
+      Ok(tokens) => tokens,
+      Err(e) => { output.push(format!("{}", e.msg));
+        return output;
+      }
+    };
+
+    let _ast = match parsing::parse(tokens)  {
+      Ok(ast) => ast,
+      Err(e) => { output.push(format!("{}", e.msg));
+        return output;
+      }
+    };
+
+    output
   }
 }

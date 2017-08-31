@@ -20,7 +20,7 @@ mod maaru_lang;
 mod robo_lang;
 
 mod language;
-use language::{ProgrammingLanguage, LanguageInterface, ProgrammingLanguageInterface, EvalOptions, LLVMCodeString};
+use language::{ProgrammingLanguageInterface, EvalOptions, LLVMCodeString};
 
 mod llvm_wrap;
 
@@ -77,9 +77,11 @@ fn main() {
             .and_then(|lang| { language_names.iter().position(|x| { *x == lang }) })
             .unwrap_or(0);
 
+    let mut options = EvalOptions::default();
     let show_llvm_ir = option_matches.opt_present("v");
+    options.trace_evaluation = option_matches.opt_present("t");
+
     let compile = !option_matches.opt_present("i");
-    let trace_evaluation = option_matches.opt_present("t");
 
     match option_matches.free[..] {
         [] | [_] => {
@@ -89,7 +91,7 @@ fn main() {
         }
         [_, ref filename, _..] => {
             let mut language = maaru_lang::Maaru::new();
-            run_noninteractive(filename, &mut language, trace_evaluation, compile);
+            run_noninteractive(filename, &mut language, options, compile);
         }
     };
 }
@@ -124,7 +126,7 @@ fn program_options() -> getopts::Options {
     options
 }
 
-fn run_noninteractive<T: ProgrammingLanguageInterface>(filename: &str, language: &mut T, trace_evaluation: bool, compile: bool) {
+fn run_noninteractive<T: ProgrammingLanguageInterface>(filename: &str, language: &mut T, options: EvalOptions, compile: bool) {
   let mut source_file = File::open(&Path::new(filename)).unwrap();
   let mut buffer = String::new();
   source_file.read_to_string(&mut buffer).unwrap();
@@ -222,7 +224,7 @@ impl Repl {
     fn input_handler(&mut self, input: &str) -> String {
       let ref mut language = self.languages[self.current_language_index];
 
-      let mut options = language::EvalOptions::default();
+      let options = language::EvalOptions::default();
       /*
          options.show_tokens = self.show_tokens;
          options.show_parse = self.show_parse;
