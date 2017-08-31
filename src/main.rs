@@ -30,7 +30,7 @@ use virtual_machine::{run_vm, run_assembler};
 fn main() {
     let languages: Vec<Box<ProgrammingLanguageInterface>> =
         vec![
-            Box::new(maaru_lang::NewMaaru::new()),
+            Box::new(maaru_lang::Maaru::new()),
             /*
             Box::new((schala_lang::Schala::new(), schala_lang::SchalaEvaluator::new())),
             Box::new((maaru_lang::Maaru::new(), maaru_lang::MaaruEvaluator::new(None))),
@@ -87,7 +87,7 @@ fn main() {
             repl.run();
         }
         [_, ref filename, _..] => {
-            let mut language = maaru_lang::NewMaaru::new();
+            let mut language = maaru_lang::Maaru::new();
             run_noninteractive(filename, &mut language, trace_evaluation, compile);
         }
     };

@@ -1,26 +1,25 @@
-use ::std::marker::PhantomData;
 pub mod tokenizer;
 pub mod parser;
 pub mod eval;
 pub mod compilation;
 
-use language::{ProgrammingLanguageInterface, EvalOptions, ProgrammingLanguage, EvaluationMachine, ParseError, TokenError, LLVMCodeString};
+use language::{ProgrammingLanguageInterface, EvalOptions, LLVMCodeString};
 
 pub use self::eval::Evaluator as MaaruEvaluator;
 
-pub struct NewMaaru<'a> {
+pub struct Maaru<'a> {
   evaluator: MaaruEvaluator<'a>
 }
 
-impl<'a> NewMaaru<'a> {
-  pub fn new() -> NewMaaru<'a> {
-    NewMaaru {
+impl<'a> Maaru<'a> {
+  pub fn new() -> Maaru<'a> {
+    Maaru {
       evaluator: MaaruEvaluator::new(None),
     }
   }
 }
 
-impl<'a> ProgrammingLanguageInterface for NewMaaru<'a> {
+impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
   fn get_language_name(&self) -> String {
     "Maaru".to_string()
   }
@@ -60,11 +59,4 @@ impl<'a> ProgrammingLanguageInterface for NewMaaru<'a> {
 
     return output;
   }
-}
-
-pub struct Maaru<'a> { marker: PhantomData<&'a ()> }
-impl<'a> Maaru<'a> {
-    pub fn new() -> Maaru <'a> {
-        Maaru { marker: PhantomData }
-    }
 }
