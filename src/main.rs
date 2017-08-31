@@ -20,7 +20,7 @@ mod maaru_lang;
 mod robo_lang;
 
 mod language;
-use language::{ProgrammingLanguage, LanguageInterface, ProgrammingLanguageInterface, LLVMCodeString, EvaluationMachine};
+use language::{ProgrammingLanguage, LanguageInterface, ProgrammingLanguageInterface, EvalOptions, LLVMCodeString, EvaluationMachine};
 
 mod llvm_wrap;
 
@@ -87,8 +87,8 @@ fn main() {
             repl.run();
         }
         [_, ref filename, _..] => {
-            let language = maaru_lang::Maaru::new();
-            run_noninteractive(filename, &language, trace_evaluation, compile);
+            let mut language = maaru_lang::NewMaaru::new();
+            run_noninteractive(filename, &mut language, trace_evaluation, compile);
         }
     };
 }
@@ -123,12 +123,17 @@ fn program_options() -> getopts::Options {
     options
 }
 
+fn run_noninteractive<T: ProgrammingLanguageInterface>(filename: &str, language: &mut T, trace_evaluation: bool, compile: bool) {
+  let mut source_file = File::open(&Path::new(filename)).unwrap();
+  let mut buffer = String::new();
+  source_file.read_to_string(&mut buffer).unwrap();
 
-fn run_noninteractive<'a, T: ProgrammingLanguage>(filename: &str, _language: &T, trace_evaluation: bool, compile: bool) {
-    let mut source_file = File::open(&Path::new(filename)).unwrap();
-    let mut buffer = String::new();
-    source_file.read_to_string(&mut buffer).unwrap();
-
+  let options = EvalOptions::default();
+  let interpretor_output = language.evaluate_in_repl(&buffer, options);
+  for line in interpretor_output {
+    println!("{}", line);
+  }
+      /*
     let tokens = match T::tokenize(&buffer) {
         Ok(t) => t,
         Err(e) => {
@@ -158,6 +163,7 @@ fn run_noninteractive<'a, T: ProgrammingLanguage>(filename: &str, _language: &T,
             println!("{}", r);
         }
     }
+    */
 }
 
 type LineReader = linefeed::Reader<linefeed::terminal::DefaultTerminal>;
