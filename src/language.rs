@@ -97,22 +97,20 @@ impl<PL, T, A, E> LanguageInterface for (PL, PL::Evaluator) where PL: Programmin
 
 /* below here is new versions of everything */
 
-#[derive(Debug, PartialEq)]
-pub struct EvalStage {
-  index: u8,
-  name: String,
-}
 
+#[derive(Debug)]
 pub struct EvalOptions {
-  debug_stages: Vec<EvalStage>,
+  pub debug_tokens: bool,
+  pub debug_parse: bool,
+  pub debug_type: bool,
+  pub debug_eval: bool,
 }
 
 pub trait ProgrammingLanguageInterface {
-  fn evaluate_in_repl(&mut self, input: &str, eval_options: EvalOptions);
+  fn evaluate_in_repl(&mut self, input: &str, eval_options: EvalOptions) -> Vec<String>;
   fn get_language_name(&self) -> String;
-  fn get_stages(&self) -> Vec<u8>;
 }
 
 pub trait CompileableLanguage : ProgrammingLanguageInterface {
-  fn compile(&mut self);
+  fn compile(&mut self) -> LLVMCodeString;
 }
