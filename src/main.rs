@@ -31,10 +31,10 @@ fn main() {
     let languages: Vec<Box<ProgrammingLanguageInterface>> =
         vec![
             Box::new(maaru_lang::Maaru::new()),
+            Box::new(robo_lang::Robo::new()),
             /*
             Box::new((schala_lang::Schala::new(), schala_lang::SchalaEvaluator::new())),
             Box::new((maaru_lang::Maaru::new(), maaru_lang::MaaruEvaluator::new(None))),
-            Box::new((robo_lang::Robo::new(), robo_lang::RoboEvaluator::new())),
             */
         ];
 

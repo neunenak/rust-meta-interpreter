@@ -1,7 +1,7 @@
 extern crate itertools;
 use self::itertools::Itertools;
 
-use language::{ProgrammingLanguage, EvaluationMachine, ParseError, TokenError, LLVMCodeString};
+use language::{ProgrammingLanguageInterface, EvalOptions, ProgrammingLanguage, EvaluationMachine, ParseError, TokenError, LLVMCodeString};
 
 pub struct Robo {
 }
@@ -56,99 +56,99 @@ pub enum Expression {
 
 }
 
-impl ProgrammingLanguage for Robo {
-    type Token = Token;
-    type AST = AST;
-    type Evaluator = RoboEvaluator;
-
-    fn name() -> String {
-        "Robo".to_string()
-    }
-
-    fn tokenize(input: &str) -> Result<Vec<Self::Token>, TokenError> {
-        use self::Token::*;
-        let mut tokens = Vec::new();
-        let mut iter = input.chars().peekable();
-        while let Some(c) = iter.next() {
-            if c == ';' {
-                while let Some(c) = iter.next() {
-                    if c == '\n' {
-                        break;
-                    }
-                }
-                continue;
-            }
-            let cur_tok = match c {
-                c if char::is_whitespace(c) && c != '\n' => continue,
-                '\n' => Newline,
-                '(' => LParen,
-                ')' => RParen,
-                '[' => LBracket,
-                ']' => RBracket,
-                '{' => LBrace,
-                '}' => RBrace,
-                ',' => Comma,
-                ':' => Colon,
-                ';' => Semicolon,
-                '.' => Period,
-                '`' => Backtick,
-                '\'' => SingleQuote,
-                '"' => {
-                    let mut buffer = String::new();
-                    loop {
-                        match iter.next() {
-                            Some(x) if x == '"' => break,
-                            Some(x) => buffer.push(x),
-                            None => return Err(TokenError::new("Unclosed quote")),
-                        }
-                    }
-                    StrLiteral(buffer)
-                }
-                c if c.is_digit(10) => {
-                    let mut integer = true;
-                    let mut buffer = String::new();
-                    buffer.push(c);
-                    buffer.extend(iter.peeking_take_while(|x| x.is_digit(10)));
-                    if let Some(&'.') = iter.peek() {
-                        buffer.push(iter.next().unwrap());
-                        integer = false;
-                    }
-                    buffer.extend(iter.peeking_take_while(|x| x.is_digit(10)));
-                    let inner = if integer {
-                        Number::IntegerRep(buffer)
-                    } else {
-                        Number::FloatRep(buffer)
-                    };
-                    NumLiteral(inner)
-                },
-                c if char::is_alphanumeric(c) => {
-                    let mut buffer = String::new();
-                    buffer.push(c);
-                    buffer.extend(iter.peeking_take_while(|x| char::is_alphanumeric(*x)));
-                    Identifier(buffer)
-                },
-                c => {
-                    let mut buffer = String::new();
-                    buffer.push(c);
-                    buffer.extend(iter.peeking_take_while(|x| !char::is_whitespace(*x)));
-                    Operator(buffer)
-                }
-            };
-            tokens.push(cur_tok);
+fn tokenize(input: &str) -> Result<Vec<Token>, TokenError> {
+  use self::Token::*;
+  let mut tokens = Vec::new();
+  let mut iter = input.chars().peekable();
+  while let Some(c) = iter.next() {
+    if c == ';' {
+      while let Some(c) = iter.next() {
+        if c == '\n' {
+          break;
         }
+      }
+      continue;
+    }
+    let cur_tok = match c {
+      c if char::is_whitespace(c) && c != '\n' => continue,
+      '\n' => Newline,
+      '(' => LParen,
+      ')' => RParen,
+      '[' => LBracket,
+      ']' => RBracket,
+      '{' => LBrace,
+      '}' => RBrace,
+      ',' => Comma,
+      ':' => Colon,
+      ';' => Semicolon,
+      '.' => Period,
+      '`' => Backtick,
+      '\'' => SingleQuote,
+      '"' => {
+        let mut buffer = String::new();
+        loop {
+          match iter.next() {
+            Some(x) if x == '"' => break,
+            Some(x) => buffer.push(x),
+            None => return Err(TokenError::new("Unclosed quote")),
+          }
+        }
+        StrLiteral(buffer)
+      }
+      c if c.is_digit(10) => {
+        let mut integer = true;
+        let mut buffer = String::new();
+        buffer.push(c);
+        buffer.extend(iter.peeking_take_while(|x| x.is_digit(10)));
+        if let Some(&'.') = iter.peek() {
+          buffer.push(iter.next().unwrap());
+          integer = false;
+        }
+        buffer.extend(iter.peeking_take_while(|x| x.is_digit(10)));
+        let inner = if integer {
+          Number::IntegerRep(buffer)
+        } else {
+          Number::FloatRep(buffer)
+        };
+        NumLiteral(inner)
+      },
+      c if char::is_alphanumeric(c) => {
+        let mut buffer = String::new();
+        buffer.push(c);
+        buffer.extend(iter.peeking_take_while(|x| char::is_alphanumeric(*x)));
+        Identifier(buffer)
+      },
+      c => {
+        let mut buffer = String::new();
+        buffer.push(c);
+        buffer.extend(iter.peeking_take_while(|x| !char::is_whitespace(*x)));
+        Operator(buffer)
+      }
+    };
+    tokens.push(cur_tok);
+  }
 
-        Ok(tokens)
-    }
+  Ok(tokens)
+}
 
-    fn parse(_input: Vec<Self::Token>) -> Result<Self::AST, ParseError> {
-        Ok(vec!())
-    }
-    fn evaluate(_ast: Self::AST, _evaluator: &mut Self::Evaluator) -> Vec<String> {
-        vec!["Unimplemented".to_string()]
-    }
-    fn compile(_ast: Self::AST) -> LLVMCodeString {
-        unimplemented!()
-    }
+impl ProgrammingLanguageInterface for Robo {
+  fn get_language_name(&self) -> String {
+    "Robo".to_string()
+  }
+
+  fn evaluate_in_repl(&mut self, input: &str, eval_options: EvalOptions) -> Vec<String> {
+    let mut output = vec!();
+    let tokens = match tokenize(input) {
+      Ok(tokens) => tokens,
+      Err(e) => {
+        output.push(format!("Tokenize error: {:?}", e));
+        return output;
+      }
+    };
+
+    output.push(format!("{:?}", tokens));
+    output
+  }
 }
 
 impl EvaluationMachine for RoboEvaluator {
