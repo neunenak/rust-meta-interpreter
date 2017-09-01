@@ -3,7 +3,7 @@ extern crate llvm_sys;
 use std::collections::HashMap;
 
 use self::llvm_sys::prelude::*;
-use self::llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
+use self::llvm_sys::{LLVMIntPredicate};
 
 use maaru_lang::parser::{AST, Statement, Function, Prototype, Expression, BinOp};
 use language::LLVMCodeString;

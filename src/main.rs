@@ -136,37 +136,6 @@ fn run_noninteractive<T: ProgrammingLanguageInterface>(filename: &str, language:
       println!("{}", line);
     }
   }
-  /*
-    let tokens = match T::tokenize(&buffer) {
-        Ok(t) => t,
-        Err(e) => {
-            println!("Tokenization error: {}", e.msg);
-            std::process::exit(1)
-        }
-    };
-
-    let ast = match T::parse(tokens) {
-        Ok(ast) => ast,
-        Err(err) => {
-            println!("Parse error: {:?}", err.msg);
-            /*println!("Remaining tokens: {:?}", err.remaining_tokens);*/
-            std::process::exit(1)
-        }
-    };
-
-    if compile {
-        compilation_sequence(T::compile(ast), filename);
-    } else {
-        let mut evaluator = <T as ProgrammingLanguage>::Evaluator::new();
-        if trace_evaluation {
-            evaluator.set_option("trace_evaluation", true);
-        }
-        let results = T::evaluate(ast, &mut evaluator);
-        if let Some(r) = results.iter().last() {
-            println!("{}", r);
-        }
-    }
-    */
 }
 
 type LineReader = linefeed::Reader<linefeed::terminal::DefaultTerminal>;

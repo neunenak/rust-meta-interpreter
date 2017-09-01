@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 #[derive(Debug)]
 pub struct TokenError {
     pub msg: String,

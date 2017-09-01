@@ -1,7 +1,7 @@
 extern crate itertools;
 use self::itertools::Itertools;
 
-use language::{ProgrammingLanguageInterface, EvalOptions, ParseError, TokenError, LLVMCodeString};
+use language::{ProgrammingLanguageInterface, EvalOptions, TokenError};
 
 pub struct Robo {
 }

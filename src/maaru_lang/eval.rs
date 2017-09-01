@@ -136,7 +136,7 @@ impl Expression {
         match *self {
             Null => false,
             StringLiteral(ref s) if **s == "" => false,
-            Number(0.0) => false,
+            Number(n) if n == 0.0 => false,
             _ => true,
         }
     }

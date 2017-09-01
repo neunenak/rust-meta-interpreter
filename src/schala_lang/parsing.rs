@@ -21,7 +21,7 @@ pub enum Token {
   Operator(Rc<String>),
 }
 
-pub fn tokenize(input: &str) -> Result<Vec<Token>, TokenError> {
+pub fn tokenize(_input: &str) -> Result<Vec<Token>, TokenError> {
   Ok(vec!())
 }
 
@@ -88,6 +88,6 @@ op := '+', '-', etc.
 pub struct AST { }
 
 #[allow(dead_code)]
-pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
+pub fn parse(_input: Vec<Token>) -> Result<AST, ParseError> {
   Ok(AST { })
 }
