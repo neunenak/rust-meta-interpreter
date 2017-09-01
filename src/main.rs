@@ -29,15 +29,11 @@ use virtual_machine::{run_vm, run_assembler};
 
 fn main() {
     let languages: Vec<Box<ProgrammingLanguageInterface>> =
-        vec![
-            Box::new(schala_lang::Schala::new()),
-            Box::new(maaru_lang::Maaru::new()),
-            Box::new(robo_lang::Robo::new()),
-            /*
-            Box::new((schala_lang::Schala::new(), schala_lang::SchalaEvaluator::new())),
-            Box::new((maaru_lang::Maaru::new(), maaru_lang::MaaruEvaluator::new(None))),
-            */
-        ];
+      vec![
+        Box::new(schala_lang::Schala::new()),
+        Box::new(maaru_lang::Maaru::new()),
+        Box::new(robo_lang::Robo::new()),
+      ];
 
     let option_matches =
         match program_options().parse(std::env::args()) {
@@ -126,7 +122,7 @@ fn program_options() -> getopts::Options {
     options
 }
 
-fn run_noninteractive<T: ProgrammingLanguageInterface>(filename: &str, language: &mut T, options: EvalOptions, compile: bool) {
+fn run_noninteractive<T: ProgrammingLanguageInterface>(filename: &str, language: &mut T, _options: EvalOptions, compile: bool) {
   let mut source_file = File::open(&Path::new(filename)).unwrap();
   let mut buffer = String::new();
   source_file.read_to_string(&mut buffer).unwrap();
@@ -306,8 +302,8 @@ impl Repl {
                     Some(&"tokens") => self.show_tokens = show,
                     Some(&"parse") => self.show_parse = show,
                     Some(&"eval") => {
-                        let ref mut language = self.languages[self.current_language_index];
-                        language.set_option("trace_evaluation", show);
+                        //let ref mut language = self.languages[self.current_language_index];
+                        //language.set_option("trace_evaluation", show);
                     },
                     Some(&"llvm") => self.show_llvm_ir = show,
                     Some(e) => {

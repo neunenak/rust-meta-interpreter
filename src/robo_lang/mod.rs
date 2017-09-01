@@ -1,7 +1,7 @@
 extern crate itertools;
 use self::itertools::Itertools;
 
-use language::{ProgrammingLanguageInterface, EvalOptions, ProgrammingLanguage, ParseError, TokenError, LLVMCodeString};
+use language::{ProgrammingLanguageInterface, EvalOptions, ParseError, TokenError, LLVMCodeString};
 
 pub struct Robo {
 }
@@ -137,7 +137,7 @@ impl ProgrammingLanguageInterface for Robo {
     "Robo".to_string()
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, eval_options: EvalOptions) -> Vec<String> {
+  fn evaluate_in_repl(&mut self, input: &str, _eval_options: EvalOptions) -> Vec<String> {
     let mut output = vec!();
     let tokens = match tokenize(input) {
       Ok(tokens) => tokens,
