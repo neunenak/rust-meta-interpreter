@@ -137,7 +137,7 @@ impl ProgrammingLanguageInterface for Robo {
     "Robo".to_string()
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, _eval_options: EvalOptions) -> ReplOutput {
+  fn evaluate_in_repl(&mut self, input: &str, _eval_options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
     let tokens = match tokenize(input) {
       Ok(tokens) => tokens,

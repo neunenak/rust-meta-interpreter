@@ -24,7 +24,7 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
     "Maaru".to_string()
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, options: EvalOptions) -> ReplOutput {
+  fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
 
     let tokens = match tokenizer::tokenize(input) {

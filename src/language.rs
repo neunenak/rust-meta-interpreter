@@ -21,6 +21,7 @@ pub struct EvalOptions {
   pub debug_tokens: bool,
   pub debug_parse: bool,
   pub debug_type: bool,
+  pub show_llvm_ir: bool,
   pub trace_evaluation: bool,
 }
 
@@ -77,7 +78,7 @@ impl TraceArtifact {
 }
 
 pub trait ProgrammingLanguageInterface {
-  fn evaluate_in_repl(&mut self, input: &str, eval_options: EvalOptions) -> ReplOutput;
+  fn evaluate_in_repl(&mut self, input: &str, eval_options: &EvalOptions) -> ReplOutput;
   fn get_language_name(&self) -> String;
   fn compile(&mut self, _input: &str) -> LLVMCodeString {
     LLVMCodeString("".to_string())
