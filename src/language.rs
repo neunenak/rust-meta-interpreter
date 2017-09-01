@@ -29,8 +29,10 @@ pub struct EvalOptions {
 pub trait ProgrammingLanguageInterface {
   fn evaluate_in_repl(&mut self, input: &str, eval_options: EvalOptions) -> Vec<String>;
   fn get_language_name(&self) -> String;
-}
-
-pub trait CompileableLanguage : ProgrammingLanguageInterface {
-  fn compile(&mut self) -> LLVMCodeString;
+  fn compile(&mut self, _input: &str) -> LLVMCodeString {
+    LLVMCodeString("".to_string())
+  }
+  fn can_compile(&self) -> bool {
+    false
+  }
 }

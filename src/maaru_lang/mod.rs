@@ -59,4 +59,27 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
 
     return output;
   }
+
+  fn can_compile(&self) -> bool {
+    true
+  }
+
+  fn compile(&mut self, input: &str) -> LLVMCodeString {
+    let tokens = match tokenizer::tokenize(input) {
+      Ok(tokens) =>  tokens,
+      Err(err) => {
+        let msg = format!("Tokenization error: {:?}\n", err.msg);
+        panic!("{}", msg);
+      }
+    };
+
+    let ast = match parser::parse(&tokens, &[]) {
+      Ok(ast) => ast,
+      Err(err) => {
+        let msg = format!("Parse error: {:?}\n", err.msg);
+        panic!("{}", msg);
+      }
+    };
+    compilation::compile_ast(ast)
+  }
 }

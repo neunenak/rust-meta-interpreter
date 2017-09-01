@@ -9,12 +9,6 @@ use std::process;
 use std::io::Write;
 use std::default::Default;
 
-/*
-mod schala_lang;
-use schala_lang::SchalaEvaluator;
-use schala_lang::Schala;
-*/
-
 mod schala_lang;
 mod maaru_lang;
 mod robo_lang;
@@ -128,11 +122,21 @@ fn run_noninteractive<T: ProgrammingLanguageInterface>(filename: &str, language:
   source_file.read_to_string(&mut buffer).unwrap();
 
   let options = EvalOptions::default();
-  let interpretor_output = language.evaluate_in_repl(&buffer, options);
-  for line in interpretor_output {
-    println!("{}", line);
+
+  if compile {
+    if !language.can_compile() {
+      panic!("Trying to compile a non-compileable  language");
+    } else {
+      let llvm_bytecode = language.compile(&buffer);
+      compilation_sequence(llvm_bytecode, filename);
+    }
+  } else {
+    let interpretor_output = language.evaluate_in_repl(&buffer, options);
+    for line in interpretor_output {
+      println!("{}", line);
+    }
   }
-      /*
+  /*
     let tokens = match T::tokenize(&buffer) {
         Ok(t) => t,
         Err(e) => {
