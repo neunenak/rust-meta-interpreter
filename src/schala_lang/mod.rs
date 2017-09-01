@@ -1,4 +1,4 @@
-use language::{ProgrammingLanguageInterface, EvalOptions};
+use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
 
 mod parsing;
 
@@ -16,23 +16,36 @@ impl ProgrammingLanguageInterface for Schala {
     "Schala".to_string()
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, _eval_options: EvalOptions) -> Vec<String> {
-    let mut output = vec!(format!("test eval"));
-
+  fn evaluate_in_repl(&mut self, input: &str, options: EvalOptions) -> ReplOutput {
+    let mut output = ReplOutput::default();
     let tokens = match parsing::tokenize(input) {
-      Ok(tokens) => tokens,
-      Err(e) => { output.push(format!("{}", e.msg));
+      Ok(tokens) => {
+        if options.debug_tokens {
+          output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", tokens)));
+        }
+        tokens
+      },
+      Err(err) => {
+        output.add_output(format!("Tokenization error: {:?}\n", err.msg));
         return output;
       }
     };
 
-    let _ast = match parsing::parse(tokens)  {
-      Ok(ast) => ast,
-      Err(e) => { output.push(format!("{}", e.msg));
+    let ast = match parsing::parse(tokens) {
+      Ok(ast) => {
+        if options.debug_parse {
+          output.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast)));
+        }
+        ast
+      },
+      Err(err) => {
+        output.add_output(format!("Parse error: {:?}\n", err.msg));
         return output;
       }
     };
 
-    output
+    let evaluation_output = format!("test eval");
+    output.add_output(evaluation_output);
+    return output;
   }
 }

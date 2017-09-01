@@ -3,7 +3,7 @@ pub mod parser;
 pub mod eval;
 pub mod compilation;
 
-use language::{ProgrammingLanguageInterface, EvalOptions, LLVMCodeString};
+use language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TraceArtifact, LLVMCodeString};
 
 pub use self::eval::Evaluator as MaaruEvaluator;
 
@@ -24,18 +24,18 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
     "Maaru".to_string()
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, options: EvalOptions) -> Vec<String> {
-    let mut output = vec![];
+  fn evaluate_in_repl(&mut self, input: &str, options: EvalOptions) -> ReplOutput {
+    let mut output = ReplOutput::default();
+
     let tokens = match tokenizer::tokenize(input) {
       Ok(tokens) => {
         if options.debug_tokens {
-          output.push(format!("{:?}", tokens));
+          output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", tokens)));
         }
         tokens
       },
       Err(err) => {
-        let msg = format!("Tokenization error: {:?}\n", err.msg);
-        output.push(msg);
+        output.add_output(format!("Tokenization error: {:?}\n", err.msg));
         return output;
       }
     };
@@ -43,20 +43,20 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
     let ast = match parser::parse(&tokens, &[]) {
       Ok(ast) => {
         if options.debug_parse {
-          output.push(format!("{:?}", ast));
+          output.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast)));
         }
         ast
       },
       Err(err) => {
-        let msg = format!("Parse error: {:?}\n", err.msg);
-        output.push(msg);
+        output.add_output(format!("Parse error: {:?}\n", err.msg));
         return output;
       }
     };
-
-    let evaluation_output = self.evaluator.run(ast);
-    output.extend(evaluation_output);
-
+    let mut evaluation_output = String::new();
+    for s in self.evaluator.run(ast).iter() {
+      evaluation_output.push_str(s);
+    }
+    output.add_output(evaluation_output);
     return output;
   }
 

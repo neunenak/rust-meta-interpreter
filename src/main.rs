@@ -132,9 +132,7 @@ fn run_noninteractive<T: ProgrammingLanguageInterface>(filename: &str, language:
     }
   } else {
     let interpretor_output = language.evaluate_in_repl(&buffer, options);
-    for line in interpretor_output {
-      println!("{}", line);
-    }
+    interpretor_output.print_to_screen();
   }
 }
 
@@ -202,11 +200,7 @@ impl Repl {
 
 
       let interpretor_output = language.evaluate_in_repl(input, options);
-      let mut acc = String::new();
-      for i in interpretor_output {
-        acc.push_str(&i)
-      }
-      acc
+      interpretor_output.to_string()
     }
 
     fn handle_interpreter_directive(&mut self, input: &str) -> bool {

@@ -1,15 +1,15 @@
 extern crate itertools;
 use self::itertools::Itertools;
 
-use language::{ProgrammingLanguageInterface, EvalOptions, TokenError};
+use language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TokenError};
 
 pub struct Robo {
 }
 
 impl Robo {
-    pub fn new() -> Robo {
-        Robo { }
-    }
+  pub fn new() -> Robo {
+    Robo { }
+  }
 }
 
 #[allow(dead_code)]
@@ -137,17 +137,17 @@ impl ProgrammingLanguageInterface for Robo {
     "Robo".to_string()
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, _eval_options: EvalOptions) -> Vec<String> {
-    let mut output = vec!();
+  fn evaluate_in_repl(&mut self, input: &str, _eval_options: EvalOptions) -> ReplOutput {
+    let mut output = ReplOutput::default();
     let tokens = match tokenize(input) {
       Ok(tokens) => tokens,
       Err(e) => {
-        output.push(format!("Tokenize error: {:?}", e));
+        output.add_output(format!("Tokenize error: {:?}", e));
         return output;
       }
     };
 
-    output.push(format!("{:?}", tokens));
+    output.add_output(format!("{:?}", tokens));
     output
   }
 }
