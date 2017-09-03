@@ -183,6 +183,12 @@ impl Repl {
           println!("{}", item);
         }
       },
+      "help" => {
+        println!("Commands:");
+        println!("exit | quit");
+        println!("lang [show|next|previous]");
+        println!("set [show|hide] [tokens|parse|eval|llvm]");
+      }
       "lang" => {
         match commands.get(1) {
           Some(&"show") => {
