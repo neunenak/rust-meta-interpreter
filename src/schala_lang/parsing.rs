@@ -3,22 +3,42 @@ use std::rc::Rc;
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub enum Token {
+pub enum TokenType {
   Newline,
   Semicolon,
+
   LParen,
   RParen,
+
   LSquareBracket,
   RSquareBracket,
+
   LCurlyBrace,
   RCurlyBrace,
+
   Comma,
   Period,
   Colon,
   Digit(u8),
   StrLiteral(Rc<String>),
   Identifier(Rc<String>),
+  Keyword(Kw),
   Operator(Rc<String>),
+}
+
+#[derive(Debug)]
+pub enum Kw {
+  If,
+  Else,
+  Func,
+  Loop,
+}
+
+#[derive(Debug)]
+pub struct Token {
+  token_type: TokenType,
+  line_number: u32,
+  char_number: u32,
 }
 
 pub fn tokenize(_input: &str) -> Result<Vec<Token>, TokenError> {
