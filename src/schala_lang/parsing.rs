@@ -103,7 +103,25 @@ fn handle_digit(c: char, input: &mut CharIter) -> TokenType {
 }
 
 fn handle_quote(input: &mut CharIter) -> TokenType {
-  unimplemented!()
+  let mut buf = String::new();
+  while let Some(c) = input.next().map(|(_, c)| { c }) {
+    if c == '"' {
+      break;
+    } else if c == '\\' {
+      let next = input.peek().map(|&(_, c)| { c });
+      if next == Some('n') {
+        input.next();
+        buf.push('\n')
+      } else if next == Some('"') {
+        input.next();
+        buf.push('"');
+      }
+      //TODO handle more escapes
+    } else {
+      buf.push(c);
+    }
+  }
+  TokenType::StrLiteral(Rc::new(buf))
 }
 
 fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
