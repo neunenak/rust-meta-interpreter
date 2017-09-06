@@ -31,6 +31,7 @@ impl ProgrammingLanguageInterface for Schala {
       }
     };
 
+    /*
     let ast = match parsing::parse(tokens) {
       Ok(ast) => {
         if options.debug_parse {
@@ -43,8 +44,9 @@ impl ProgrammingLanguageInterface for Schala {
         return output;
       }
     };
+    */
 
-    let evaluation_output = format!("test eval");
+    let evaluation_output = format!("{:?}", tokens);
     output.add_output(evaluation_output);
     return output;
   }

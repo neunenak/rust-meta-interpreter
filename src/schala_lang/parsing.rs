@@ -1,29 +1,30 @@
+extern crate itertools;
+
 use language::{TokenError, ParseError};
 use std::rc::Rc;
+use std::iter::{Enumerate, Peekable};
+use self::itertools::Itertools;
+use std::str::Chars;
 
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum TokenType {
-  Newline,
-  Semicolon,
+  Newline, Semicolon,
 
-  LParen,
-  RParen,
+  LParen, RParen,
+  LSquareBracket, RSquareBracket,
+  LAngleBracket, RAngleBracket,
+  LCurlyBrace, RCurlyBrace,
 
-  LSquareBracket,
-  RSquareBracket,
+  Comma, Period, Colon, Underscore,
 
-  LCurlyBrace,
-  RCurlyBrace,
-
-  Comma,
-  Period,
-  Colon,
-  Digit(u8),
+  Operator(Rc<String>),
+  DigitGroup(Rc<String>), HexNumberSigil, BinNumberSigil,
   StrLiteral(Rc<String>),
   Identifier(Rc<String>),
   Keyword(Kw),
-  Operator(Rc<String>),
+
+  Error(String),
 }
 
 #[derive(Debug)]
@@ -31,18 +32,72 @@ pub enum Kw {
   If,
   Else,
   Func,
+  For,
   Loop,
 }
 
 #[derive(Debug)]
 pub struct Token {
   token_type: TokenType,
-  line_number: u32,
-  char_number: u32,
+  offset: usize,
 }
 
-pub fn tokenize(_input: &str) -> Result<Vec<Token>, TokenError> {
-  Ok(vec!())
+fn is_digit(c: &char) -> bool {
+  c.is_digit(10)
+}
+
+type CharIter<'a> = Peekable<Enumerate<Chars<'a>>>;
+
+pub fn tokenize(input: &str) -> Result<Vec<Token>, TokenError> {
+  use self::TokenType::*;
+
+  let mut tokens: Vec<Token> = Vec::new();
+  let mut input: CharIter = input.chars().enumerate().peekable();
+
+  while let Some((idx, c)) = input.next() {
+    let cur_tok_type = match c {
+      c if char::is_whitespace(c) && c != '\n' => continue,
+      '#' => {
+        if let Some(&(_, '{')) = input.peek() {
+        } else {
+          while let Some((_, c)) = input.next() {
+            if c == '\n' {
+              break;
+            }
+          }
+        }
+        continue;
+      },
+      '\n' => Newline, ';' => Semicolon,
+      ':' => Colon, ',' => Comma, '_' => Underscore, '.' => Period,
+      '(' => LParen, ')' => RParen,
+      '{' => LCurlyBrace, '}' => RCurlyBrace,
+      '<' => LAngleBracket, '>' => RAngleBracket,
+      '[' => LSquareBracket, ']' => RSquareBracket,
+      c if is_digit(&c) => handle_digit(c, &mut input),
+      _ => RSquareBracket,
+    };
+
+    tokens.push(Token { token_type: cur_tok_type, offset: idx });
+  }
+
+  Ok(tokens)
+}
+
+fn handle_digit(c: char, input: &mut CharIter) -> TokenType {
+  use self::TokenType::*;
+
+  if c == '0' && input.peek().map_or(false, |&(_, c)| { c == 'x' }) {
+    input.next();
+    HexNumberSigil
+  } else if c == '0' && input.peek().map_or(false, |&(_, c)| { c == 'b' }) {
+    input.next();
+    BinNumberSigil
+  } else {
+    let mut buf = c.to_string();
+    buf.extend(input.peeking_take_while(|&(_, ref c)| is_digit(c)).map(|(_, c)| { c }));
+    DigitGroup(Rc::new(buf))
+  }
 }
 
 /*
@@ -77,7 +132,6 @@ ascription := expression (':' type)+
 function := 'fn' prototype '{' (statement)* '}'
 prototype := identifier '(' identlist ')'
 identlist := identifier (',' identifier)* | ε
-
 
 
 declaration :=  FN prototype LCurlyBrace (statement)* RCurlyBrace
