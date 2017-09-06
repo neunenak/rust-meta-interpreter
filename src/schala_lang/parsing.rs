@@ -56,7 +56,6 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, TokenError> {
 
   while let Some((idx, c)) = input.next() {
     let cur_tok_type = match c {
-      c if char::is_whitespace(c) && c != '\n' => continue,
       '#' => {
         if let Some(&(_, '{')) = input.peek() {
         } else {
@@ -68,14 +67,17 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, TokenError> {
         }
         continue;
       },
+      c if char::is_whitespace(c) && c != '\n' => continue,
       '\n' => Newline, ';' => Semicolon,
-      ':' => Colon, ',' => Comma, '_' => Underscore, '.' => Period,
+      ':' => Colon, ',' => Comma, '.' => Period,
       '(' => LParen, ')' => RParen,
       '{' => LCurlyBrace, '}' => RCurlyBrace,
       '<' => LAngleBracket, '>' => RAngleBracket,
       '[' => LSquareBracket, ']' => RSquareBracket,
+      '"' => handle_quote(&mut input),
       c if is_digit(&c) => handle_digit(c, &mut input),
-      _ => RSquareBracket,
+      c @ '_' | c if c.is_alphabetic() => handle_alphabetic(c, &mut input),
+      c => handle_operator(c, &mut input),
     };
 
     tokens.push(Token { token_type: cur_tok_type, offset: idx });
@@ -99,6 +101,19 @@ fn handle_digit(c: char, input: &mut CharIter) -> TokenType {
     DigitGroup(Rc::new(buf))
   }
 }
+
+fn handle_quote(input: &mut CharIter) -> TokenType {
+  unimplemented!()
+}
+
+fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
+  unimplemented!()
+}
+
+fn handle_operator(c: char, input: &mut CharIter) -> TokenType {
+  unimplemented!()
+}
+
 
 /*
 Schala EBNF grammar
