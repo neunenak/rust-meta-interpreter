@@ -1,0 +1,56 @@
+
+fn main() {
+
+# comments are scripting-style
+#{ but can also be
+
+}# blocks
+
+@annotations are with @-
+
+# variable expressions
+  var a: I32 = 20
+  const b: String = 20
+
+  there(); can(); be(); multiple(); statements(); per_line();
+
+  fn yolo(a: MyType, b: YourType): ReturnType<Param1, Param2> {
+    if a == 20 {
+      return "early"
+    }
+    var sex = 20
+    sex
+  }
+
+  for {
+  # infinite loop
+  }
+
+  #iteration over a variable
+  for i <- [1..1000]  {
+
+  }
+
+  #while loop
+  for a != 3 || fuckTard() {
+    break
+  }
+
+  #monadic decomposition
+  for a <- maybeInt(); s <- foo() {
+    a + s
+  }
+
+  # let statements too!!
+  for (a = 20
+  b = fuck) {
+    a + b
+  }
+
+  #syntax is, I guess, for <expr> <brace-block>, where <expr> is a bool, or a <arrow-expr>
+
+  type Maybe<T> = None | Some<T>
+
+  fuck.map(fn(x) { x + 10 })
+
+}
