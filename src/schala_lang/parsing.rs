@@ -88,7 +88,6 @@ pub fn tokenize(input: &str) -> Vec<Token> {
       c @ '_' | c if c.is_alphabetic() => handle_alphabetic(c, &mut input),
       c => handle_operator(c, &mut input),
     };
-
     tokens.push(Token { token_type: cur_tok_type, offset: idx });
   }
   tokens
@@ -112,21 +111,24 @@ fn handle_digit(c: char, input: &mut CharIter) -> TokenType {
 
 fn handle_quote(input: &mut CharIter) -> TokenType {
   let mut buf = String::new();
-  while let Some(c) = input.next().map(|(_, c)| { c }) {
-    if c == '"' {
-      break;
-    } else if c == '\\' {
-      let next = input.peek().map(|&(_, c)| { c });
-      if next == Some('n') {
-        input.next();
-        buf.push('\n')
-      } else if next == Some('"') {
-        input.next();
-        buf.push('"');
-      }
-      //TODO handle more escapes
-    } else {
-      buf.push(c);
+  loop {
+    match input.next().map(|(_, c)| { c }) {
+      Some('"') => break,
+      Some('\\') => {
+        let next = input.peek().map(|&(_, c)| { c });
+        if next == Some('n') {
+          input.next();
+          buf.push('\n')
+        } else if next == Some('"') {
+          input.next();
+          buf.push('"');
+        } else if next == Some('t') {
+          input.next();
+          buf.push('\t');
+        }
+      },
+      Some(c) => buf.push(c),
+      None => return TokenType::Error(format!("Unclosed string")),
     }
   }
   TokenType::StrLiteral(Rc::new(buf))
