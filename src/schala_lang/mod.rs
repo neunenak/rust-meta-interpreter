@@ -2,6 +2,8 @@ use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOut
 
 mod parsing;
 
+use self::parsing::TokenType;
+
 pub struct Schala { 
 }
 
@@ -18,18 +20,16 @@ impl ProgrammingLanguageInterface for Schala {
 
   fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
-    let tokens = match parsing::tokenize(input) {
-      Ok(tokens) => {
-        if options.debug_tokens {
-          output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", tokens)));
-        }
-        tokens
-      },
-      Err(err) => {
-        output.add_output(format!("Tokenization error: {:?}\n", err.msg));
-        return output;
-      }
-    };
+    let tokens = parsing::tokenize(input);
+    if options.debug_tokens {
+      output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", tokens)));
+    }
+
+    let token_errors: Vec<&String> = tokens.iter().filter_map(|t| t.get_error()).collect();
+    if token_errors.len() != 0 {
+      output.add_output(format!("Tokenization error: {:?}\n", token_errors));
+      return output;
+    }
 
     /*
     let ast = match parsing::parse(tokens) {

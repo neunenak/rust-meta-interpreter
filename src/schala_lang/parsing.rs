@@ -42,13 +42,22 @@ pub struct Token {
   offset: usize,
 }
 
+impl Token {
+  pub fn get_error(&self) -> Option<&String> {
+    match self.token_type {
+      TokenType::Error(ref s) => Some(s),
+      _ => None,
+    }
+  }
+}
+
 fn is_digit(c: &char) -> bool {
   c.is_digit(10)
 }
 
 type CharIter<'a> = Peekable<Enumerate<Chars<'a>>>;
 
-pub fn tokenize(input: &str) -> Result<Vec<Token>, TokenError> {
+pub fn tokenize(input: &str) -> Vec<Token> {
   use self::TokenType::*;
 
   let mut tokens: Vec<Token> = Vec::new();
@@ -82,8 +91,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, TokenError> {
 
     tokens.push(Token { token_type: cur_tok_type, offset: idx });
   }
-
-  Ok(tokens)
+  tokens
 }
 
 fn handle_digit(c: char, input: &mut CharIter) -> TokenType {
