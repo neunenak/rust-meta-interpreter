@@ -1,3 +1,7 @@
+extern crate colored;
+
+use self::colored::*;
+
 #[derive(Debug)]
 pub struct TokenError {
     pub msg: String,
@@ -42,7 +46,8 @@ impl ReplOutput {
   pub fn to_string(&self) -> String {
     let mut acc = String::new();
     for line in self.artifacts.iter() {
-      acc.push_str(&line.debug_output);
+      acc.push_str(&line.debug_output.color(line.text_color).to_string());
+      acc.push_str(&"\n");
     }
     acc.push_str(&self.output);
     acc
@@ -69,11 +74,12 @@ pub struct CompilationOutput {
 pub struct TraceArtifact {
   stage_name: String,
   debug_output: String,
+  text_color: &'static str,
 }
 
 impl TraceArtifact {
   pub fn new(stage: &str, debug: String) -> TraceArtifact {
-    TraceArtifact { stage_name: stage.to_string(), debug_output: debug }
+    TraceArtifact { stage_name: stage.to_string(), debug_output: debug, text_color: "blue" }
   }
 }
 
