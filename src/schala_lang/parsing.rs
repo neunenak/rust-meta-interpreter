@@ -7,7 +7,6 @@ use std::iter::{Enumerate, Peekable};
 use self::itertools::Itertools;
 use std::str::Chars;
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
   Newline, Semicolon,
@@ -276,11 +275,35 @@ postop := ε | LParen exprlist RParen | LBracket expression RBracket
 op := '+', '-', etc.
 */
 
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct AST { }
+struct Parser {
+  tokens: Vec<Token>,
+}
 
-#[allow(dead_code)]
-pub fn parse(_input: Vec<Token>) -> Result<AST, ParseError> {
-  Ok(AST { })
+#[derive(Debug)]
+pub struct AST(Vec<Statement>);
+
+#[derive(Debug, PartialEq)]
+pub enum Statement {
+  Expression(Expression),
+  Declaration(Declaration),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Declaration {
+  FuncDecl,
+  TypeDecl
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Expression {
+  UnsignedIntLiteral(u64),
+  SignedIntLiteral(i64),
+  FloatLiteral(f64),
+}
+
+pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
+  use self::Statement::*; use self::Declaration::*; use self::Expression::*;
+
+  let statements = vec![Expression(UnsignedIntLiteral(1))];
+  Ok(AST(statements))
 }

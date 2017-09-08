@@ -23,13 +23,14 @@ impl ProgrammingLanguageInterface for Schala {
       output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", tokens)));
     }
 
-    let token_errors: Vec<&String> = tokens.iter().filter_map(|t| t.get_error()).collect();
-    if token_errors.len() != 0 {
-      output.add_output(format!("Tokenization error: {:?}\n", token_errors));
-      return output;
+    {
+      let token_errors: Vec<&String> = tokens.iter().filter_map(|t| t.get_error()).collect();
+      if token_errors.len() != 0 {
+        output.add_output(format!("Tokenization error: {:?}\n", token_errors));
+        return output;
+      }
     }
 
-    /*
     let ast = match parsing::parse(tokens) {
       Ok(ast) => {
         if options.debug_parse {
@@ -42,9 +43,8 @@ impl ProgrammingLanguageInterface for Schala {
         return output;
       }
     };
-    */
 
-    let evaluation_output = format!("{:?}", tokens);
+    let evaluation_output = format!("{:?}", ast);
     output.add_output(evaluation_output);
     return output;
   }
