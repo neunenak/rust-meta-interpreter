@@ -49,7 +49,26 @@ fn main() {
 
   #syntax is, I guess, for <expr> <brace-block>, where <expr> is a bool, or a <arrow-expr>
 
-  type Maybe<T> = None | Some<T>
+  # type level alises
+ typealias <name> = <other type>
+ 
+ #declaring types of all stripes
+ type MyData = { a: i32, b: String }
+ type MyType = MyType
+ type Option<a> = None | Some(a)
+ type Signal = Absence | SimplePresence(i32) | ComplexPresence {a: i32, b: MyCustomData}
+
+ #traits
+ 
+ trait Bashable { }
+ trait Luggable {
+  fn lug(self, a: Option<Self>)
+ }
+
+
+type <name> = struct { <field> : <type>,* }
+type <name> = Variant1 | Variant2(type, type) | Variant3 struct { }
+
 
   fuck.map(fn(x) { x + 10 })
 

@@ -16,6 +16,7 @@ pub enum TokenType {
   LSquareBracket, RSquareBracket,
   LAngleBracket, RAngleBracket,
   LCurlyBrace, RCurlyBrace,
+  Pipe,
 
   Comma, Period, Colon, Underscore,
 
@@ -30,11 +31,13 @@ pub enum TokenType {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Kw {
-  If,
-  Else,
+  If, Else,
   Func,
   For,
-  Loop,
+  Var, Const, Let,
+  Type, SelfType, SelfIdent,
+  Trait, Impl,
+  True, False
 }
 
 lazy_static! {
@@ -42,6 +45,18 @@ lazy_static! {
     hashmap! {
       "if" => Kw::If,
       "else" => Kw::Else,
+      "fn" => Kw::Func,
+      "for" => Kw::For,
+      "var" => Kw::Var,
+      "const" => Kw::Const,
+      "let" => Kw::Let,
+      "type" => Kw::Type,
+      "Self" => Kw::SelfType,
+      "self" => Kw::SelfIdent,
+      "trait" => Kw::Trait,
+      "impl" => Kw::Impl,
+      "true" => Kw::True,
+      "false" => Kw::False,
     };
 }
 
@@ -85,13 +100,14 @@ pub fn tokenize(input: &str) -> Vec<Token> {
         }
         continue;
       },
-      c if char::is_whitespace(c) && c != '\n' => continue,
+      c if c.is_whitespace() && c != '\n' => continue,
       '\n' => Newline, ';' => Semicolon,
       ':' => Colon, ',' => Comma, '.' => Period,
       '(' => LParen, ')' => RParen,
       '{' => LCurlyBrace, '}' => RCurlyBrace,
       '<' => LAngleBracket, '>' => RAngleBracket,
       '[' => LSquareBracket, ']' => RSquareBracket,
+      '|' => Pipe,
       '"' => handle_quote(&mut input),
       c if is_digit(&c) => handle_digit(c, &mut input),
       c @ '_' | c if c.is_alphabetic() => handle_alphabetic(c, &mut input), //TODO I'll probably have to rewrite this if I care about types being uppercase, also type parameterization
@@ -163,7 +179,18 @@ fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
 }
 
 fn handle_operator(c: char, input: &mut CharIter) -> TokenType {
-  unimplemented!()
+  let mut buf = String::new();
+  buf.push(c);
+  loop {
+    match input.peek().map(|&(_, c)| { c }) {
+      Some(c) if !c.is_alphabetic() && !c.is_whitespace() => {
+        input.next();
+        buf.push(c);
+      },
+      _ => break
+    }
+  }
+  TokenType::Operator(Rc::new(buf))
 }
 
 
