@@ -2,8 +2,6 @@ use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOut
 
 mod parsing;
 
-use self::parsing::TokenType;
-
 pub struct Schala { 
 }
 

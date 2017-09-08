@@ -1,6 +1,7 @@
 extern crate itertools;
 
 use language::{TokenError, ParseError};
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::iter::{Enumerate, Peekable};
 use self::itertools::Itertools;
@@ -27,13 +28,21 @@ pub enum TokenType {
   Error(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Kw {
   If,
   Else,
   Func,
   For,
   Loop,
+}
+
+lazy_static! {
+  static ref KEYWORDS: HashMap<&'static str, Kw> =
+    hashmap! {
+      "if" => Kw::If,
+      "else" => Kw::Else,
+    };
 }
 
 #[derive(Debug)]
@@ -85,7 +94,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
       '[' => LSquareBracket, ']' => RSquareBracket,
       '"' => handle_quote(&mut input),
       c if is_digit(&c) => handle_digit(c, &mut input),
-      c @ '_' | c if c.is_alphabetic() => handle_alphabetic(c, &mut input),
+      c @ '_' | c if c.is_alphabetic() => handle_alphabetic(c, &mut input), //TODO I'll probably have to rewrite this if I care about types being uppercase, also type parameterization
       c => handle_operator(c, &mut input),
     };
     tokens.push(Token { token_type: cur_tok_type, offset: idx });
@@ -135,7 +144,22 @@ fn handle_quote(input: &mut CharIter) -> TokenType {
 }
 
 fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
-  unimplemented!()
+  let mut buf = String::new();
+  buf.push(c);
+  loop {
+    match input.peek().map(|&(_, c)| { c }) {
+      Some(c) if c.is_alphanumeric() => {
+        input.next();
+        buf.push(c);
+      },
+      _ => break,
+    }
+  }
+
+  match KEYWORDS.get(buf.as_str()) {
+    Some(kw) => TokenType::Keyword(kw.clone()),
+    None => TokenType::Identifier(Rc::new(buf)),
+  }
 }
 
 fn handle_operator(c: char, input: &mut CharIter) -> TokenType {

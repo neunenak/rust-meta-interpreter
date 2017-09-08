@@ -1,6 +1,10 @@
 #![feature(advanced_slice_patterns, slice_patterns, box_patterns)]
 extern crate getopts;
 extern crate linefeed;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate maplit;
 
 use std::path::Path;
 use std::fs::File;
