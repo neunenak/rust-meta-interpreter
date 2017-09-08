@@ -139,6 +139,7 @@ fn tokenize_identifier(c: char, iter: &mut Peekable<Chars>) -> Result<Token, Tok
     })
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -204,3 +205,4 @@ mod tests {
 
     }
 }
+*/

@@ -8,7 +8,7 @@ use self::itertools::Itertools;
 use std::str::Chars;
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TokenType {
   Newline, Semicolon,
 
@@ -29,7 +29,7 @@ pub enum TokenType {
   Error(String),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Kw {
   If, Else,
   Func,
@@ -92,7 +92,6 @@ pub fn tokenize(input: &str) -> Vec<Token> {
   let mut input: CharIter = input.chars().enumerate().peekable();
 
   while let Some((idx, c)) = input.next() {
-    println!("C: {}", c);
     let cur_tok_type = match c {
       '#' => {
         if let Some(&(_, '{')) = input.peek() {
@@ -202,6 +201,23 @@ fn handle_operator(c: char, input: &mut CharIter) -> TokenType {
   TokenType::Operator(Rc::new(buf))
 }
 
+#[cfg(test)]
+mod schala_tokenizer_tests {
+  use super::*;
+  use super::TokenType::*;
+  use super::Kw::*;
+
+  macro_rules! ident { ($ident:expr) => { Identifier(Rc::new($ident.to_string())) } }
+  macro_rules! op { ($ident:expr) => { Operator(Rc::new($ident.to_string())) } }
+
+  #[test]
+  fn tokens() {
+    let a = tokenize("let a: A<B> = c ++ d");
+    let token_types: Vec<TokenType> = a.into_iter().map(move |t| t.token_type).collect();
+    assert_eq!(token_types, vec![Keyword(Let), ident!("a"), Colon, ident!("A"),
+      LAngleBracket, ident!("B"), RAngleBracket, op!("="), ident!("c"), op!("++"), ident!("d")]);
+  }
+}
 
 /*
 Schala EBNF grammar

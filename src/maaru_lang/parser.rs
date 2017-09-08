@@ -635,6 +635,7 @@ pub fn parse(tokens: &[Token], _parsed_tree: &[Statement]) -> ParseResult<AST> {
     parser.program()
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use schala_lang::tokenizer;
@@ -751,3 +752,4 @@ mod tests {
         }
     }
 }
+*/
