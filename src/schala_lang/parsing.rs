@@ -1,6 +1,6 @@
 extern crate itertools;
 
-use language::{TokenError, ParseError};
+use language::{ParseError};
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::iter::{Enumerate, Peekable};
