@@ -14,6 +14,18 @@ fn main() {
 
   there(); can(); be(); multiple(); statements(); per_line();
 
+  #string interpolation
+  const yolo = "I have ${a + b} people in my house"
+
+  # let expressions ??? not sure if I want this
+  let a = 10, b = 20, c = 30 in a + b + c
+
+  #list literal
+  const q = [1,2,3,4]
+
+  #lambda literal ?? maybe? not sure how this should work
+  q.map(|item| { item * 100 })
+
   fn yolo(a: MyType, b: YourType): ReturnType<Param1, Param2> {
     if a == 20 {
       return "early"
@@ -21,6 +33,7 @@ fn main() {
     var sex = 20
     sex
   }
+
 
   for {
   # infinite loop
@@ -47,9 +60,20 @@ fn main() {
     a + b
   }
 
-  #syntax is, I guess, for <expr> <brace-block>, where <expr> is a bool, or a <arrow-expr>
 
-  # type level alises
+  # pattern-matching
+  match <expr> {
+    Some(a) => {
+
+    },
+    None => {
+
+    },
+  }
+
+ #syntax is, I guess, for <expr> <brace-block>, where <expr> is a bool, or a <arrow-expr>
+
+ # type level alises
  typealias <name> = <other type>
  
  #declaring types of all stripes
@@ -64,12 +88,5 @@ fn main() {
  trait Luggable {
   fn lug(self, a: Option<Self>)
  }
-
-
-type <name> = struct { <field> : <type>,* }
-type <name> = Variant1 | Variant2(type, type) | Variant3 struct { }
-
-
-  fuck.map(fn(x) { x + 10 })
 
 }
