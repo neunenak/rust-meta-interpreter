@@ -1,6 +1,5 @@
 extern crate itertools;
 
-use language::{ParseError};
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::iter::{Enumerate, Peekable};
@@ -279,6 +278,12 @@ struct Parser {
   tokens: Vec<Token>,
 }
 
+pub struct ParseError {
+  pub msg: String,
+}
+
+pub type ParseResult<T> = Result<T, ParseError>;
+
 #[derive(Debug)]
 pub struct AST(Vec<Statement>);
 
@@ -301,9 +306,19 @@ pub enum Expression {
   FloatLiteral(f64),
 }
 
-pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
-  use self::Statement::*; use self::Declaration::*; use self::Expression::*;
+impl Parser {
+  fn new(input: Vec<Token>) -> Parser {
+    Parser { tokens: input }
+  }
 
-  let statements = vec![Expression(UnsignedIntLiteral(1))];
-  Ok(AST(statements))
+  fn program(&mut self) -> ParseResult<AST> {
+    use self::Statement::*; use self::Declaration::*; use self::Expression::*;
+    let statements = vec![Expression(UnsignedIntLiteral(1))];
+    Ok(AST(statements))
+  }
+}
+
+pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
+  let mut parser = Parser::new(input);
+  parser.program()
 }
