@@ -25,7 +25,6 @@ pub enum TokenType {
   Identifier(Rc<String>),
   Keyword(Kw),
 
-  EOF,
   Error(String),
 }
 
@@ -287,8 +286,12 @@ impl Parser {
     Parser { tokens: input.into_iter().peekable() }
   }
 
-  fn peek(&mut self) -> TokenType {
-    self.tokens.peek().map(|ref t| { t.token_type.clone() }).unwrap_or(TokenType::EOF)
+  fn peek(&mut self) -> Option<TokenType> {
+    self.tokens.peek().map(|ref t| { t.token_type.clone() })
+  }
+
+  fn next(&mut self) -> Option<TokenType> {
+    self.tokens.next().map(|ref t| { t.token_type.clone() })
   }
 
   fn program(&mut self) -> ParseResult<AST> {
