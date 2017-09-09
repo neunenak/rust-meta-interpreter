@@ -4,9 +4,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::iter::{Enumerate, Peekable};
 use self::itertools::Itertools;
+use std::vec::IntoIter;
 use std::str::Chars;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
   Newline, Semicolon,
 
@@ -24,6 +25,7 @@ pub enum TokenType {
   Identifier(Rc<String>),
   Keyword(Kw),
 
+  EOF,
   Error(String),
 }
 
@@ -274,8 +276,26 @@ postop := ε | LParen exprlist RParen | LBracket expression RBracket
 op := '+', '-', etc.
 */
 
+type TokenIter = Peekable<IntoIter<Token>>;
+
 struct Parser {
-  tokens: Vec<Token>,
+  tokens: TokenIter,
+}
+
+impl Parser {
+  fn new(input: Vec<Token>) -> Parser {
+    Parser { tokens: input.into_iter().peekable() }
+  }
+
+  fn peek(&mut self) -> TokenType {
+    self.tokens.peek().map(|ref t| { t.token_type.clone() }).unwrap_or(TokenType::EOF)
+  }
+
+  fn program(&mut self) -> ParseResult<AST> {
+    use self::Statement::*; use self::Declaration::*; use self::Expression::*;
+    let statements = vec![Expression(UnsignedIntLiteral(1))];
+    Ok(AST(statements))
+  }
 }
 
 pub struct ParseError {
@@ -306,17 +326,6 @@ pub enum Expression {
   FloatLiteral(f64),
 }
 
-impl Parser {
-  fn new(input: Vec<Token>) -> Parser {
-    Parser { tokens: input }
-  }
-
-  fn program(&mut self) -> ParseResult<AST> {
-    use self::Statement::*; use self::Declaration::*; use self::Expression::*;
-    let statements = vec![Expression(UnsignedIntLiteral(1))];
-    Ok(AST(statements))
-  }
-}
 
 pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
   let mut parser = Parser::new(input);
