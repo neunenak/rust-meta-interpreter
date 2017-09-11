@@ -360,8 +360,7 @@ pub enum Declaration {
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
-  UnsignedIntLiteral(u64),
-  SignedIntLiteral(i64),
+  IntLiteral(u64),
   FloatLiteral(f64),
 }
 
@@ -453,7 +452,7 @@ impl Parser {
       }
     } else {
       match digits.parse::<u64>() {
-        Ok(d) => Ok(UnsignedIntLiteral(d)),
+        Ok(d) => Ok(IntLiteral(d)),
         Err(e) => unimplemented!("Need to handle numbers that don't parse to a Rust u64 {}", e),
       }
     }
