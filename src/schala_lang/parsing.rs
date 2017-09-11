@@ -302,6 +302,7 @@ digits := (digit_group underscore)+
 
 type TokenIter = Peekable<IntoIter<Token>>;
 
+#[derive(Debug)]
 pub struct ParseError {
   pub msg: String,
 }
@@ -341,7 +342,7 @@ macro_rules! expect {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct AST(Vec<Statement>);
 
 #[derive(Debug, PartialEq)]
@@ -468,4 +469,17 @@ impl Parser {
 pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
   let mut parser = Parser::new(input);
   parser.program()
+}
+
+#[cfg(test)]
+mod parse_tests {
+  use super::*;
+  use super::Statement::*;
+  use super::Expression::*;
+  use super::ParseError;
+  #[test]
+  fn test_parsing() {
+    let a = "8.1";
+    assert_eq!(parse(tokenize(a)).unwrap(), AST(vec![Expression(FloatLiteral(8.1))]));
+  }
 }
