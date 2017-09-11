@@ -13,11 +13,6 @@ impl TokenError {
     }
 }
 
-#[derive(Debug)]
-pub struct ParseError {
-    pub msg: String,
-}
-
 pub struct LLVMCodeString(pub String);
 
 #[derive(Debug, Default)]
