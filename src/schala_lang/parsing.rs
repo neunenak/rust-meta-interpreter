@@ -29,6 +29,7 @@ pub enum TokenType {
 
   Error(String),
 }
+use self::TokenType::*;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Kw {
@@ -41,6 +42,7 @@ pub enum Kw {
   Trait, Impl,
   True, False
 }
+use self::Kw::*;
 
 lazy_static! {
   static ref KEYWORDS: HashMap<&'static str, Kw> =
@@ -87,8 +89,6 @@ fn is_digit(c: &char) -> bool {
 type CharIter<'a> = Peekable<Enumerate<Chars<'a>>>;
 
 pub fn tokenize(input: &str) -> Vec<Token> {
-  use self::TokenType::*;
-
   let mut tokens: Vec<Token> = Vec::new();
   let mut input: CharIter = input.chars().enumerate().peekable();
 
@@ -124,8 +124,6 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 }
 
 fn handle_digit(c: char, input: &mut CharIter) -> TokenType {
-  use self::TokenType::*;
-
   if c == '0' && input.peek().map_or(false, |&(_, c)| { c == 'x' }) {
     input.next();
     HexNumberSigil
@@ -366,7 +364,6 @@ pub enum Expression {
 
 impl Parser {
   fn program(&mut self) -> ParseResult<AST> {
-    use self::TokenType::*;
     let mut statements = Vec::new();
     loop {
       match self.peek() {
@@ -382,7 +379,6 @@ impl Parser {
   }
 
   fn statement(&mut self) -> ParseResult<Statement> {
-    use self::TokenType::*;
     use self::Kw::*;
     //TODO handle error recovery here
     match self.peek() {
@@ -409,14 +405,12 @@ impl Parser {
   }
 
   fn literal(&mut self) -> ParseResult<Expression> {
-    use self::TokenType::*;
     match self.peek() {
       DigitGroup(_) | HexNumberSigil | BinNumberSigil | Period => self.number_literal(),
       _ => unimplemented!(),
       }
     }
   fn number_literal(&mut self) -> ParseResult<Expression> {
-    use self::TokenType::*;
     match self.peek() {
       HexNumberSigil | BinNumberSigil => self.int_literal(),
       _ => self.float_literal(),
@@ -459,7 +453,6 @@ impl Parser {
   }
 
   fn digits(&mut self) -> ParseResult<String> {
-    use self::TokenType::*;
     let mut ds = String::new();
     loop {
       match self.peek() {
