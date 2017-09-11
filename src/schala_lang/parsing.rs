@@ -25,6 +25,8 @@ pub enum TokenType {
   Identifier(Rc<String>),
   Keyword(Kw),
 
+  EOF,
+
   Error(String),
 }
 
@@ -166,7 +168,7 @@ fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
   let mut buf = String::new();
   buf.push(c);
   if c == '_' && input.peek().map(|&(_, c)| { !c.is_alphabetic() }).unwrap_or(true) {
-    return TokenType::Identifier(Rc::new(format!("_")))
+    return TokenType::Underscore
   }
 
   loop {
@@ -206,6 +208,7 @@ mod schala_tokenizer_tests {
   use super::TokenType::*;
   use super::Kw::*;
 
+  macro_rules! digit { ($ident:expr) => { DigitGroup(Rc::new($ident.to_string())) } }
   macro_rules! ident { ($ident:expr) => { Identifier(Rc::new($ident.to_string())) } }
   macro_rules! op { ($ident:expr) => { Operator(Rc::new($ident.to_string())) } }
 
@@ -216,17 +219,16 @@ mod schala_tokenizer_tests {
     assert_eq!(token_types, vec![Keyword(Let), ident!("a"), Colon, ident!("A"),
       LAngleBracket, ident!("B"), RAngleBracket, op!("="), ident!("c"), op!("++"), ident!("d")]);
   }
+
+  #[test]
+  fn underscores() {
+    let token_types: Vec<TokenType> = tokenize("4_8").into_iter().map(move |t| t.token_type).collect();
+    assert_eq!(token_types, vec![digit!("4"), Underscore, digit!("8")]);
+  }
 }
 
 /*
-Schala EBNF grammar
-
-
- type alias <name> = <other type>
- 
-type <name> = struct { <field> : <type>,* }
-type <name> = Variant1 | Variant2(type, type) | Variant3 struct { }
-
+Schala (PROVISIONAL!!) EBNF grammar
 
 '' = literal, all other symbols are nonterminals
 
@@ -275,7 +277,44 @@ postop := ε | LParen exprlist RParen | LBracket expression RBracket
 op := '+', '-', etc.
 */
 
+
+/* Schala EBNF Grammar */
+/*
+
+program := (statement delimiter)* EOF
+delimiter := NEWLINE | SEMICOLON
+statement := expression | declaration
+
+declaration := type_declaration | func_declaration
+
+type_declaration := TYPE
+func_declaration := FN
+
+expression := primary
+primary := literal
+literal := TRUE | FALSE | number_literal | str_literal
+
+// a float_literal can still be assigned to an int in type-checking
+number_literal := int_literal | float_literal
+int_literal = (HEX_SIGIL | BIN_SIGIL) digits
+float_literal := digits (PERIOD digits)
+digits := (digit_group underscore)+
+
+*/
+
 type TokenIter = Peekable<IntoIter<Token>>;
+
+pub struct ParseError {
+  pub msg: String,
+}
+
+impl ParseError {
+  fn new<T>(msg: &str) -> ParseResult<T> {
+    Err(ParseError { msg: msg.to_string() })
+  }
+}
+
+pub type ParseResult<T> = Result<T, ParseError>;
 
 struct Parser {
   tokens: TokenIter,
@@ -286,26 +325,23 @@ impl Parser {
     Parser { tokens: input.into_iter().peekable() }
   }
 
-  fn peek(&mut self) -> Option<TokenType> {
-    self.tokens.peek().map(|ref t| { t.token_type.clone() })
+  fn peek(&mut self) -> TokenType {
+    self.tokens.peek().map(|ref t| { t.token_type.clone() }).unwrap_or(TokenType::EOF)
   }
 
-  fn next(&mut self) -> Option<TokenType> {
-    self.tokens.next().map(|ref t| { t.token_type.clone() })
-  }
-
-  fn program(&mut self) -> ParseResult<AST> {
-    use self::Statement::*; use self::Declaration::*; use self::Expression::*;
-    let statements = vec![Expression(UnsignedIntLiteral(1))];
-    Ok(AST(statements))
+  fn next(&mut self) -> TokenType {
+    self.tokens.next().map(|ref t| { t.token_type.clone() }).unwrap_or(TokenType::EOF)
   }
 }
 
-pub struct ParseError {
-  pub msg: String,
+macro_rules! expect {
+  ($self:expr, $token_type:pat, $message:expr) => {
+    match $self.peek() {
+      Some($token_type) => {$self.next();},
+      _ => return ParseError { msg: $message.to_string() },
+    }
+  }
 }
-
-pub type ParseResult<T> = Result<T, ParseError>;
 
 #[derive(Debug)]
 pub struct AST(Vec<Statement>);
@@ -329,6 +365,102 @@ pub enum Expression {
   FloatLiteral(f64),
 }
 
+impl Parser {
+  fn program(&mut self) -> ParseResult<AST> {
+    use self::TokenType::*;
+    let mut statements = Vec::new();
+    loop {
+      match self.peek() {
+        EOF => break,
+        Newline | Semicolon => {
+          self.next();
+          continue;
+        },
+        _ => statements.push(self.statement()?),
+      }
+    }
+    Ok(AST(statements))
+  }
+
+  fn statement(&mut self) -> ParseResult<Statement> {
+    use self::TokenType::*;
+    use self::Kw::*;
+    //TODO handle error recovery here
+    match self.peek() {
+      Keyword(Type) => self.type_declaration().map(|decl| { Statement::Declaration(decl) }),
+      Keyword(Func)=> self.func_declaration().map(|func| { Statement::Declaration(func) }),
+      _ => self.expression().map(|expr| { Statement::Expression(expr) } ),
+    }
+  }
+
+  fn type_declaration(&mut self) -> ParseResult<Declaration> {
+    unimplemented!()
+  }
+
+  fn func_declaration(&mut self) -> ParseResult<Declaration> {
+    unimplemented!()
+  }
+
+  fn expression(&mut self) -> ParseResult<Expression> {
+    self.primary()
+  }
+
+  fn primary(&mut self) -> ParseResult<Expression> {
+    self.literal()
+  }
+
+  fn literal(&mut self) -> ParseResult<Expression> {
+    use self::TokenType::*;
+    match self.peek() {
+      DigitGroup(_) | HexNumberSigil | BinNumberSigil | Period => self.number_literal(),
+      _ => unimplemented!(),
+      }
+    }
+  fn number_literal(&mut self) -> ParseResult<Expression> {
+    use self::TokenType::*;
+    match self.peek() {
+      HexNumberSigil | BinNumberSigil => self.int_literal(),
+      _ => self.float_literal(),
+    }
+  }
+
+  fn int_literal(&mut self) -> ParseResult<Expression> {
+    use self::Expression::*;
+    let digits = self.digits()?;
+    match self.next() {
+      BinNumberSigil => {
+        unimplemented!()
+      },
+      HexNumberSigil => {
+        unimplemented!()
+      },
+      _ => return ParseError::new("Expected '0x' or '0b'"),
+    }
+  }
+
+  fn float_literal(&mut self) -> ParseResult<Expression> {
+    use self::Expression::*;
+    let digits = self.digits()?;
+    match digits.parse::<u64>() {
+      Ok(d) => Ok(UnsignedIntLiteral(d)),
+      Err(p) => unimplemented!("Need to handle numbers that don't parse to a Rust u64 {:?}", p),
+    }
+  }
+
+  fn digits(&mut self) -> ParseResult<String> {
+    use self::TokenType::*;
+    let mut ds = String::new();
+    loop {
+      let xxx = self.next();
+      match xxx {
+        Underscore => continue,
+        DigitGroup(ref s) => ds.push_str(s),
+        x => break,
+      }
+    }
+    Ok(ds)
+  }
+}
 
 pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
   let mut parser = Parser::new(input);
