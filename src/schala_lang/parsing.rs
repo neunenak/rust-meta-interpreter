@@ -451,11 +451,10 @@ impl Parser {
     use self::TokenType::*;
     let mut ds = String::new();
     loop {
-      let xxx = self.next();
-      match xxx {
+      match self.next() {
         Underscore => continue,
         DigitGroup(ref s) => ds.push_str(s),
-        x => break,
+        _ => break,
       }
     }
     Ok(ds)
