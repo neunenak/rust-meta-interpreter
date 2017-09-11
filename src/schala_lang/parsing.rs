@@ -440,10 +440,22 @@ impl Parser {
 
   fn float_literal(&mut self) -> ParseResult<Expression> {
     use self::Expression::*;
-    let digits = self.digits()?;
-    match digits.parse::<u64>() {
-      Ok(d) => Ok(UnsignedIntLiteral(d)),
-      Err(p) => unimplemented!("Need to handle numbers that don't parse to a Rust u64 {:?}", p),
+    let mut digits = self.digits()?;
+    let p = self.peek();
+    if let TokenType::Period = self.peek() {
+      self.next();
+      digits.push_str(".");
+      digits.push_str(&self.digits()?);
+      match digits.parse::<f64>() {
+        Ok(f) => Ok(FloatLiteral(f)),
+        Err(e) => unimplemented!("Float didn't parse with error: {}", e),
+
+      }
+    } else {
+      match digits.parse::<u64>() {
+        Ok(d) => Ok(UnsignedIntLiteral(d)),
+        Err(e) => unimplemented!("Need to handle numbers that don't parse to a Rust u64 {}", e),
+      }
     }
   }
 
@@ -451,9 +463,9 @@ impl Parser {
     use self::TokenType::*;
     let mut ds = String::new();
     loop {
-      match self.next() {
-        Underscore => continue,
-        DigitGroup(ref s) => ds.push_str(s),
+      match self.peek() {
+        Underscore => { self.next(); continue; },
+        DigitGroup(ref s) => { self.next(); ds.push_str(s)},
         _ => break,
       }
     }
