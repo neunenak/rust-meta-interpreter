@@ -285,12 +285,14 @@ statement := expression | declaration
 
 declaration := type_declaration | func_declaration
 
-type_declaration := TYPE
+type_declaration := TYPE identifier
 func_declaration := FN
 
 expression := primary
 primary := literal
 literal := TRUE | FALSE | number_literal | str_literal
+
+identifier := IDENTIFIER
 
 // a float_literal can still be assigned to an int in type-checking
 number_literal := int_literal | float_literal
@@ -336,8 +338,8 @@ impl Parser {
 macro_rules! expect {
   ($self:expr, $token_type:pat, $message:expr) => {
     match $self.peek() {
-      Some($token_type) => {$self.next();},
-      _ => return ParseError { msg: $message.to_string() },
+      $token_type => $self.next(),
+      _ => return Err(ParseError { msg: $message.to_string() }),
     }
   }
 }
@@ -354,7 +356,12 @@ pub enum Statement {
 #[derive(Debug, PartialEq)]
 pub enum Declaration {
   FuncDecl,
-  TypeDecl
+  TypeDecl(Rc<String>, TypeBody)
+}
+
+#[derive(Debug, PartialEq)]
+pub enum TypeBody {
+  TypeBody
 }
 
 #[derive(Debug, PartialEq)]
@@ -390,7 +397,9 @@ impl Parser {
   }
 
   fn type_declaration(&mut self) -> ParseResult<Declaration> {
-    unimplemented!()
+    expect!(self, Keyword(Type), "Expected 'type'");
+    let name = self.identifier()?;
+    Ok(Declaration::TypeDecl(name, TypeBody::TypeBody))
   }
 
   fn func_declaration(&mut self) -> ParseResult<Declaration> {
@@ -403,6 +412,13 @@ impl Parser {
 
   fn primary(&mut self) -> ParseResult<Expression> {
     self.literal()
+  }
+
+  fn identifier(&mut self) -> ParseResult<Rc<String>> {
+    match self.next() {
+      Identifier(s) => Ok(s),
+      p => ParseError::new(&format!("Expected an identifier, got {:?}", p)),
+    }
   }
 
   fn literal(&mut self) -> ParseResult<Expression> {
