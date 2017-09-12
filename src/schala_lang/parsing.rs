@@ -210,6 +210,7 @@ mod schala_tokenizer_tests {
   macro_rules! ident { ($ident:expr) => { Identifier(Rc::new($ident.to_string())) } }
   macro_rules! op { ($ident:expr) => { Operator(Rc::new($ident.to_string())) } }
 
+
   #[test]
   fn tokens() {
     let a = tokenize("let a: A<B> = c ++ d");
@@ -519,9 +520,14 @@ mod parse_tests {
   use super::Statement::*;
   use super::Expression::*;
   use super::ParseError;
+
+  macro_rules! parse_test {
+    ($string:expr, $correct:expr) => { assert_eq!(parse(tokenize($string)).unwrap(), $correct) }
+  }
+
   #[test]
   fn test_parsing() {
-    let a = "8.1";
-    assert_eq!(parse(tokenize(a)).unwrap(), AST(vec![Expression(FloatLiteral(8.1))]));
+    parse_test!("8.1", AST(vec![Expression(FloatLiteral(8.1))]));
+    parse_test!("0b010", AST(vec![Expression(IntLiteral(2))]));
   }
 }
