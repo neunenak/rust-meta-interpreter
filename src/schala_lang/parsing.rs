@@ -293,7 +293,8 @@ param_list := (identifier type_anno+ Comma)*
 
 type_anno := Colon type
 
-expression := primary
+expression := precedence_expr
+precedence_expr := primary
 primary := literal
 literal := TRUE | FALSE | number_literal | str_literal
 
@@ -373,6 +374,22 @@ pub enum TypeBody {
 pub enum Expression {
   IntLiteral(u64),
   FloatLiteral(f64),
+  BinExp(Operator, Box<Expression>, Box<Expression>)
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Operator {
+  op: [char; 5] //operators can be at most 5 characters long
+}
+
+impl Operator {
+  fn get_precedence(&self) -> i32 {
+    match self.op[0] {
+      '+' | '-' => 10,
+      '*' | '/' | '%' => 20,
+      _ => 30,
+    }
+  }
 }
 
 impl Parser {
@@ -420,7 +437,9 @@ impl Parser {
   }
 
   fn expression(&mut self) -> ParseResult<Expression> {
-    self.primary()
+    let lhs = self.primary()?;
+    //self.primary()
+    Ok(lhs)
   }
 
   fn primary(&mut self) -> ParseResult<Expression> {
