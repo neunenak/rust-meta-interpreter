@@ -290,6 +290,8 @@ func_declaration := FN identifier LParen param_list RParen
 
 param_list := (identifier type_anno+ Comma)*
 
+type_anno := Colon type
+
 expression := primary
 primary := literal
 literal := TRUE | FALSE | number_literal | str_literal
