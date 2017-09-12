@@ -448,10 +448,11 @@ impl Parser {
 
   fn int_literal(&mut self) -> ParseResult<Expression> {
     use self::Expression::*;
-    let digits = self.digits()?;
     match self.next() {
       BinNumberSigil => {
-        unimplemented!()
+        let digits = self.digits()?;
+        let n = parse_binary(digits)?;
+        Ok(IntLiteral(n))
       },
       HexNumberSigil => {
         unimplemented!()
@@ -491,6 +492,20 @@ impl Parser {
     }
     Ok(ds)
   }
+}
+
+fn parse_binary(digits: String) -> ParseResult<u64> {
+  let mut result: u64 = 0;
+  let mut multiplier = 1;
+  for d in digits.chars().rev() {
+    match d {
+      '1' => result += multiplier,
+      '0' => (),
+      _ => return ParseError::new("Encountered a character not '1' or '0 while parsing a binary literal"),
+    }
+    multiplier *= 2;
+  }
+  Ok(result)
 }
 
 pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
