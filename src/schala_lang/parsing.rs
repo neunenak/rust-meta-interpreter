@@ -548,5 +548,8 @@ mod parse_tests {
   fn test_parsing() {
     parse_test!("8.1", AST(vec![Expression(FloatLiteral(8.1))]));
     parse_test!("0b010", AST(vec![Expression(IntLiteral(2))]));
+    parse_test!("3; 4; 4.3", AST(
+      vec![Expression(IntLiteral(3)), Expression(IntLiteral(4)),
+        Expression(FloatLiteral(4.3))]));
   }
 }
