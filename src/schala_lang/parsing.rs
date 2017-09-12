@@ -389,7 +389,6 @@ impl Parser {
   }
 
   fn statement(&mut self) -> ParseResult<Statement> {
-    use self::Kw::*;
     //TODO handle error recovery here
     match self.peek() {
       Keyword(Type) => self.type_declaration().map(|decl| { Statement::Declaration(decl) }),
