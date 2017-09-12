@@ -286,7 +286,9 @@ statement := expression | declaration
 declaration := type_declaration | func_declaration
 
 type_declaration := TYPE identifier
-func_declaration := FN
+func_declaration := FN identifier LParen param_list RParen
+
+param_list := (identifier type_anno+ Comma)*
 
 expression := primary
 primary := literal
@@ -403,7 +405,16 @@ impl Parser {
   }
 
   fn func_declaration(&mut self) -> ParseResult<Declaration> {
-    unimplemented!()
+    expect!(self, Keyword(Func), "Expected 'fn'");
+    let name = self.identifier()?;
+    expect!(self, LParen, "Expected '('");
+    let params = self.param_list();
+    expect!(self, RParen, "Expected ')'");
+    Ok(Declaration::FuncDecl)
+  }
+
+  fn param_list(&mut self) -> ParseResult<Vec<Rc<String>>> {
+    Ok(vec!())
   }
 
   fn expression(&mut self) -> ParseResult<Expression> {
@@ -451,7 +462,6 @@ impl Parser {
   fn float_literal(&mut self) -> ParseResult<Expression> {
     use self::Expression::*;
     let mut digits = self.digits()?;
-    let p = self.peek();
     if let TokenType::Period = self.peek() {
       self.next();
       digits.push_str(".");
