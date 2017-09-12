@@ -374,17 +374,22 @@ pub enum TypeBody {
 pub enum Expression {
   IntLiteral(u64),
   FloatLiteral(f64),
-  BinExp(Operator, Box<Expression>, Box<Expression>)
+  BinExp(Operation, Box<Expression>, Box<Expression>)
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Operator {
-  op: [char; 5] //operators can be at most 5 characters long
+pub struct Operation {
+  op: Rc<String>
 }
 
-impl Operator {
-  fn get_precedence(&self) -> i32 {
-    match self.op[0] {
+impl Operation {
+  fn min_precedence() -> i32 {
+    i32::min_value()
+  }
+
+  fn get_precedence(op: Rc<String>) -> i32 {
+    let c: char = op.chars().next().unwrap();
+    match c {
       '+' | '-' => 10,
       '*' | '/' | '%' => 20,
       _ => 30,
@@ -437,8 +442,34 @@ impl Parser {
   }
 
   fn expression(&mut self) -> ParseResult<Expression> {
-    let lhs = self.primary()?;
-    //self.primary()
+    self.precedence_expr(Operation::min_precedence())
+  }
+
+  // this implements Pratt parsing, see http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
+  fn precedence_expr(&mut self, precedence: i32) -> ParseResult<Expression> {
+    use self::Expression::*;
+
+    //TODO clean this up
+    let mut lhs = self.primary()?;
+    loop {
+      let op_str = match self.peek() {
+        Operator(op) => op,
+        _ => break,
+      };
+      println!("Opstr: {}", op_str);
+      let new_precedence = Operation::get_precedence(op_str);
+      println!("new {} and old {} precedence", new_precedence, precedence);
+      if precedence >= new_precedence {
+        break;
+      }
+      let op_str = match self.next() {
+        Operator(op) => op,
+        _ => unreachable!(),
+      };
+      let rhs = self.precedence_expr(new_precedence)?;
+      let operation = Operation { op: op_str };
+      lhs = BinExp(operation, Box::new(lhs), Box::new(rhs));
+    }
     Ok(lhs)
   }
 
@@ -456,7 +487,7 @@ impl Parser {
   fn literal(&mut self) -> ParseResult<Expression> {
     match self.peek() {
       DigitGroup(_) | HexNumberSigil | BinNumberSigil | Period => self.number_literal(),
-      _ => unimplemented!(),
+      t => panic!("trying to parse {:?}", t),
       }
     }
   fn number_literal(&mut self) -> ParseResult<Expression> {
@@ -543,6 +574,12 @@ mod parse_tests {
   macro_rules! parse_test {
     ($string:expr, $correct:expr) => { assert_eq!(parse(tokenize($string)).unwrap(), $correct) }
   }
+  macro_rules! binexp {
+    ($op:expr, $lhs:expr, $rhs:expr) => { BinExp($op, Box::new($lhs), Box::new($rhs)) }
+  }
+  macro_rules! op {
+    ($op:expr) => { Operation { op: Rc::new($op.to_string()) } }
+  }
 
   #[test]
   fn test_parsing() {
@@ -551,5 +588,15 @@ mod parse_tests {
     parse_test!("3; 4; 4.3", AST(
       vec![Expression(IntLiteral(3)), Expression(IntLiteral(4)),
         Expression(FloatLiteral(4.3))]));
+
+    parse_test!("1 + 2 * 3", AST(vec!
+      [
+        Expression(binexp!(op!("+"), IntLiteral(1), binexp!(op!("*"), IntLiteral(2), IntLiteral(3))))
+      ]));
+
+    parse_test!("1 * 2 + 3", AST(vec!
+      [
+        Expression(binexp!(op!("+"), binexp!(op!("*"), IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
+      ]));
   }
 }
