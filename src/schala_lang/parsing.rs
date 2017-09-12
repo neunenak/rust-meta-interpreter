@@ -598,5 +598,9 @@ mod parse_tests {
       [
         Expression(binexp!(op!("+"), binexp!(op!("*"), IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
       ]));
+
+    parse_test!("1 && 2", AST(vec![Expression(binexp!(op!("&&"), IntLiteral(1), IntLiteral(2)))]));
+
+
   }
 }
