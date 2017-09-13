@@ -472,7 +472,17 @@ impl Parser {
   }
 
   fn primary(&mut self) -> ParseResult<Expression> {
-    self.literal()
+    match self.peek() {
+      LParen => self.paren_expr(),
+      _ => self.literal(),
+    }
+  }
+
+  fn paren_expr(&mut self) -> ParseResult<Expression> {
+    expect!(self, LParen, "Expected '('");
+    let expr = self.expression()?;
+    expect!(self, RParen, "Expected ')'");
+    Ok(expr)
   }
 
   fn identifier(&mut self) -> ParseResult<Rc<String>> {
@@ -580,7 +590,7 @@ mod parse_tests {
   }
 
   #[test]
-  fn test_parsing() {
+  fn parsing_number_literals_and_binexps() {
     parse_test!("8.1", AST(vec![Expression(FloatLiteral(8.1))]));
     parse_test!("0b010", AST(vec![Expression(IntLiteral(2))]));
     parse_test!("3; 4; 4.3", AST(
@@ -599,6 +609,19 @@ mod parse_tests {
 
     parse_test!("1 && 2", AST(vec![Expression(binexp!(op!("&&"), IntLiteral(1), IntLiteral(2)))]));
 
+    parse_test!("1 + 2 * 3 + 4", AST(vec![Expression(
+          binexp!(op!("+"),
+                  binexp!(op!("+"), IntLiteral(1),
+                          binexp!(op!("*"), IntLiteral(2), IntLiteral(3))
+                         ),
+                  IntLiteral(4)
+                 )
+          )]));
 
+    parse_test!("(1 + 2) * 3", AST(vec!
+      [
+        Expression(binexp!(op!("*"), binexp!(op!("+"), IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
+      ]));
   }
+
 }
