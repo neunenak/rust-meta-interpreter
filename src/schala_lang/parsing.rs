@@ -456,9 +456,7 @@ impl Parser {
         Operator(op) => op,
         _ => break,
       };
-      println!("Opstr: {}", op_str);
       let new_precedence = Operation::get_precedence(op_str);
-      println!("new {} and old {} precedence", new_precedence, precedence);
       if precedence >= new_precedence {
         break;
       }
