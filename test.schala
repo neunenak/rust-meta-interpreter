@@ -78,7 +78,7 @@ fn main() {
 
 #what if type A = B meant that you could had to create A's with A(B), but when you used A's the interface was exactly like B's?
 # maybe introduce a 'newtype' keyword for this
- 
+
  #declaring types of all stripes
  type MyData = { a: i32, b: String }
  type MyType = MyType

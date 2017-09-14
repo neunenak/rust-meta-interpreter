@@ -307,7 +307,7 @@ identifier_expr := call_expr | index_expr | IDENTIFIER
 literal := «true» | «false» | number_literal | str_literal
 
 call_expr := IDENTIFIER «(» expr_list «)» //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
-index_expr := «(» (expression («,» (expression)* | ε) «)»
+index_expr := «[» (expression («,» (expression)* | ε) «]»
 expr_list := expression («,» expression)* | ε
 
 // a float_literal can still be assigned to an int in type-checking
@@ -408,6 +408,10 @@ pub enum Expression {
   Call {
     name: Rc<String>,
     params: Vec<Expression>,
+  },
+  Index {
+    indexee: Box<Expression>,
+    indexers: Vec<Expression>,
   }
 }
 
@@ -548,9 +552,12 @@ impl Parser {
         unimplemented!()
       },
       LSquareBracket => {
-        let bracket = self.index_expr()?;
-        unimplemented!()
-      },
+        let indexers = self.index_expr()?;
+        Ok(Expression::Index {
+          indexee: Box::new(Expression::Variable(identifier)),
+          indexers: indexers,
+        })
+      }
       _ => Ok(Expression::Variable(identifier))
     }
   }
@@ -559,8 +566,21 @@ impl Parser {
     unimplemented!()
   }
 
-  fn index_expr(&mut self) -> ParseResult<Expression> {
-    unimplemented!()
+  fn index_expr(&mut self) -> ParseResult<Vec<Expression>> {
+    expect!(self, LSquareBracket, "Expected '['");
+    let mut exprs = Vec::new();
+    loop {
+      if let RSquareBracket = self.peek() {
+        break;
+      }
+      exprs.push(self.expression()?);
+      match self.peek() {
+        Comma => { self.next(); }
+        _ => break,
+      };
+    }
+    expect!(self, RSquareBracket, "Expected ']'");
+    Ok(exprs)
   }
 
   fn identifier(&mut self) -> ParseResult<Rc<String>> {
@@ -715,7 +735,12 @@ mod parse_tests {
   fn parsing_identifiers() {
     parse_test!("a", AST(vec![Expression(var!("a"))]));
     parse_test!("a + b", AST(vec![Expression(binexp!(op!("+"), var!("a"), var!("b")))]));
+    //parse_test!("a[b]", AST(vec![Expression(
+    //parse_test!("a[]", <- TODO THIS NEEDS TO FAIL
+    //parse_test!(damn()[a] ,<- TODO needs to succeed
+    parse_test!("a[b,c]", AST(vec![Expression(Index { indexee: Box::new(var!("a")), indexers: vec![var!("b"), var!("c")]} )]));     
   }
+
 
   #[test]
   fn parsing_functions() {
