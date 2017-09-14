@@ -286,19 +286,23 @@ statement := expression | declaration
 
 declaration := type_declaration | func_declaration
 
-type_declaration := TYPE identifier
-func_declaration := FN identifier LParen param_list RParen
+type_declaration := TYPE IDENTIFIER
+func_declaration := FN IDENTIFIER LParen param_list RParen
 
-param_list := (identifier type_anno+ Comma)*
+param_list := (IDENTIFIER type_anno+ Comma)*
 
 type_anno := Colon type
 
 expression := precedence_expr
 precedence_expr := primary
-primary := literal
+primary := literal | paren_expr | identifier_expr
+paren_expr := LParen expression RParen
+identifier_expr := call_expr | index_expr | IDENTIFIER
 literal := TRUE | FALSE | number_literal | str_literal
 
-identifier := IDENTIFIER
+call_expr := IDENTIFIER LParen expr_list RParen //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
+index_expr := LBracket (expression, Comma+)* RBracket
+expr_list := expression (Comma expression)* | ε
 
 // a float_literal can still be assigned to an int in type-checking
 number_literal := int_literal | float_literal
@@ -374,7 +378,12 @@ pub enum TypeBody {
 pub enum Expression {
   IntLiteral(u64),
   FloatLiteral(f64),
-  BinExp(Operation, Box<Expression>, Box<Expression>)
+  BinExp(Operation, Box<Expression>, Box<Expression>),
+  Variable(Rc<String>),
+  Call {
+    name: Rc<String>,
+    params: Vec<Expression>,
+  }
 }
 
 #[derive(Debug, PartialEq)]
@@ -474,6 +483,7 @@ impl Parser {
   fn primary(&mut self) -> ParseResult<Expression> {
     match self.peek() {
       LParen => self.paren_expr(),
+      Identifier(_) => self.identifier_expr(),
       _ => self.literal(),
     }
   }
@@ -483,6 +493,29 @@ impl Parser {
     let expr = self.expression()?;
     expect!(self, RParen, "Expected ')'");
     Ok(expr)
+  }
+
+  fn identifier_expr(&mut self) -> ParseResult<Expression> {
+    let identifier = self.identifier()?;
+    match self.peek() {
+      LParen => {
+        let call = self.call_expr()?;
+        unimplemented!()
+      },
+      LSquareBracket => {
+        let bracket = self.index_expr()?;
+        unimplemented!()
+      },
+      _ => Ok(Expression::Variable(identifier))
+    }
+  }
+
+  fn call_expr(&mut self) -> ParseResult<Expression> {
+    unimplemented!()
+  }
+
+  fn index_expr(&mut self) -> ParseResult<Expression> {
+    unimplemented!()
   }
 
   fn identifier(&mut self) -> ParseResult<Rc<String>> {
