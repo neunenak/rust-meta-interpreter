@@ -654,6 +654,7 @@ mod parse_tests {
   macro_rules! parse_test {
     ($string:expr, $correct:expr) => { assert_eq!(parse(tokenize($string)).unwrap(), $correct) }
   }
+
   macro_rules! binexp {
     ($op:expr, $lhs:expr, $rhs:expr) => { BinExp($op, Box::new($lhs), Box::new($rhs)) }
   }
@@ -708,5 +709,6 @@ mod parse_tests {
   #[test]
   fn parsing_types() {
     parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!(Yolo), TypeBody(vec![Variant::Singleton(rc!(Yolo))])))]));
+    parse_test!("alias Sex = Drugs", AST(vec![Declaration(TypeAlias(rc!(Sex), rc!(Drugs)))]));
   }
 }
