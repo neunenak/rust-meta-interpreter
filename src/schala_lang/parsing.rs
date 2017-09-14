@@ -278,37 +278,43 @@ op := '+', '-', etc.
 
 
 /* Schala EBNF Grammar */
-/*
+/* Terminal productions are «in Guillemets» or UPPERCASE if they are a class
+ * or not representable in ASCII
 
 program := (statement delimiter)* EOF
-delimiter := NEWLINE | SEMICOLON
+delimiter := NEWLINE | «;»
 statement := expression | declaration
 
-declaration := type_declaration | func_declaration
+declaration := type_alias | type_declaration | func_declaration
 
-type_declaration := TYPE IDENTIFIER
-func_declaration := FN IDENTIFIER LParen param_list RParen
+type_alias := «alias» IDENTIFIER «=» IDENTIFIER
+type_declaration := «type» IDENTIFIER «=» type_body
+type_body := variant_specifier («|» variant_specifier)*
+variant_specifier := «{» member_list «}»
+member_list := (IDENTIFIER type_anno)*
 
-param_list := (IDENTIFIER type_anno+ Comma)*
+func_declaration := «fn» IDENTIFIER «(» param_list «)»
+param_list := (IDENTIFIER type_anno+ «,»)*
 
-type_anno := Colon type
+type_anno := «:» type
 
 expression := precedence_expr
 precedence_expr := primary
 primary := literal | paren_expr | identifier_expr
+
 paren_expr := LParen expression RParen
 identifier_expr := call_expr | index_expr | IDENTIFIER
-literal := TRUE | FALSE | number_literal | str_literal
+literal := «true» | «false» | number_literal | str_literal
 
-call_expr := IDENTIFIER LParen expr_list RParen //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
-index_expr := LBracket (expression, Comma+)* RBracket
-expr_list := expression (Comma expression)* | ε
+call_expr := IDENTIFIER «(» expr_list «)» //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
+index_expr := «(» (expression («,» (expression)* | ε) «)»
+expr_list := expression («,» expression)* | ε
 
 // a float_literal can still be assigned to an int in type-checking
 number_literal := int_literal | float_literal
-int_literal = (HEX_SIGIL | BIN_SIGIL) digits
-float_literal := digits (PERIOD digits)
-digits := (digit_group underscore)+
+int_literal = ('0x' | '0b') digits
+float_literal := digits ('.' digits)
+digits := (DIGIT_GROUP underscore)+
 
 */
 
@@ -351,6 +357,12 @@ macro_rules! expect {
       $token_type => $self.next(),
       _ => return Err(ParseError { msg: $message.to_string() }),
     }
+  };
+  ($self:expr, $token_type:pat if $cond:expr, $message:expr) => {
+    match $self.peek() {
+      $token_type if $cond => $self.next(),
+      _ => return Err(ParseError { msg: $message.to_string() }),
+    }
   }
 }
 
@@ -366,12 +378,18 @@ pub enum Statement {
 #[derive(Debug, PartialEq)]
 pub enum Declaration {
   FuncDecl,
-  TypeDecl(Rc<String>, TypeBody)
+  TypeDecl(Rc<String>, TypeBody),
+  TypeAlias(Rc<String>, Rc<String>)
 }
 
 #[derive(Debug, PartialEq)]
-pub enum TypeBody {
-  TypeBody
+pub struct TypeBody(Vec<Variant>);
+
+#[derive(Debug, PartialEq)]
+pub enum Variant {
+  Singleton(Rc<String>),
+  //ArgumentConstructor,
+  //Record
 }
 
 #[derive(Debug, PartialEq)]
@@ -425,16 +443,32 @@ impl Parser {
   fn statement(&mut self) -> ParseResult<Statement> {
     //TODO handle error recovery here
     match self.peek() {
+      Keyword(Alias) => self.type_alias().map(|alias| { Statement::Declaration(alias) }),
       Keyword(Type) => self.type_declaration().map(|decl| { Statement::Declaration(decl) }),
       Keyword(Func)=> self.func_declaration().map(|func| { Statement::Declaration(func) }),
       _ => self.expression().map(|expr| { Statement::Expression(expr) } ),
     }
   }
 
+  fn type_alias(&mut self) -> ParseResult<Declaration> {
+    expect!(self, Keyword(Alias), "Expected 'alias'");
+    let alias = self.identifier()?;
+    expect!(self, Operator(ref c) if **c == "=", "Expected '='");
+    let original = self.identifier()?;
+    Ok(Declaration::TypeAlias(alias, original))
+  }
+
   fn type_declaration(&mut self) -> ParseResult<Declaration> {
     expect!(self, Keyword(Type), "Expected 'type'");
     let name = self.identifier()?;
-    Ok(Declaration::TypeDecl(name, TypeBody::TypeBody))
+    expect!(self, Operator(ref c) if **c == "=", "Expected '='");
+    let body = self.type_body()?;
+    Ok(Declaration::TypeDecl(name, body))
+  }
+
+  fn type_body(&mut self) -> ParseResult<TypeBody> {
+    let variant = Variant::Singleton(self.identifier()?);
+    Ok(TypeBody(vec!(variant)))
   }
 
   fn func_declaration(&mut self) -> ParseResult<Declaration> {
@@ -609,8 +643,13 @@ pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
 mod parse_tests {
   use super::*;
   use super::Statement::*;
+  use super::Declaration::*;
   use super::Expression::*;
   use super::ParseError;
+
+  macro_rules! rc {
+    ($string:expr) => { Rc::new($string.to_string()) }
+  }
 
   macro_rules! parse_test {
     ($string:expr, $correct:expr) => { assert_eq!(parse(tokenize($string)).unwrap(), $correct) }
@@ -664,5 +703,10 @@ mod parse_tests {
   fn parsing_identifiers() {
     parse_test!("a", AST(vec![Expression(var!("a"))]));
     parse_test!("a + b", AST(vec![Expression(binexp!(op!("+"), var!("a"), var!("b")))]));
+  }
+
+  #[test]
+  fn parsing_types() {
+    parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!("Yolo"), TypeBody(vec![Variant::Singleton(rc!("Yolo"))])))]));
   }
 }
