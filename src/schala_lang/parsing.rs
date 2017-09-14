@@ -718,6 +718,11 @@ mod parse_tests {
   }
 
   #[test]
+  fn parsing_functions() {
+    parse_test!("fn oi()",  AST(vec![Declaration(FuncDecl { name: rc!(oi), params: vec![] })]));
+  }
+
+  #[test]
   fn parsing_types() {
     parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!(Yolo), TypeBody(vec![Variant::Singleton(rc!(Yolo))])))]));
     parse_test!("alias Sex = Drugs", AST(vec![Declaration(TypeAlias(rc!(Sex), rc!(Drugs)))]));
