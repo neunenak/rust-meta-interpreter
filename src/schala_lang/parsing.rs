@@ -621,6 +621,9 @@ mod parse_tests {
   macro_rules! op {
     ($op:expr) => { Operation { op: Rc::new($op.to_string()) } }
   }
+  macro_rules! var {
+    ($var:expr) => { Variable(Rc::new($var.to_string())) }
+  }
 
   #[test]
   fn parsing_number_literals_and_binexps() {
@@ -657,4 +660,9 @@ mod parse_tests {
       ]));
   }
 
+  #[test]
+  fn parsing_identifiers() {
+    parse_test!("a", AST(vec![Expression(var!("a"))]));
+    parse_test!("a + b", AST(vec![Expression(binexp!(op!("+"), var!("a"), var!("b")))]));
+  }
 }
