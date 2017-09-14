@@ -74,7 +74,10 @@ fn main() {
  #syntax is, I guess, for <expr> <brace-block>, where <expr> is a bool, or a <arrow-expr>
 
  # type level alises
- typealias <name> = <other type>
+ typealias <name> = <other type> #maybe thsi should be 'alias'?
+
+#what if type A = B meant that you could had to create A's with A(B), but when you used A's the interface was exactly like B's?
+# maybe introduce a 'newtype' keyword for this
  
  #declaring types of all stripes
  type MyData = { a: i32, b: String }
