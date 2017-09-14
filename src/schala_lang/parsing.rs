@@ -648,7 +648,7 @@ mod parse_tests {
   use super::ParseError;
 
   macro_rules! rc {
-    ($string:expr) => { Rc::new($string.to_string()) }
+    ($string:tt) => { Rc::new(stringify!($string).to_string()) }
   }
 
   macro_rules! parse_test {
@@ -707,6 +707,6 @@ mod parse_tests {
 
   #[test]
   fn parsing_types() {
-    parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!("Yolo"), TypeBody(vec![Variant::Singleton(rc!("Yolo"))])))]));
+    parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!(Yolo), TypeBody(vec![Variant::Singleton(rc!(Yolo))])))]));
   }
 }
