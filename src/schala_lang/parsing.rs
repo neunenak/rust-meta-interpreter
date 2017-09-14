@@ -375,9 +375,16 @@ pub enum Statement {
   Declaration(Declaration),
 }
 
+type ParamName = Rc<String>;
+type TypeName = Rc<String>;
+type FormalParamList = Vec<(ParamName, Option<TypeName>)>;
+
 #[derive(Debug, PartialEq)]
 pub enum Declaration {
-  FuncDecl,
+  FuncDecl {
+    name: Rc<String>,
+    params: FormalParamList,
+  },
   TypeDecl(Rc<String>, TypeBody),
   TypeAlias(Rc<String>, Rc<String>)
 }
@@ -475,12 +482,16 @@ impl Parser {
     expect!(self, Keyword(Func), "Expected 'fn'");
     let name = self.identifier()?;
     expect!(self, LParen, "Expected '('");
-    let params = self.param_list();
+    let params = self.param_list()?;
     expect!(self, RParen, "Expected ')'");
-    Ok(Declaration::FuncDecl)
+    let decl = Declaration::FuncDecl {
+      name: name,
+      params: params
+    };
+    Ok(decl)
   }
 
-  fn param_list(&mut self) -> ParseResult<Vec<Rc<String>>> {
+  fn param_list(&mut self) -> ParseResult<FormalParamList> {
     Ok(vec!())
   }
 
