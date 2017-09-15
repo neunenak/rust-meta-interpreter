@@ -2,7 +2,7 @@ use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOut
 
 mod parsing;
 
-pub struct Schala { 
+pub struct Schala {
 }
 
 impl Schala {
@@ -32,14 +32,15 @@ impl ProgrammingLanguageInterface for Schala {
     }
 
     let ast = match parsing::parse(tokens) {
-      Ok(ast) => {
+      (Ok(ast), trace) => {
         if options.debug_parse {
-          output.add_artifact(TraceArtifact::new("Recursive descent calls:", format!("{:?}", "OI")));
+          output.add_artifact(TraceArtifact::new("Recursive descent calls:", trace));
           output.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast)));
         }
         ast
       },
-      Err(err) => {
+      (Err(err), trace) => {
+        output.add_artifact(TraceArtifact::new("Recursive descent calls:", trace));
         output.add_output(format!("Parse error: {:?}\n", err.msg));
         return output;
       }

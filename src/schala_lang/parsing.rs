@@ -333,6 +333,7 @@ impl ParseError {
 
 pub type ParseResult<T> = Result<T, ParseError>;
 
+#[derive(Debug)]
 pub struct ParseRecord(String);
 
 struct Parser {
@@ -711,9 +712,11 @@ fn parse_binary(digits: String) -> ParseResult<u64> {
   Ok(result)
 }
 
-pub fn parse(input: Vec<Token>) -> Result<AST, ParseError> {
+pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, String) {
   let mut parser = Parser::new(input);
-  parser.program()
+  let ast = parser.program();
+  let trace = format!("Parse record: {:?}", parser.parse_record);
+  (ast, trace)
 }
 
 #[cfg(test)]
