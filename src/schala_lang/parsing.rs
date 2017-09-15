@@ -548,8 +548,11 @@ impl Parser {
     let identifier = self.identifier()?;
     match self.peek() {
       LParen => {
-        let call = self.call_expr()?;
-        unimplemented!()
+        let call_params = self.call_expr()?;
+        Ok(Expression::Call {
+          name: identifier,
+          params: call_params,
+        })
       },
       LSquareBracket => {
         let indexers = self.index_expr()?;
@@ -562,8 +565,21 @@ impl Parser {
     }
   }
 
-  fn call_expr(&mut self) -> ParseResult<Expression> {
-    unimplemented!()
+  fn call_expr(&mut self) -> ParseResult<Vec<Expression>> {
+    let mut exprs = Vec::new();
+    expect!(self, LParen, "Expected '('");
+    loop {
+      if let RParen = self.peek() {
+        break;
+      }
+      exprs.push(self.expression()?);
+      match self.peek() {
+        Comma => { self.next(); },
+        _ => break,
+      }
+    }
+    expect!(self, RParen, "Expected ')'");
+    Ok(exprs)
   }
 
   fn index_expr(&mut self) -> ParseResult<Vec<Expression>> {
@@ -745,6 +761,11 @@ mod parse_tests {
   #[test]
   fn parsing_functions() {
     parse_test!("fn oi()",  AST(vec![Declaration(FuncDecl { name: rc!(oi), params: vec![] })]));
+    parse_test!("oi()", AST(vec![Expression(Call { name: rc!(oi), params: vec![] })]));
+    parse_test!("oi(a, 2 + 2)", AST(vec![Expression(Call
+    { name: rc!(oi),
+      params: vec![var!("a"), binexp!(op!("+"), IntLiteral(2), IntLiteral(2))]
+    })]));
   }
 
   #[test]
