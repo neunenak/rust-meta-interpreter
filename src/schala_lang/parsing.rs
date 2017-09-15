@@ -443,7 +443,7 @@ macro_rules! parse_method {
   ($name:ident, $self:ident, $type:ty, $body:tt) => {
     fn $name(&mut $self) -> $type {
       let next_token = $self.peek();
-      let record = ParseRecord(format!("Token: {:?}", next_token));
+      let record = ParseRecord(format!("production {}, Token: {:?}", stringify!($name), next_token));
       $self.parse_record.push(record);
       $body
     }
@@ -482,7 +482,7 @@ impl Parser {
     Ok(AST(statements))
   });
 
-  fn statement(&mut self) -> ParseResult<Statement> {
+  parse_method!(statement, self, ParseResult<Statement>, {
     //TODO handle error recovery here
     match self.peek() {
       Keyword(Alias) => self.type_alias().map(|alias| { Statement::Declaration(alias) }),
@@ -490,7 +490,7 @@ impl Parser {
       Keyword(Func)=> self.func_declaration().map(|func| { Statement::Declaration(func) }),
       _ => self.expression().map(|expr| { Statement::Expression(expr) } ),
     }
-  }
+  });
 
   fn type_alias(&mut self) -> ParseResult<Declaration> {
     expect!(self, Keyword(Alias), "Expected 'alias'");
