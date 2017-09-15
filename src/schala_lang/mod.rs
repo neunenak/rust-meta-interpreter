@@ -34,6 +34,7 @@ impl ProgrammingLanguageInterface for Schala {
     let ast = match parsing::parse(tokens) {
       Ok(ast) => {
         if options.debug_parse {
+          output.add_artifact(TraceArtifact::new("Recursive descent calls:", format!("{:?}", "OI")));
           output.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast)));
         }
         ast

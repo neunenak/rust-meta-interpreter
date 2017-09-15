@@ -333,13 +333,16 @@ impl ParseError {
 
 pub type ParseResult<T> = Result<T, ParseError>;
 
+pub struct ParseRecord(String);
+
 struct Parser {
   tokens: TokenIter,
+  parse_record: Vec<ParseRecord>,
 }
 
 impl Parser {
   fn new(input: Vec<Token>) -> Parser {
-    Parser { tokens: input.into_iter().peekable() }
+    Parser { tokens: input.into_iter().peekable(), parse_record: vec![] }
   }
 
   fn peek(&mut self) -> TokenType {
@@ -435,7 +438,19 @@ impl Operation {
   }
 }
 
+macro_rules! parse_method {
+  ($name:ident, $self:ident, $type:ty, $body:tt) => {
+    fn $name(&mut $self) -> $type {
+      let next_token = $self.peek();
+      let record = ParseRecord(format!("Token: {:?}", next_token));
+      $self.parse_record.push(record);
+      $body
+    }
+  }
+}
+
 impl Parser {
+  /*
   fn program(&mut self) -> ParseResult<AST> {
     let mut statements = Vec::new();
     loop {
@@ -450,6 +465,21 @@ impl Parser {
     }
     Ok(AST(statements))
   }
+  */
+  parse_method!(program, self, ParseResult<AST>, {
+    let mut statements = Vec::new();
+    loop {
+      match self.peek() {
+        EOF => break,
+        Newline | Semicolon => {
+          self.next();
+          continue;
+        },
+        _ => statements.push(self.statement()?),
+      }
+    }
+    Ok(AST(statements))
+  });
 
   fn statement(&mut self) -> ParseResult<Statement> {
     //TODO handle error recovery here
