@@ -304,7 +304,7 @@ primary := literal | paren_expr | identifier_expr
 
 paren_expr := LParen expression RParen
 identifier_expr := call_expr | index_expr | IDENTIFIER
-literal := «true» | «false» | number_literal | str_literal
+literal := «true» | «false» | number_literal | STR_LITERAL
 
 call_expr := IDENTIFIER «(» expr_list «)» //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
 index_expr := «[» (expression («,» (expression)* | ε) «]»
@@ -407,6 +407,7 @@ pub enum Variant {
 pub enum Expression {
   IntLiteral(u64),
   FloatLiteral(f64),
+  StringLiteral(Rc<String>),
   BinExp(Operation, Box<Expression>, Box<Expression>),
   Variable(Rc<String>),
   Call {
@@ -624,7 +625,11 @@ impl Parser {
   parse_method!(literal(&mut self) -> ParseResult<Expression> {
     match self.peek() {
       DigitGroup(_) | HexNumberSigil | BinNumberSigil | Period => self.number_literal(),
-      t => panic!("trying to parse {:?}", t),
+      StrLiteral(s) => {
+        self.next();
+        Ok(Expression::StringLiteral(s))
+      }
+      e => ParseError::new(&format!("Expected a literal expression, got {:?}", e)),
     }
   });
 
@@ -717,7 +722,7 @@ mod parse_tests {
   }
 
   macro_rules! parse_test {
-    ($string:expr, $correct:expr) => { assert_eq!(parse(tokenize($string)).unwrap(), $correct) }
+    ($string:expr, $correct:expr) => { assert_eq!(parse(tokenize($string)).0.unwrap(), $correct) }
   }
 
   macro_rules! binexp {
@@ -784,6 +789,11 @@ mod parse_tests {
     { name: rc!(oi),
       params: vec![var!("a"), binexp!(op!("+"), IntLiteral(2), IntLiteral(2))]
     })]));
+  }
+
+  #[test]
+  fn parsing_strings() {
+    parse_test!(r#""hello""#, AST(vec![Expression(StringLiteral(rc!(hello)))]));
   }
 
   #[test]
