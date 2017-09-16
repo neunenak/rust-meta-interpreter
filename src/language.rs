@@ -83,8 +83,14 @@ impl TraceArtifact {
   }
 
   pub fn new_parse_trace(trace: Vec<String>) -> TraceArtifact {
-    let debug = format!("Parse trace: {:?}", trace);
-    TraceArtifact { stage_name: "parse_trace".to_string(), debug_output: debug, text_color: "red"}
+    let mut output = String::new();
+
+    for t in trace {
+      output.push_str(&t);
+      output.push_str("\n");
+    }
+
+    TraceArtifact { stage_name: "parse_trace".to_string(), debug_output: output, text_color: "red"}
   }
 }
 
