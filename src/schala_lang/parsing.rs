@@ -241,7 +241,7 @@ type_decl := 'type' type_format
 type_format := 'alias' '=' type | type_constructor
 type_constructor := capital_ident '=' type_rhs
 type_rhs := struct_decl | type_variant ('|' type_variant)*
-struct_decl := 'struct' '{' (ident ':' type)* '}' 
+struct_decl := 'struct' '{' (ident ':' type)* '}'
 type_variant := capital_ident | tuple_type | capital_ident struct_decl
 tuple_type := // something like Variant(a,b)
 type := // something like Type[A[b]]
@@ -440,34 +440,19 @@ impl Operation {
 }
 
 macro_rules! parse_method {
-  ($name:ident, $self:ident, $type:ty, $body:tt) => {
+
+  ($name:ident(&mut $self:ident) -> $type:ty $body:block) => {
     fn $name(&mut $self) -> $type {
       let next_token = $self.peek();
       let record = ParseRecord(format!("production {}, Token: {:?}", stringify!($name), next_token));
       $self.parse_record.push(record);
       $body
     }
-  }
+  };
 }
 
 impl Parser {
-  /*
-  fn program(&mut self) -> ParseResult<AST> {
-    let mut statements = Vec::new();
-    loop {
-      match self.peek() {
-        EOF => break,
-        Newline | Semicolon => {
-          self.next();
-          continue;
-        },
-        _ => statements.push(self.statement()?),
-      }
-    }
-    Ok(AST(statements))
-  }
-  */
-  parse_method!(program, self, ParseResult<AST>, {
+  parse_method!(program(&mut self) -> ParseResult<AST> {
     let mut statements = Vec::new();
     loop {
       match self.peek() {
@@ -482,7 +467,7 @@ impl Parser {
     Ok(AST(statements))
   });
 
-  parse_method!(statement, self, ParseResult<Statement>, {
+  parse_method!(statement(&mut self) -> ParseResult<Statement> {
     //TODO handle error recovery here
     match self.peek() {
       Keyword(Alias) => self.type_alias().map(|alias| { Statement::Declaration(alias) }),
@@ -530,9 +515,9 @@ impl Parser {
     Ok(vec!())
   }
 
-  fn expression(&mut self) -> ParseResult<Expression> {
+  parse_method!(expression(&mut self) -> ParseResult<Expression> {
     self.precedence_expr(Operation::min_precedence())
-  }
+  });
 
   // this implements Pratt parsing, see http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
   fn precedence_expr(&mut self, precedence: i32) -> ParseResult<Expression> {
