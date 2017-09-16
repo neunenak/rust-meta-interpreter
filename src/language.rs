@@ -74,7 +74,17 @@ pub struct TraceArtifact {
 
 impl TraceArtifact {
   pub fn new(stage: &str, debug: String) -> TraceArtifact {
-    TraceArtifact { stage_name: stage.to_string(), debug_output: debug, text_color: "blue" }
+    let color = match stage {
+      "parse_trace" => "red",
+      "tokens" => "green",
+      _ => "blue",
+    };
+    TraceArtifact { stage_name: stage.to_string(), debug_output: debug, text_color: color}
+  }
+
+  pub fn new_parse_trace(trace: Vec<String>) -> TraceArtifact {
+    let debug = format!("Parse trace: {:?}", trace);
+    TraceArtifact { stage_name: "parse_trace".to_string(), debug_output: debug, text_color: "red"}
   }
 }
 

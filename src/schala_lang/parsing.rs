@@ -697,10 +697,10 @@ fn parse_binary(digits: String) -> ParseResult<u64> {
   Ok(result)
 }
 
-pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, String) {
+pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, Vec<String>) {
   let mut parser = Parser::new(input);
   let ast = parser.program();
-  let trace = format!("Parse record: {:?}", parser.parse_record);
+  let trace = parser.parse_record.into_iter().map(|r| r.0).collect();
   (ast, trace)
 }
 
