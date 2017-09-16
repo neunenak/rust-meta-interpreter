@@ -440,7 +440,6 @@ impl Operation {
 }
 
 macro_rules! parse_method {
-
   ($name:ident(&mut $self:ident) -> $type:ty $body:block) => {
     fn $name(&mut $self) -> $type {
       let next_token = $self.peek();
@@ -477,28 +476,28 @@ impl Parser {
     }
   });
 
-  fn type_alias(&mut self) -> ParseResult<Declaration> {
+  parse_method!(type_alias(&mut self) -> ParseResult<Declaration> {
     expect!(self, Keyword(Alias), "Expected 'alias'");
     let alias = self.identifier()?;
     expect!(self, Operator(ref c) if **c == "=", "Expected '='");
     let original = self.identifier()?;
     Ok(Declaration::TypeAlias(alias, original))
-  }
+  });
 
-  fn type_declaration(&mut self) -> ParseResult<Declaration> {
+  parse_method!(type_declaration(&mut self) -> ParseResult<Declaration> {
     expect!(self, Keyword(Type), "Expected 'type'");
     let name = self.identifier()?;
     expect!(self, Operator(ref c) if **c == "=", "Expected '='");
     let body = self.type_body()?;
     Ok(Declaration::TypeDecl(name, body))
-  }
+  });
 
-  fn type_body(&mut self) -> ParseResult<TypeBody> {
+  parse_method!(type_body(&mut self) -> ParseResult<TypeBody> {
     let variant = Variant::Singleton(self.identifier()?);
     Ok(TypeBody(vec!(variant)))
-  }
+  });
 
-  fn func_declaration(&mut self) -> ParseResult<Declaration> {
+  parse_method!(func_declaration(&mut self) -> ParseResult<Declaration> {
     expect!(self, Keyword(Func), "Expected 'fn'");
     let name = self.identifier()?;
     expect!(self, LParen, "Expected '('");
@@ -509,11 +508,11 @@ impl Parser {
       params: params
     };
     Ok(decl)
-  }
+  });
 
-  fn param_list(&mut self) -> ParseResult<FormalParamList> {
+  parse_method!(param_list(&mut self) -> ParseResult<FormalParamList> {
     Ok(vec!())
-  }
+  });
 
   parse_method!(expression(&mut self) -> ParseResult<Expression> {
     self.precedence_expr(Operation::min_precedence())
@@ -545,20 +544,20 @@ impl Parser {
     Ok(lhs)
   }
 
-  fn primary(&mut self) -> ParseResult<Expression> {
+  parse_method!(primary(&mut self) -> ParseResult<Expression> {
     match self.peek() {
       LParen => self.paren_expr(),
       Identifier(_) => self.identifier_expr(),
       _ => self.literal(),
     }
-  }
+  });
 
-  fn paren_expr(&mut self) -> ParseResult<Expression> {
+  parse_method!(paren_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, LParen, "Expected '('");
     let expr = self.expression()?;
     expect!(self, RParen, "Expected ')'");
     Ok(expr)
-  }
+  });
 
   fn identifier_expr(&mut self) -> ParseResult<Expression> {
     let identifier = self.identifier()?;
@@ -581,7 +580,7 @@ impl Parser {
     }
   }
 
-  fn call_expr(&mut self) -> ParseResult<Vec<Expression>> {
+  parse_method!(call_expr(&mut self) -> ParseResult<Vec<Expression>> {
     let mut exprs = Vec::new();
     expect!(self, LParen, "Expected '('");
     loop {
@@ -596,9 +595,9 @@ impl Parser {
     }
     expect!(self, RParen, "Expected ')'");
     Ok(exprs)
-  }
+  });
 
-  fn index_expr(&mut self) -> ParseResult<Vec<Expression>> {
+  parse_method!(index_expr(&mut self) -> ParseResult<Vec<Expression>> {
     expect!(self, LSquareBracket, "Expected '['");
     let mut exprs = Vec::new();
     loop {
@@ -613,29 +612,30 @@ impl Parser {
     }
     expect!(self, RSquareBracket, "Expected ']'");
     Ok(exprs)
-  }
+  });
 
-  fn identifier(&mut self) -> ParseResult<Rc<String>> {
+  parse_method!(identifier(&mut self) -> ParseResult<Rc<String>> {
     match self.next() {
       Identifier(s) => Ok(s),
       p => ParseError::new(&format!("Expected an identifier, got {:?}", p)),
     }
-  }
+  });
 
-  fn literal(&mut self) -> ParseResult<Expression> {
+  parse_method!(literal(&mut self) -> ParseResult<Expression> {
     match self.peek() {
       DigitGroup(_) | HexNumberSigil | BinNumberSigil | Period => self.number_literal(),
       t => panic!("trying to parse {:?}", t),
-      }
     }
-  fn number_literal(&mut self) -> ParseResult<Expression> {
+  });
+
+  parse_method!(number_literal(&mut self) -> ParseResult<Expression> {
     match self.peek() {
       HexNumberSigil | BinNumberSigil => self.int_literal(),
       _ => self.float_literal(),
     }
-  }
+  });
 
-  fn int_literal(&mut self) -> ParseResult<Expression> {
+  parse_method!(int_literal(&mut self) -> ParseResult<Expression> {
     use self::Expression::*;
     match self.next() {
       BinNumberSigil => {
@@ -648,9 +648,9 @@ impl Parser {
       },
       _ => return ParseError::new("Expected '0x' or '0b'"),
     }
-  }
+  });
 
-  fn float_literal(&mut self) -> ParseResult<Expression> {
+  parse_method!(float_literal(&mut self) -> ParseResult<Expression> {
     use self::Expression::*;
     let mut digits = self.digits()?;
     if let TokenType::Period = self.peek() {
@@ -668,9 +668,9 @@ impl Parser {
         Err(e) => unimplemented!("Need to handle numbers that don't parse to a Rust u64 {}", e),
       }
     }
-  }
+  });
 
-  fn digits(&mut self) -> ParseResult<String> {
+  parse_method!(digits(&mut self) -> ParseResult<String> {
     let mut ds = String::new();
     loop {
       match self.peek() {
@@ -680,7 +680,7 @@ impl Parser {
       }
     }
     Ok(ds)
-  }
+  });
 }
 
 fn parse_binary(digits: String) -> ParseResult<u64> {
