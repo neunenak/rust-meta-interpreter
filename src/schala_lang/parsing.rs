@@ -476,7 +476,7 @@ impl Operation {
     i32::min_value()
   }
 
-  fn get_precedence(op: Rc<String>) -> i32 {
+  fn get_precedence(op: &str) -> i32 {
     let c: char = op.chars().next().unwrap();
     match c {
       '+' | '-' => 10,
@@ -582,12 +582,12 @@ impl Parser {
     //TODO clean this up
     let mut lhs = self.primary()?;
     loop {
-      let op_str = match self.peek() {
-        Operator(op) => op,
-        Period => Rc::new(".".to_string()),
+      let new_precedence = match self.peek() {
+        Operator(op) => Operation::get_precedence(&*op),
+        Period => Operation::get_precedence("."),
         _ => break,
       };
-      let new_precedence = Operation::get_precedence(op_str);
+
       if precedence >= new_precedence {
         break;
       }
