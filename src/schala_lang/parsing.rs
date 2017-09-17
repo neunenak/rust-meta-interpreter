@@ -86,6 +86,11 @@ fn is_digit(c: &char) -> bool {
   c.is_digit(10)
 }
 
+const OPERATOR_CHARS: [char; 19] = ['!', '$', '%', '&', '*', '+', '-', '.', '/', ':', '<', '>', '=', '?', '@', '^', '|', '~', '`'];
+fn is_operator(c: &char) -> bool {
+  OPERATOR_CHARS.iter().any(|x| x == c)
+}
+
 type CharIter<'a> = Peekable<Enumerate<Chars<'a>>>;
 
 pub fn tokenize(input: &str) -> Vec<Token> {
@@ -110,13 +115,12 @@ pub fn tokenize(input: &str) -> Vec<Token> {
       ':' => Colon, ',' => Comma, '.' => Period,
       '(' => LParen, ')' => RParen,
       '{' => LCurlyBrace, '}' => RCurlyBrace,
-      '<' => LAngleBracket, '>' => RAngleBracket,
       '[' => LSquareBracket, ']' => RSquareBracket,
-      '|' => Pipe,
       '"' => handle_quote(&mut input),
       c if is_digit(&c) => handle_digit(c, &mut input),
       c if c.is_alphabetic() || c == '_' => handle_alphabetic(c, &mut input), //TODO I'll probably have to rewrite this if I care about types being uppercase, also type parameterization
-      c => handle_operator(c, &mut input),
+      c if is_operator(&c) => handle_operator(c, &mut input),
+      unknown => Error(format!("Unexpected character: {}", unknown)),
     };
     tokens.push(Token { token_type: cur_tok_type, offset: idx });
   }
@@ -186,11 +190,26 @@ fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
 }
 
 fn handle_operator(c: char, input: &mut CharIter) -> TokenType {
+  match c {
+    '<' | '>' | '|' => {
+      let ref next = input.peek().map(|&(_, c)| { c });
+      if !next.map(|n| { is_operator(&n) }).unwrap_or(false) {
+        return match c {
+          '<' => LAngleBracket,
+          '>' => RAngleBracket,
+          '|' => Pipe,
+          _ => unreachable!(),
+        }
+      }
+    },
+    _ => (),
+  };
+
   let mut buf = String::new();
   buf.push(c);
   loop {
     match input.peek().map(|&(_, c)| { c }) {
-      Some(c) if !c.is_alphabetic() && !c.is_whitespace() => {
+      Some(c) if is_operator(&c) => {
         input.next();
         buf.push(c);
       },
@@ -804,6 +823,12 @@ mod parse_tests {
     parse_test!("a[b,c]", AST(vec![Expression(Index { indexee: Box::new(var!("a")), indexers: vec![var!("b"), var!("c")]} )]));     
   }
 
+  #[test]
+  fn parse_complicated_operators() {
+    parse_test!("a <- b", AST(vec![Expression(binexp!(op!("<-"), var!("a"), var!("b")))]));
+    parse_test!("a || b", AST(vec![Expression(binexp!(op!("||"), var!("a"), var!("b")))]));
+    parse_test!("a<>b", AST(vec![Expression(binexp!(op!("<>"), var!("a"), var!("b")))]));
+  }
 
   #[test]
   fn parsing_functions() {
