@@ -649,7 +649,7 @@ impl Parser {
         Ok(IntLiteral(n))
       },
       HexNumberSigil => {
-        unimplemented!()
+        ParseError::new("Not implemented")
       },
       _ => return ParseError::new("Expected '0x' or '0b'"),
     }
@@ -664,13 +664,13 @@ impl Parser {
       digits.push_str(&self.digits()?);
       match digits.parse::<f64>() {
         Ok(f) => Ok(FloatLiteral(f)),
-        Err(e) => unimplemented!("Float didn't parse with error: {}", e),
+        Err(e) => ParseError::new(&format!("Float failed to parse with error: {}", e)),
 
       }
     } else {
       match digits.parse::<u64>() {
         Ok(d) => Ok(IntLiteral(d)),
-        Err(e) => unimplemented!("Need to handle numbers that don't parse to a Rust u64 {}", e),
+        Err(e) => ParseError::new(&format!("Integer failed to parse with error: {}", e)),
       }
     }
   });
