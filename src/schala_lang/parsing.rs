@@ -376,7 +376,10 @@ impl ParseError {
 pub type ParseResult<T> = Result<T, ParseError>;
 
 #[derive(Debug)]
-pub struct ParseRecord(String);
+pub struct ParseRecord {
+  production_name: String,
+  next_token: String,
+}
 
 struct Parser {
   tokens: TokenIter,
@@ -487,7 +490,10 @@ macro_rules! parse_method {
   ($name:ident(&mut $self:ident) -> $type:ty $body:block) => {
     fn $name(&mut $self) -> $type {
       let next_token = $self.peek();
-      let record = ParseRecord(format!("production {}, Token: {:?}", stringify!($name), next_token));
+      let record = ParseRecord {
+        production_name: stringify!($name).to_string(),
+        next_token: format!("{:?}", next_token),
+      };
       $self.parse_record.push(record);
       $body
     }
@@ -565,6 +571,13 @@ impl Parser {
   // this implements Pratt parsing, see http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
   fn precedence_expr(&mut self, precedence: i32) -> ParseResult<Expression> {
     use self::Expression::*;
+
+    let next_token = self.peek();
+    let record = ParseRecord {
+      production_name: "precedence_expr".to_string(),
+      next_token: format!("{:?}", next_token),
+    };
+    self.parse_record.push(record);
 
     //TODO clean this up
     let mut lhs = self.primary()?;
@@ -752,7 +765,10 @@ fn parse_binary(digits: String) -> ParseResult<u64> {
 pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, Vec<String>) {
   let mut parser = Parser::new(input);
   let ast = parser.program();
-  let trace = parser.parse_record.into_iter().map(|r| r.0).collect();
+
+  let trace = parser.parse_record.into_iter().map(|r| {
+    format!("Production `{}`, token: {:?}", r.production_name, r.next_token)
+  }).collect();
   (ast, trace)
 }
 
