@@ -277,26 +277,50 @@ op := '+', '-', etc.
 */
 
 
+/* for reference, here is the scala EBNF for expressions:
+ * see http://scala-lang.org/files/archive/spec/2.12/06-expressions.html
+
+Expr ::= (Bindings | id | ‘_’) ‘=>’ Expr
+| Expr1
+Expr1 ::= ‘if’ ‘(’ Expr ‘)’ {nl} Expr [[semi] else Expr]
+| ‘while’ ‘(’ Expr ‘)’ {nl} Expr
+| ‘try’ ‘{’ Block ‘}’ [‘catch’ ‘{’ CaseClauses ‘}’]
+[‘finally’ Expr]
+| ‘do’ Expr [semi] ‘while’ ‘(’ Expr ’)’
+| ‘for’ (‘(’ Enumerators ‘)’ | ‘{’ Enumerators ‘}’)
+{nl} [‘yield’] Expr
+| ‘throw’ Expr
+| ‘return’ [Expr]
+| [SimpleExpr ‘.’] id ‘=’ Expr
+| SimpleExpr1 ArgumentExprs ‘=’ Expr
+| PostfixExpr
+| PostfixExpr Ascription
+| PostfixExpr ‘match’ ‘{’ CaseClauses ‘}’
+
+PrefixExpr ::= [‘-’ | ‘+’ | ‘~’ | ‘!’] SimpleExpr
+
+*/
+
 /* Schala EBNF Grammar */
-/* Terminal productions are «in Guillemets» or UPPERCASE if they are a class
+/* Terminal productions are in 'single quotes' or UPPERCASE if they are a class
  * or not representable in ASCII
 
 program := (statement delimiter)* EOF
-delimiter := NEWLINE | «;»
+delimiter := NEWLINE | ';'
 statement := expression | declaration
 
 declaration := type_alias | type_declaration | func_declaration
 
-type_alias := «alias» IDENTIFIER «=» IDENTIFIER
-type_declaration := «type» IDENTIFIER «=» type_body
-type_body := variant_specifier («|» variant_specifier)*
-variant_specifier := «{» member_list «}»
+type_alias := 'alias' IDENTIFIER '=' IDENTIFIER
+type_declaration := 'type' IDENTIFIER '=' type_body
+type_body := variant_specifier ('|' variant_specifier)*
+variant_specifier := '{' member_list '}'
 member_list := (IDENTIFIER type_anno)*
 
-func_declaration := «fn» IDENTIFIER «(» param_list «)»
-param_list := (IDENTIFIER type_anno+ «,»)*
+func_declaration := 'fn' IDENTIFIER '(' param_list ')'
+param_list := (IDENTIFIER type_anno+ ',')*
 
-type_anno := «:» type
+type_anno := ':' type
 
 expression := precedence_expr
 precedence_expr := primary
@@ -304,11 +328,11 @@ primary := literal | paren_expr | identifier_expr
 
 paren_expr := LParen expression RParen
 identifier_expr := call_expr | index_expr | IDENTIFIER
-literal := «true» | «false» | number_literal | STR_LITERAL
+literal := 'true' | 'false' | number_literal | STR_LITERAL
 
-call_expr := IDENTIFIER «(» expr_list «)» //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
-index_expr := «[» (expression («,» (expression)* | ε) «]»
-expr_list := expression («,» expression)* | ε
+call_expr := IDENTIFIER '(' expr_list ')' //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
+index_expr := '[' (expression (',' (expression)* | ε) ']'
+expr_list := expression (',' expression)* | ε
 
 // a float_literal can still be assigned to an int in type-checking
 number_literal := int_literal | float_literal
