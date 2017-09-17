@@ -112,7 +112,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
       },
       c if c.is_whitespace() && c != '\n' => continue,
       '\n' => Newline, ';' => Semicolon,
-      ':' => Colon, ',' => Comma, '.' => Period,
+      ':' => Colon, ',' => Comma,
       '(' => LParen, ')' => RParen,
       '{' => LCurlyBrace, '}' => RCurlyBrace,
       '[' => LSquareBracket, ']' => RSquareBracket,
@@ -191,13 +191,14 @@ fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
 
 fn handle_operator(c: char, input: &mut CharIter) -> TokenType {
   match c {
-    '<' | '>' | '|' => {
+    '<' | '>' | '|' | '.' => {
       let ref next = input.peek().map(|&(_, c)| { c });
       if !next.map(|n| { is_operator(&n) }).unwrap_or(false) {
         return match c {
           '<' => LAngleBracket,
           '>' => RAngleBracket,
           '|' => Pipe,
+          '.' => Period,
           _ => unreachable!(),
         }
       }
@@ -222,8 +223,6 @@ fn handle_operator(c: char, input: &mut CharIter) -> TokenType {
 #[cfg(test)]
 mod schala_tokenizer_tests {
   use super::*;
-  use super::TokenType::*;
-  use super::Kw::*;
 
   macro_rules! digit { ($ident:expr) => { DigitGroup(Rc::new($ident.to_string())) } }
   macro_rules! ident { ($ident:expr) => { Identifier(Rc::new($ident.to_string())) } }
@@ -571,6 +570,7 @@ impl Parser {
     loop {
       let op_str = match self.peek() {
         Operator(op) => op,
+        Period => Rc::new(".".to_string()),
         _ => break,
       };
       let new_precedence = Operation::get_precedence(op_str);
@@ -579,6 +579,7 @@ impl Parser {
       }
       let op_str = match self.next() {
         Operator(op) => op,
+        Period => Rc::new(".".to_string()),
         _ => unreachable!(),
       };
       let rhs = self.precedence_expr(new_precedence)?;
@@ -758,7 +759,6 @@ mod parse_tests {
   use super::Statement::*;
   use super::Declaration::*;
   use super::Expression::*;
-  use super::ParseError;
 
   macro_rules! rc {
     ($string:tt) => { Rc::new(stringify!($string).to_string()) }
@@ -780,6 +780,7 @@ mod parse_tests {
 
   #[test]
   fn parsing_number_literals_and_binexps() {
+    parse_test!(".2", AST(vec![Expression(FloatLiteral(0.2))]));
     parse_test!("8.1", AST(vec![Expression(FloatLiteral(8.1))]));
     parse_test!("0b010", AST(vec![Expression(IntLiteral(2))]));
     parse_test!("3; 4; 4.3", AST(
@@ -811,6 +812,8 @@ mod parse_tests {
       [
         Expression(binexp!(op!("*"), binexp!(op!("+"), IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
       ]));
+
+    parse_test!(".1 + .2", AST(vec![Expression(binexp!(op!("+"), FloatLiteral(0.1), FloatLiteral(0.2)))]));
   }
 
   #[test]
@@ -828,6 +831,11 @@ mod parse_tests {
     parse_test!("a <- b", AST(vec![Expression(binexp!(op!("<-"), var!("a"), var!("b")))]));
     parse_test!("a || b", AST(vec![Expression(binexp!(op!("||"), var!("a"), var!("b")))]));
     parse_test!("a<>b", AST(vec![Expression(binexp!(op!("<>"), var!("a"), var!("b")))]));
+    parse_test!("a.b.c.d", AST(vec![Expression(binexp!(op!("."),
+                                                binexp!(op!("."),
+                                                  binexp!(op!("."), var!("a"), var!("b")),
+                                                var!("c")),
+                                               var!("d")))]));
   }
 
   #[test]
