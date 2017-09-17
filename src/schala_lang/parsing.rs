@@ -450,6 +450,7 @@ pub enum Expression {
   IntLiteral(u64),
   FloatLiteral(f64),
   StringLiteral(Rc<String>),
+  BoolLiteral(bool),
   BinExp(Operation, Box<Expression>, Box<Expression>),
   Variable(Rc<String>),
   Call {
@@ -669,6 +670,8 @@ impl Parser {
   parse_method!(literal(&mut self) -> ParseResult<Expression> {
     match self.peek() {
       DigitGroup(_) | HexNumberSigil | BinNumberSigil | Period => self.number_literal(),
+      Keyword(Kw::True) => { self.next(); Ok(Expression::BoolLiteral(true)) },
+      Keyword(Kw::False) => { self.next(); Ok(Expression::BoolLiteral(false)) },
       StrLiteral(s) => {
         self.next();
         Ok(Expression::StringLiteral(s))
@@ -846,6 +849,12 @@ mod parse_tests {
     { name: rc!(oi),
       params: vec![var!("a"), binexp!(op!("+"), IntLiteral(2), IntLiteral(2))]
     })]));
+  }
+
+  #[test]
+  fn parse_bools() {
+    parse_test!("false", AST(vec![Expression(BoolLiteral(false))]));
+    parse_test!("true", AST(vec![Expression(BoolLiteral(true))]));
   }
 
   #[test]
