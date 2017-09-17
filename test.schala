@@ -42,17 +42,20 @@ fn main() {
   #iteration over a variable
   for i <- [1..1000]  {
 
-  }
+  } #return type is return type of block
 
   #while loop
   for a != 3 || fuckTard() {
     break
-  }
+  } #return type is return type of block
 
   #monadic decomposition
-  for a <- maybeInt(); s <- foo() {
+  for {
+    a <- maybeInt();
+    s <- foo() 
+  } return {
     a + s
-  }
+  } #return type is Monad<return type of block>
 
   # let statements too!!
   for (a = 20

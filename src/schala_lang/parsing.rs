@@ -38,6 +38,7 @@ pub enum Kw {
   For,
   Match,
   Var, Const, Let, In,
+  Return,
   Alias, Type, SelfType, SelfIdent,
   Trait, Impl,
   True, False
@@ -56,6 +57,7 @@ lazy_static! {
       "const" => Kw::Const,
       "let" => Kw::Let,
       "in" => Kw::In,
+      "return" => Kw::Return,
       "alias" => Kw::Alias,
       "type" => Kw::Type,
       "Self" => Kw::SelfType,
