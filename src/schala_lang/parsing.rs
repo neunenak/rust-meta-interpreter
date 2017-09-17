@@ -327,7 +327,7 @@ program := (statement delimiter)* EOF
 delimiter := NEWLINE | ';'
 statement := expression | declaration
 
-declaration := type_alias | type_declaration | func_declaration
+declaration := type_alias | type_declaration | func_declaration | binding_declaration
 
 type_alias := 'alias' IDENTIFIER '=' IDENTIFIER
 type_declaration := 'type' IDENTIFIER '=' type_body
@@ -337,6 +337,9 @@ member_list := (IDENTIFIER type_anno)*
 
 func_declaration := 'fn' IDENTIFIER '(' param_list ')'
 param_list := (IDENTIFIER type_anno+ ',')*
+
+binding_declaration: 'var' IDENTIFIER '=' expression
+                      | 'const' IDENTIFIER '=' expression
 
 type_anno := ':' type
 
@@ -435,7 +438,12 @@ pub enum Declaration {
     params: FormalParamList,
   },
   TypeDecl(Rc<String>, TypeBody),
-  TypeAlias(Rc<String>, Rc<String>)
+  TypeAlias(Rc<String>, Rc<String>),
+  Binding {
+    name: Rc<String>,
+    constant: bool,
+    expr: Expression,
+  }
 }
 
 #[derive(Debug, PartialEq)]
@@ -522,6 +530,7 @@ impl Parser {
       Keyword(Alias) => self.type_alias().map(|alias| { Statement::Declaration(alias) }),
       Keyword(Type) => self.type_declaration().map(|decl| { Statement::Declaration(decl) }),
       Keyword(Func)=> self.func_declaration().map(|func| { Statement::Declaration(func) }),
+      Keyword(Var) | Keyword(Const) => self.binding_declaration().map(|decl| Statement::Declaration(decl)),
       _ => self.expression().map(|expr| { Statement::Expression(expr) } ),
     }
   });
@@ -562,6 +571,19 @@ impl Parser {
 
   parse_method!(param_list(&mut self) -> ParseResult<FormalParamList> {
     Ok(vec!())
+  });
+
+  parse_method!(binding_declaration(&mut self) -> ParseResult<Declaration> {
+    let constant = match self.next() {
+      Keyword(Var) => false,
+      Keyword(Const) => true,
+      _ => return ParseError::new("Expected 'var' or 'const'"),
+    };
+    let name = self.identifier()?;
+    expect!(self, Operator(ref o) if **o == "=", "Expected '='");
+    let expr = self.expression()?;
+
+    Ok(Declaration::Binding { name, constant, expr })
   });
 
   parse_method!(expression(&mut self) -> ParseResult<Expression> {
@@ -846,7 +868,7 @@ mod parse_tests {
   }
 
   #[test]
-  fn parse_complicated_operators() {
+  fn parsing_complicated_operators() {
     parse_test!("a <- b", AST(vec![Expression(binexp!(op!("<-"), var!("a"), var!("b")))]));
     parse_test!("a || b", AST(vec![Expression(binexp!(op!("||"), var!("a"), var!("b")))]));
     parse_test!("a<>b", AST(vec![Expression(binexp!(op!("<>"), var!("a"), var!("b")))]));
@@ -868,7 +890,7 @@ mod parse_tests {
   }
 
   #[test]
-  fn parse_bools() {
+  fn parsing_bools() {
     parse_test!("false", AST(vec![Expression(BoolLiteral(false))]));
     parse_test!("true", AST(vec![Expression(BoolLiteral(true))]));
   }
@@ -882,5 +904,11 @@ mod parse_tests {
   fn parsing_types() {
     parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!(Yolo), TypeBody(vec![Variant::Singleton(rc!(Yolo))])))]));
     parse_test!("alias Sex = Drugs", AST(vec![Declaration(TypeAlias(rc!(Sex), rc!(Drugs)))]));
+  }
+
+  #[test]
+  fn parsing_bindings() {
+    parse_test!("var a = 10", AST(vec![Declaration(Binding { name: rc!(a), constant: false, expr: IntLiteral(10) } )]));
+    parse_test!("const a = 2 + 2", AST(vec![Declaration(Binding { name: rc!(a), constant: true, expr: binexp!(op!("+"), IntLiteral(2), IntLiteral(2)) }) ]));
   }
 }
