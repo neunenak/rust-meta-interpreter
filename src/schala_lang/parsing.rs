@@ -833,10 +833,10 @@ mod parse_tests {
   }
 
   macro_rules! binexp {
-    ($op:expr, $lhs:expr, $rhs:expr) => { BinExp($op, Box::new($lhs), Box::new($rhs)) }
+    ($op:expr, $lhs:expr, $rhs:expr) => { BinExp(op!($op), Box::new($lhs), Box::new($rhs)) }
   }
   macro_rules! prefexp {
-    ($op:expr, $lhs:expr) => { PrefixExp($op, Box::new($lhs)) }
+    ($op:expr, $lhs:expr) => { PrefixExp(op!($op), Box::new($lhs)) }
   }
   macro_rules! op {
     ($op:expr) => { Operation(Rc::new($op.to_string())) }
@@ -856,20 +856,20 @@ mod parse_tests {
 
     parse_test!("1 + 2 * 3", AST(vec!
       [
-        Expression(binexp!(op!("+"), IntLiteral(1), binexp!(op!("*"), IntLiteral(2), IntLiteral(3))))
+        Expression(binexp!("+", IntLiteral(1), binexp!("*", IntLiteral(2), IntLiteral(3))))
       ]));
 
     parse_test!("1 * 2 + 3", AST(vec!
       [
-        Expression(binexp!(op!("+"), binexp!(op!("*"), IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
+        Expression(binexp!("+", binexp!("*", IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
       ]));
 
-    parse_test!("1 && 2", AST(vec![Expression(binexp!(op!("&&"), IntLiteral(1), IntLiteral(2)))]));
+    parse_test!("1 && 2", AST(vec![Expression(binexp!("&&", IntLiteral(1), IntLiteral(2)))]));
 
     parse_test!("1 + 2 * 3 + 4", AST(vec![Expression(
-          binexp!(op!("+"),
-                  binexp!(op!("+"), IntLiteral(1),
-                          binexp!(op!("*"), IntLiteral(2), IntLiteral(3))
+          binexp!("+",
+                  binexp!("+", IntLiteral(1),
+                          binexp!("*", IntLiteral(2), IntLiteral(3))
                          ),
                   IntLiteral(4)
                  )
@@ -877,16 +877,16 @@ mod parse_tests {
 
     parse_test!("(1 + 2) * 3", AST(vec!
       [
-        Expression(binexp!(op!("*"), binexp!(op!("+"), IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
+        Expression(binexp!("*", binexp!("+", IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
       ]));
 
-    parse_test!(".1 + .2", AST(vec![Expression(binexp!(op!("+"), FloatLiteral(0.1), FloatLiteral(0.2)))]));
+    parse_test!(".1 + .2", AST(vec![Expression(binexp!("+", FloatLiteral(0.1), FloatLiteral(0.2)))]));
   }
 
   #[test]
   fn parsing_identifiers() {
     parse_test!("a", AST(vec![Expression(var!("a"))]));
-    parse_test!("a + b", AST(vec![Expression(binexp!(op!("+"), var!("a"), var!("b")))]));
+    parse_test!("a + b", AST(vec![Expression(binexp!("+", var!("a"), var!("b")))]));
     //parse_test!("a[b]", AST(vec![Expression(
     //parse_test!("a[]", <- TODO THIS NEEDS TO FAIL
     //parse_test!(damn()[a] ,<- TODO needs to succeed
@@ -895,19 +895,19 @@ mod parse_tests {
 
   #[test]
   fn parsing_complicated_operators() {
-    parse_test!("a <- b", AST(vec![Expression(binexp!(op!("<-"), var!("a"), var!("b")))]));
-    parse_test!("a || b", AST(vec![Expression(binexp!(op!("||"), var!("a"), var!("b")))]));
-    parse_test!("a<>b", AST(vec![Expression(binexp!(op!("<>"), var!("a"), var!("b")))]));
-    parse_test!("a.b.c.d", AST(vec![Expression(binexp!(op!("."),
-                                                binexp!(op!("."),
-                                                  binexp!(op!("."), var!("a"), var!("b")),
+    parse_test!("a <- b", AST(vec![Expression(binexp!("<-", var!("a"), var!("b")))]));
+    parse_test!("a || b", AST(vec![Expression(binexp!("||", var!("a"), var!("b")))]));
+    parse_test!("a<>b", AST(vec![Expression(binexp!("<>", var!("a"), var!("b")))]));
+    parse_test!("a.b.c.d", AST(vec![Expression(binexp!(".",
+                                                binexp!(".",
+                                                  binexp!(".", var!("a"), var!("b")),
                                                 var!("c")),
                                                var!("d")))]));
-    parse_test!("-3", AST(vec![Expression(prefexp!(op!("-"), IntLiteral(3)))]));
-    parse_test!("-0.2", AST(vec![Expression(prefexp!(op!("-"), FloatLiteral(0.2)))]));
-    parse_test!("!3", AST(vec![Expression(prefexp!(op!("!"), IntLiteral(3)))]));
-    parse_test!("a <- -b", AST(vec![Expression(binexp!(op!("<-"), var!("a"), prefexp!(op!("-"), var!("b"))))]));
-    parse_test!("a <--b", AST(vec![Expression(binexp!(op!("<--"), var!("a"), var!("b")))]));
+    parse_test!("-3", AST(vec![Expression(prefexp!("-", IntLiteral(3)))]));
+    parse_test!("-0.2", AST(vec![Expression(prefexp!("-", FloatLiteral(0.2)))]));
+    parse_test!("!3", AST(vec![Expression(prefexp!("!", IntLiteral(3)))]));
+    parse_test!("a <- -b", AST(vec![Expression(binexp!("<-", var!("a"), prefexp!("-", var!("b"))))]));
+    parse_test!("a <--b", AST(vec![Expression(binexp!("<--", var!("a"), var!("b")))]));
   }
 
   #[test]
@@ -916,7 +916,7 @@ mod parse_tests {
     parse_test!("oi()", AST(vec![Expression(Call { name: rc!(oi), params: vec![] })]));
     parse_test!("oi(a, 2 + 2)", AST(vec![Expression(Call
     { name: rc!(oi),
-      params: vec![var!("a"), binexp!(op!("+"), IntLiteral(2), IntLiteral(2))]
+      params: vec![var!("a"), binexp!("+", IntLiteral(2), IntLiteral(2))]
     })]));
   }
 
@@ -940,6 +940,6 @@ mod parse_tests {
   #[test]
   fn parsing_bindings() {
     parse_test!("var a = 10", AST(vec![Declaration(Binding { name: rc!(a), constant: false, expr: IntLiteral(10) } )]));
-    parse_test!("const a = 2 + 2", AST(vec![Declaration(Binding { name: rc!(a), constant: true, expr: binexp!(op!("+"), IntLiteral(2), IntLiteral(2)) }) ]));
+    parse_test!("const a = 2 + 2", AST(vec![Declaration(Binding { name: rc!(a), constant: true, expr: binexp!("+", IntLiteral(2), IntLiteral(2)) }) ]));
   }
 }
