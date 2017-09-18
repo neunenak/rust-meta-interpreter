@@ -346,7 +346,10 @@ binding_declaration: 'var' IDENTIFIER '=' expression
 type_anno := ':' type
 
 expression := precedence_expr
-precedence_expr := primary
+
+precedence_expr := prefix_expr
+prefix_expr := prefix_op primary
+prefix_op := '+' | '-' | '!' | '~'
 primary := literal | paren_expr | identifier_expr
 
 paren_expr := LParen expression RParen
@@ -465,6 +468,7 @@ pub enum Expression {
   StringLiteral(Rc<String>),
   BoolLiteral(bool),
   BinExp(Operation, Box<Expression>, Box<Expression>),
+  PrefixExp(Operation, Box<Expression>),
   Variable(Rc<String>),
   Call {
     name: Rc<String>,
@@ -487,11 +491,17 @@ impl Operation {
   }
 
   fn get_precedence(op: &str) -> i32 {
-    let c: char = op.chars().next().unwrap();
-    match c {
-      '+' | '-' => 10,
-      '*' | '/' | '%' => 20,
+    match op {
+      "+" | "-" => 10,
+      "*" | "/" | "%" =>  20,
       _ => 30,
+    }
+  }
+
+  fn is_prefix(op: &str) -> bool {
+    match op {
+      "+" | "-" | "!" | "~" => true,
+      _ => false,
     }
   }
 }
@@ -603,8 +613,7 @@ impl Parser {
     };
     self.parse_record.push(record);
 
-    //TODO clean this up
-    let mut lhs = self.primary()?;
+    let mut lhs = self.prefix_expr()?;
     loop {
       let new_precedence = match self.peek() {
         Operator(op) => Operation::get_precedence(&*op),
@@ -626,6 +635,20 @@ impl Parser {
     }
     Ok(lhs)
   }
+
+  parse_method!(prefix_expr(&mut self) -> ParseResult<Expression> {
+    match self.peek() {
+      Operator(ref op) if Operation::is_prefix(&*op) => {
+        let op_str = match self.next() {
+          Operator(op) => op,
+          _ => unreachable!(),
+        };
+        let expr = self.primary()?;
+        Ok(Expression::PrefixExp(Operation { op: op_str }, Box::new(expr)))
+      },
+      _ => self.primary()
+    }
+  });
 
   parse_method!(primary(&mut self) -> ParseResult<Expression> {
     match self.peek() {
@@ -814,6 +837,9 @@ mod parse_tests {
   macro_rules! binexp {
     ($op:expr, $lhs:expr, $rhs:expr) => { BinExp($op, Box::new($lhs), Box::new($rhs)) }
   }
+  macro_rules! prefexp {
+    ($op:expr, $lhs:expr) => { PrefixExp($op, Box::new($lhs)) }
+  }
   macro_rules! op {
     ($op:expr) => { Operation { op: Rc::new($op.to_string()) } }
   }
@@ -879,6 +905,11 @@ mod parse_tests {
                                                   binexp!(op!("."), var!("a"), var!("b")),
                                                 var!("c")),
                                                var!("d")))]));
+    parse_test!("-3", AST(vec![Expression(prefexp!(op!("-"), IntLiteral(3)))]));
+    parse_test!("-0.2", AST(vec![Expression(prefexp!(op!("-"), FloatLiteral(0.2)))]));
+    parse_test!("!3", AST(vec![Expression(prefexp!(op!("!"), IntLiteral(3)))]));
+    parse_test!("a <- -b", AST(vec![Expression(binexp!(op!("<-"), var!("a"), prefexp!(op!("-"), var!("b"))))]));
+    parse_test!("a <--b", AST(vec![Expression(binexp!(op!("<--"), var!("a"), var!("b")))]));
   }
 
   #[test]
