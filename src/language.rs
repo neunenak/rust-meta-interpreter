@@ -15,7 +15,7 @@ impl TokenError {
 
 pub struct LLVMCodeString(pub String);
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EvalOptions {
   pub debug_tokens: bool,
   pub debug_parse: bool,

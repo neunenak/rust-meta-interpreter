@@ -13,4 +13,7 @@ linefeed = "0.2.2"
 lazy_static = "0.2.8"
 maplit = "*"
 colored = "1.5"
+serde = "1.0.15"
+serde_derive = "1.0.15"
+serde_json = "1.0.3"
 

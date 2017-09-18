@@ -5,6 +5,10 @@ extern crate linefeed;
 extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
 
 use std::path::Path;
 use std::fs::File;
@@ -121,14 +125,42 @@ impl Repl {
     let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Metainterpreter").unwrap();
     reader.set_prompt(">> ");
     let i = if initial_index < languages.len() { initial_index } else { 0 };
+
     Repl {
-      options: EvalOptions::default(),
+      options: Repl::get_options(),
       languages: languages,
       current_language_index: i,
       interpreter_directive_sigil: '.',
       reader: reader,
     }
   }
+
+  fn get_options() -> EvalOptions {
+    File::open(".schala_repl")
+      .and_then(|mut file| {
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        Ok(contents)
+      })
+      .and_then(|contents| {
+        let options: EvalOptions = serde_json::from_str(&contents)?;
+        Ok(options)
+      }).unwrap_or(EvalOptions::default())
+  }
+
+  fn save_options(&self) {
+    let ref options = self.options;
+    let read = File::create(".schala_repl")
+      .and_then(|mut file| {
+        let buf = serde_json::to_string(options).unwrap();
+        file.write_all(buf.as_bytes())
+      });
+
+    if let Err(err) = read {
+      println!("Error saving .schala_repl file {}", err);
+    }
+  }
+
   fn run(&mut self) {
     use linefeed::ReadResult::*;
     println!("MetaInterpreter v 0.05");
@@ -181,7 +213,10 @@ impl Repl {
     };
 
     match cmd {
-      "exit" | "quit"  => process::exit(0),
+      "exit" | "quit"  => {
+        self.save_options();
+        process::exit(0)
+      },
       "history"  => {
         for item in self.reader.history() {
           println!("{}", item);
