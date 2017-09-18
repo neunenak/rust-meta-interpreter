@@ -481,9 +481,7 @@ pub enum Expression {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Operation {
-  op: Rc<String>
-}
+pub struct Operation(Rc<String>);
 
 impl Operation {
   fn min_precedence() -> i32 {
@@ -630,7 +628,7 @@ impl Parser {
         _ => unreachable!(),
       };
       let rhs = self.precedence_expr(new_precedence)?;
-      let operation = Operation { op: op_str };
+      let operation = Operation(op_str);
       lhs = BinExp(operation, Box::new(lhs), Box::new(rhs));
     }
     Ok(lhs)
@@ -644,7 +642,7 @@ impl Parser {
           _ => unreachable!(),
         };
         let expr = self.primary()?;
-        Ok(Expression::PrefixExp(Operation { op: op_str }, Box::new(expr)))
+        Ok(Expression::PrefixExp(Operation(op_str), Box::new(expr)))
       },
       _ => self.primary()
     }
@@ -841,7 +839,7 @@ mod parse_tests {
     ($op:expr, $lhs:expr) => { PrefixExp($op, Box::new($lhs)) }
   }
   macro_rules! op {
-    ($op:expr) => { Operation { op: Rc::new($op.to_string()) } }
+    ($op:expr) => { Operation(Rc::new($op.to_string())) }
   }
   macro_rules! var {
     ($var:expr) => { Variable(Rc::new($var.to_string())) }
