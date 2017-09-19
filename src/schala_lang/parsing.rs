@@ -300,12 +300,18 @@ prefix_op := '+' | '-' | '!' | '~'
 primary := literal | paren_expr | identifier_expr
 
 paren_expr := LParen expression RParen
-identifier_expr := call_expr | index_expr | IDENTIFIER
+identifier_expr := call_expr | index_expr | if_expr | IDENTIFIER
 literal := 'true' | 'false' | number_literal | STR_LITERAL
+
+if_expr := 'if' expression block else_clause
+else_clause := ε | 'else' block
+
+block := '{' (statement)* '}'
 
 call_expr := IDENTIFIER '(' expr_list ')' //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
 index_expr := '[' (expression (',' (expression)* | ε) ']'
 expr_list := expression (',' expression)* | ε
+
 
 // a float_literal can still be assigned to an int in type-checking
 number_literal := int_literal | float_literal
@@ -424,7 +430,8 @@ pub enum Expression {
   Index {
     indexee: Box<Expression>,
     indexers: Vec<Expression>,
-  }
+  },
+  IfExpression(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
 }
 
 #[derive(Debug, PartialEq)]
@@ -598,6 +605,7 @@ impl Parser {
   parse_method!(primary(&mut self) -> ParseResult<Expression> {
     match self.peek() {
       LParen => self.paren_expr(),
+      Keyword(Kw::If) => self.if_expr(),
       Identifier(_) => self.identifier_expr(),
       _ => self.literal(),
     }
@@ -610,7 +618,7 @@ impl Parser {
     Ok(expr)
   });
 
-  fn identifier_expr(&mut self) -> ParseResult<Expression> {
+  parse_method!(identifier_expr(&mut self) -> ParseResult<Expression> {
     let identifier = self.identifier()?;
     match self.peek() {
       LParen => {
@@ -629,7 +637,7 @@ impl Parser {
       }
       _ => Ok(Expression::Variable(identifier))
     }
-  }
+  });
 
   parse_method!(call_expr(&mut self) -> ParseResult<Vec<Expression>> {
     let mut exprs = Vec::new();
@@ -663,6 +671,40 @@ impl Parser {
     }
     expect!(self, RSquareBracket, "Expected ']'");
     Ok(exprs)
+  });
+
+  parse_method!(if_expr(&mut self) -> ParseResult<Expression> {
+    expect!(self, Keyword(Kw::If), "Expected 'if'");
+    let condition = self.expression()?;
+    let then_clause = self.block()?;
+    let else_clause = self.else_clause()?;
+    Ok(Expression::IfExpression(Box::new(condition), then_clause, else_clause))
+  });
+
+  parse_method!(else_clause(&mut self) -> ParseResult<Option<Vec<Statement>>> {
+    Ok(if let Keyword(Kw::Else) = self.peek() {
+      self.next();
+      Some(self.block()?)
+    } else {
+      None
+    })
+  });
+
+  parse_method!(block(&mut self) -> ParseResult<Vec<Statement>> {
+    expect!(self, LCurlyBrace, "Expected '{'");
+    let mut statements = Vec::new();
+    loop {
+      match self.peek() {
+        EOF | RCurlyBrace => break,
+        Newline | Semicolon => {
+          self.next();
+          continue;
+        },
+        _ => statements.push(self.statement()?),
+      }
+    }
+    expect!(self, RCurlyBrace, "Expected '}'");
+    Ok(statements)
   });
 
   parse_method!(identifier(&mut self) -> ParseResult<Rc<String>> {
@@ -888,5 +930,25 @@ mod parse_tests {
   fn parsing_bindings() {
     parse_test!("var a = 10", AST(vec![Declaration(Binding { name: rc!(a), constant: false, expr: IntLiteral(10) } )]));
     parse_test!("const a = 2 + 2", AST(vec![Declaration(Binding { name: rc!(a), constant: true, expr: binexp!("+", IntLiteral(2), IntLiteral(2)) }) ]));
+  }
+
+  #[test]
+  fn parsing_block_expressions() {
+    parse_test!("if a() { b(); c() }", AST(vec![Expression(
+        IfExpression(Box::new(Call { name: rc!(a), params: vec![]}),
+          vec![Expression(Call { name: rc!(b), params: vec![]}), Expression(Call { name: rc!(c), params: vec![] })],
+          None))]));
+    parse_test!(r#"
+    if true {
+      const a = 10
+      b
+    } else {
+      c
+    }"#, 
+    AST(vec![Expression(IfExpression(Box::new(BoolLiteral(true)),
+      vec![Declaration(Binding { name: rc!(a), constant: true, expr: IntLiteral(10) }),
+           Expression(Variable(rc!(b)))],
+      Some(vec![Expression(Variable(rc!(c)))])))])
+    );
   }
 }

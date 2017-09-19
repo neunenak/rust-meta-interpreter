@@ -8,7 +8,6 @@ extern crate lazy_static;
 extern crate maplit;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate serde_json;
 
 use std::path::Path;
