@@ -58,3 +58,7 @@ http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-ma
 
 ### LLVM
 http://blog.ulysse.io/2016/07/03/llvm-getting-started.html
+
+###Rust resources
+https://thefullsnack.com/en/rust-for-the-web.html
+https://rocket.rs/guide/getting-started/
