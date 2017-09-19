@@ -1,8 +1,12 @@
+use rocket;
+
+use rocket::response::NamedFile;
+
 #[get("/")]
-fn index() -> &'static str {
-  "rocket test"
+fn index() -> Result<NamedFile, ()> {
+  NamedFile::open("static/index.html").map_err(|_| ())
 }
 
-fn web_main() {
+pub fn web_main() {
   rocket::ignite().mount("/", routes![index]).launch();
 }

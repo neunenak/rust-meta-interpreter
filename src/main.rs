@@ -1,4 +1,6 @@
 #![feature(advanced_slice_patterns, slice_patterns, box_patterns)]
+#![feature(plugin)]
+#![plugin(rocket_codegen)]
 extern crate getopts;
 extern crate linefeed;
 extern crate itertools;
@@ -9,6 +11,7 @@ extern crate maplit;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate rocket;
 
 use std::path::Path;
 use std::fs::File;
