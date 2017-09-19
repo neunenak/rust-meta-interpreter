@@ -1,9 +1,7 @@
-extern crate itertools;
-
+use itertools::Itertools;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::iter::{Enumerate, Peekable};
-use self::itertools::Itertools;
 use std::vec::IntoIter;
 use std::str::Chars;
 
@@ -71,8 +69,8 @@ lazy_static! {
 
 #[derive(Debug)]
 pub struct Token {
-  token_type: TokenType,
-  offset: usize,
+  pub token_type: TokenType,
+  pub offset: usize,
 }
 
 impl Token {

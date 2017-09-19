@@ -1,5 +1,4 @@
-extern crate itertools;
-use self::itertools::Itertools;
+use itertools::Itertools;
 
 use language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TokenError};
 

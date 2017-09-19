@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
 
 mod parsing;
@@ -20,7 +21,9 @@ impl ProgrammingLanguageInterface for Schala {
     let mut output = ReplOutput::default();
     let tokens = parsing::tokenize(input);
     if options.debug_tokens {
-      output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", tokens)));
+      let token_string = tokens.iter().map(|t| format!("{:?}<{}>", t.token_type, t.offset)).join(", ");
+      output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", token_string)));
+
     }
 
     {
