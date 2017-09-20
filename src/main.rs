@@ -12,6 +12,7 @@ extern crate maplit;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate rocket;
+extern crate rocket_contrib;
 
 use std::path::Path;
 use std::fs::File;
