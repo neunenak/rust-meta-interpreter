@@ -435,7 +435,17 @@ pub enum Expression {
     indexers: Vec<Expression>,
   },
   IfExpression(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
+  MatchExpression(Box<Expression>, Vec<MatchArm>)
 }
+
+#[derive(Debug, PartialEq)]
+pub struct MatchArm {
+  pat: Pattern,
+  expr: Expression,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Pattern(String);
 
 #[derive(Debug, PartialEq)]
 pub struct Operation(Rc<String>);
@@ -717,7 +727,11 @@ impl Parser {
     expect!(self, LCurlyBrace, "Expected '{'");
     let body = self.match_body()?;
     expect!(self, RCurlyBrace, "Expected '}'");
-    unimplementd!()
+    Ok(Expression::MatchExpression(Box::new(expr), body))
+  });
+
+  parse_method!(match_body(&mut self) -> ParseResult<Vec<MatchArm>> {
+    Ok(vec!())
   });
 
   parse_method!(identifier(&mut self) -> ParseResult<Rc<String>> {
