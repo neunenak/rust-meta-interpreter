@@ -308,6 +308,7 @@ else_clause := ε | 'else' block
 
 match_expr := 'match' expression '{' match_body '}'
 match_body := pattern '=>' expression
+pattern := identifier //TODO NOT DONE
 
 block := '{' (statement)* '}'
 
@@ -445,7 +446,7 @@ pub struct MatchArm {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Pattern(String);
+pub struct Pattern(Rc<String>);
 
 #[derive(Debug, PartialEq)]
 pub struct Operation(Rc<String>);
@@ -731,7 +732,26 @@ impl Parser {
   });
 
   parse_method!(match_body(&mut self) -> ParseResult<Vec<MatchArm>> {
-    Ok(vec!())
+    let mut arms = Vec::new();
+    loop {
+      if let RCurlyBrace = self.peek() {
+        break;
+      }
+      let pat = self.pattern()?;
+      expect!(self, Operator(ref c) if **c == "=>", "Expected '=>'");
+      let expr = self.expression()?;
+      arms.push(MatchArm {pat, expr});
+      match self.peek() {
+        Comma => { self.next(); },
+        _ => break
+      }
+    }
+    Ok(arms)
+  });
+
+  parse_method!(pattern(&mut self) -> ParseResult<Pattern> {
+    let identifier = self.identifier()?;
+    Ok(Pattern(identifier))
   });
 
   parse_method!(identifier(&mut self) -> ParseResult<Rc<String>> {
