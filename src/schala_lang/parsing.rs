@@ -297,14 +297,17 @@ expression := precedence_expr
 precedence_expr := prefix_expr
 prefix_expr := prefix_op primary
 prefix_op := '+' | '-' | '!' | '~'
-primary := literal | paren_expr | identifier_expr
+primary := literal | paren_expr | if_expr | match_expr | identifier_expr
 
 paren_expr := LParen expression RParen
-identifier_expr := call_expr | index_expr | if_expr | IDENTIFIER
+identifier_expr := call_expr | index_expr | IDENTIFIER
 literal := 'true' | 'false' | number_literal | STR_LITERAL
 
 if_expr := 'if' expression block else_clause
 else_clause := ε | 'else' block
+
+match_expr := 'match' expression '{' match_body '}'
+match_body := pattern '=>' expression
 
 block := '{' (statement)* '}'
 
@@ -606,6 +609,7 @@ impl Parser {
     match self.peek() {
       LParen => self.paren_expr(),
       Keyword(Kw::If) => self.if_expr(),
+      Keyword(Kw::Match) => self.match_expr(),
       Identifier(_) => self.identifier_expr(),
       _ => self.literal(),
     }
@@ -705,6 +709,15 @@ impl Parser {
     }
     expect!(self, RCurlyBrace, "Expected '}'");
     Ok(statements)
+  });
+
+  parse_method!(match_expr(&mut self) -> ParseResult<Expression> {
+    expect!(self, Keyword(Kw::Match), "Expected 'match'");
+    let expr = self.expression()?;
+    expect!(self, LCurlyBrace, "Expected '{'");
+    let body = self.match_body()?;
+    expect!(self, RCurlyBrace, "Expected '}'");
+    unimplementd!()
   });
 
   parse_method!(identifier(&mut self) -> ParseResult<Rc<String>> {
