@@ -10,10 +10,14 @@
     "babelify": "^7.3.0",
     "browserify": "^14.4.0",
     "react": "^15.6.1",
-    "react-dom": "^15.6.1"
+    "react-dom": "^15.6.1",
+    "request": "^2.82.0"
   },
   "babel": {
-    "presets": ["babel-preset-react", "babel-preset-es2015"]
+    "presets": [
+      "babel-preset-react",
+      "babel-preset-es2015"
+    ]
   },
   "scripts": {
     "build": "browserify main.jsx -t babelify -o bundle.js"

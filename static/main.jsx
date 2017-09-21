@@ -1,6 +1,8 @@
 const React = require("react");
 const ReactDOM = require("react-dom");
+const request = require("request");
 
+const serverAddress = "http://localhost:8000";
 
 class CodeArea extends React.Component {
   constructor(props) {
@@ -16,6 +18,15 @@ class CodeArea extends React.Component {
 
   submit(event) {
     console.log("This", this.state.value);
+    const options = {
+      url: `${serverAddress}/input`,
+      json: true,
+      body: {source: this.state.value}
+    };
+    request.post(options, (error, response, body) => {
+      console.log("resp", response);
+      console.log("body", body);
+    });
   }
 
   render() {
