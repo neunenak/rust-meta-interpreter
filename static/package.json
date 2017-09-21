@@ -14,5 +14,8 @@
   },
   "babel": {
     "presets": ["babel-preset-react", "babel-preset-es2015"]
+  },
+  "scripts": {
+    "build": "browserify main.jsx -t babelify -o bundle.js"
   }
 }

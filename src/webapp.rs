@@ -8,6 +8,11 @@ fn index() -> Result<NamedFile, ()> {
   NamedFile::open("static/index.html").map_err(|_| ())
 }
 
+#[get("/bundle.js")]
+fn js_bundle() -> Result<NamedFile, ()> {
+  NamedFile::open("static/bundle.js").map_err(|_| ())
+}
+
 #[derive(Serialize, Deserialize)]
 struct Input {
   source: String,
@@ -25,5 +30,5 @@ fn interpreter_input(input: Json<Input>) -> Json<Output> {
 }
 
 pub fn web_main() {
-  rocket::ignite().mount("/", routes![index, interpreter_input]).launch();
+  rocket::ignite().mount("/", routes![index, js_bundle, interpreter_input]).launch();
 }
