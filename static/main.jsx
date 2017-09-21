@@ -17,6 +17,7 @@ class CodeArea extends React.Component {
   }
 
   submit(event) {
+    /*
     console.log("This", this.state.value);
     const options = {
       url: `${serverAddress}/input`,
@@ -27,6 +28,7 @@ class CodeArea extends React.Component {
       console.log("resp", response);
       console.log("body", body);
     });
+    */
   }
 
   render() {
