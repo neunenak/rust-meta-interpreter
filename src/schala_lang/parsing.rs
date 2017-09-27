@@ -291,8 +291,9 @@ binding_declaration: 'var' IDENTIFIER '=' expression
                       | 'const' IDENTIFIER '=' expression
 
 type_anno := ':' type
+type := IDENTIFIER (LAngleBracket type RAngleBracket)*
 
-expression := precedence_expr
+expression := precedence_expr type_anno+
 
 precedence_expr := prefix_expr
 prefix_expr := prefix_op primary
@@ -565,7 +566,29 @@ impl Parser {
   });
 
   parse_method!(expression(&mut self) -> ParseResult<Expression> {
-    self.precedence_expr(Operation::min_precedence())
+    let expr_body = self.precedence_expr(Operation::min_precedence());
+    let type_anno = match self.peek() {
+      Colon => {
+        self.next();
+        Some(self.type_anno()?)
+      },
+      _ => None
+    };
+    expr_body
+  });
+
+  parse_method!(type_anno(&mut self) -> ParseResult<()> {
+    let type_name = self.identifier()?;
+    let param = match self.peek() {
+      LAngleBracket => {
+        self.next();
+        let param = self.type_anno()?;
+        expect!(self, RAngleBracket, "Expected '>'");
+        Some(param)
+      },
+      _ => None
+    };
+    Ok(())
   });
 
   // this implements Pratt parsing, see http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
