@@ -420,7 +420,13 @@ pub enum Variant {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Expression {
+pub struct Expression(ExpressionType, Option<TypeAnno>);
+
+#[derive(Debug, PartialEq)]
+pub struct TypeAnno(Rc<String>);
+
+#[derive(Debug, PartialEq)]
+pub enum ExpressionType {
   IntLiteral(u64),
   FloatLiteral(f64),
   StringLiteral(Rc<String>),
@@ -566,7 +572,7 @@ impl Parser {
   });
 
   parse_method!(expression(&mut self) -> ParseResult<Expression> {
-    let expr_body = self.precedence_expr(Operation::min_precedence());
+    let mut expr_body = self.precedence_expr(Operation::min_precedence())?;
     let type_anno = match self.peek() {
       Colon => {
         self.next();
@@ -574,10 +580,14 @@ impl Parser {
       },
       _ => None
     };
-    expr_body
+    if let Some(a) = expr_body.1 {
+        panic!("UNexpected thing {:?}", a);
+    }
+    expr_body.1 = type_anno;
+    Ok(expr_body)
   });
 
-  parse_method!(type_anno(&mut self) -> ParseResult<()> {
+  parse_method!(type_anno(&mut self) -> ParseResult<TypeAnno> {
     let type_name = self.identifier()?;
     let param = match self.peek() {
       LAngleBracket => {
@@ -588,13 +598,11 @@ impl Parser {
       },
       _ => None
     };
-    Ok(())
+    Ok(TypeAnno(type_name))
   });
 
   // this implements Pratt parsing, see http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
   fn precedence_expr(&mut self, precedence: i32) -> ParseResult<Expression> {
-    use self::Expression::*;
-
     let next_token = self.peek();
     let record = ParseRecord {
       production_name: "precedence_expr".to_string(),
@@ -620,7 +628,7 @@ impl Parser {
       };
       let rhs = self.precedence_expr(new_precedence)?;
       let operation = Operation(op_str);
-      lhs = BinExp(operation, Box::new(lhs), Box::new(rhs));
+      lhs = Expression(ExpressionType::BinExp(operation, Box::new(lhs), Box::new(rhs)), None);
     }
     Ok(lhs)
   }
@@ -633,7 +641,9 @@ impl Parser {
           _ => unreachable!(),
         };
         let expr = self.primary()?;
-        Ok(Expression::PrefixExp(Operation(op_str), Box::new(expr)))
+        Ok(Expression(
+            ExpressionType::PrefixExp(Operation(op_str), Box::new(expr)),
+            None))
       },
       _ => self.primary()
     }
@@ -657,23 +667,24 @@ impl Parser {
   });
 
   parse_method!(identifier_expr(&mut self) -> ParseResult<Expression> {
+    use self::ExpressionType::*;
     let identifier = self.identifier()?;
     match self.peek() {
       LParen => {
         let call_params = self.call_expr()?;
-        Ok(Expression::Call {
+        Ok(Expression(Call {
           name: identifier,
           params: call_params,
-        })
+        }, None))
       },
       LSquareBracket => {
         let indexers = self.index_expr()?;
-        Ok(Expression::Index {
-          indexee: Box::new(Expression::Variable(identifier)),
+        Ok(Expression(Index {
+          indexee: Box::new(Expression(Variable(identifier), None)),
           indexers: indexers,
-        })
+        }, None))
       }
-      _ => Ok(Expression::Variable(identifier))
+      _ => Ok(Expression(Variable(identifier), None))
     }
   });
 
@@ -716,7 +727,7 @@ impl Parser {
     let condition = self.expression()?;
     let then_clause = self.block()?;
     let else_clause = self.else_clause()?;
-    Ok(Expression::IfExpression(Box::new(condition), then_clause, else_clause))
+    Ok(Expression(ExpressionType::IfExpression(Box::new(condition), then_clause, else_clause), None))
   });
 
   parse_method!(else_clause(&mut self) -> ParseResult<Option<Vec<Statement>>> {
@@ -751,7 +762,7 @@ impl Parser {
     expect!(self, LCurlyBrace, "Expected '{'");
     let body = self.match_body()?;
     expect!(self, RCurlyBrace, "Expected '}'");
-    Ok(Expression::MatchExpression(Box::new(expr), body))
+    Ok(Expression(ExpressionType::MatchExpression(Box::new(expr), body), None))
   });
 
   parse_method!(match_body(&mut self) -> ParseResult<Vec<MatchArm>> {
@@ -785,13 +796,20 @@ impl Parser {
   });
 
   parse_method!(literal(&mut self) -> ParseResult<Expression> {
+    use self::ExpressionType::*;
     match self.peek() {
       DigitGroup(_) | HexNumberSigil | BinNumberSigil | Period => self.number_literal(),
-      Keyword(Kw::True) => { self.next(); Ok(Expression::BoolLiteral(true)) },
-      Keyword(Kw::False) => { self.next(); Ok(Expression::BoolLiteral(false)) },
+      Keyword(Kw::True) => {
+        self.next();
+        Ok(Expression(BoolLiteral(true), None))
+      },
+      Keyword(Kw::False) => {
+        self.next();
+        Ok(Expression(BoolLiteral(false), None))
+      },
       StrLiteral(s) => {
         self.next();
-        Ok(Expression::StringLiteral(s))
+        Ok(Expression(StringLiteral(s), None))
       }
       e => ParseError::new(&format!("Expected a literal expression, got {:?}", e)),
     }
@@ -805,12 +823,12 @@ impl Parser {
   });
 
   parse_method!(int_literal(&mut self) -> ParseResult<Expression> {
-    use self::Expression::*;
+    use self::ExpressionType::*;
     match self.next() {
       BinNumberSigil => {
         let digits = self.digits()?;
         let n = parse_binary(digits)?;
-        Ok(IntLiteral(n))
+        Ok(Expression(IntLiteral(n), None))
       },
       HexNumberSigil => {
         ParseError::new("Not implemented")
@@ -820,20 +838,20 @@ impl Parser {
   });
 
   parse_method!(float_literal(&mut self) -> ParseResult<Expression> {
-    use self::Expression::*;
+    use self::ExpressionType::*;
     let mut digits = self.digits()?;
     if let TokenType::Period = self.peek() {
       self.next();
       digits.push_str(".");
       digits.push_str(&self.digits()?);
       match digits.parse::<f64>() {
-        Ok(f) => Ok(FloatLiteral(f)),
+        Ok(f) => Ok(Expression(FloatLiteral(f), None)),
         Err(e) => ParseError::new(&format!("Float failed to parse with error: {}", e)),
 
       }
     } else {
       match digits.parse::<u64>() {
-        Ok(d) => Ok(IntLiteral(d)),
+        Ok(d) => Ok(Expression(IntLiteral(d), None)),
         Err(e) => ParseError::new(&format!("Integer failed to parse with error: {}", e)),
       }
     }
