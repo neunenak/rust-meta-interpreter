@@ -900,6 +900,7 @@ mod parse_tests {
   use super::{AST, Expression, Statement, Operation, TypeBody, Variant, parse, tokenize};
   use super::Statement::*;
   use super::Declaration::*;
+  use super::TypeAnno;
   use super::ExpressionType::*;
 
   macro_rules! rc {
@@ -951,18 +952,12 @@ mod parse_tests {
     parse_test!("1 && 2", AST(vec![exprstatement!(binexp!("&&", IntLiteral(1), IntLiteral(2)))]));
 
     parse_test!("1 + 2 * 3 + 4", AST(vec![exprstatement!(
-          binexp!("+",
-                  binexp!("+", IntLiteral(1),
-                          binexp!("*", IntLiteral(2), IntLiteral(3))
-                         ),
-                  IntLiteral(4)
-                 )
-          )]));
+      binexp!("+",
+        binexp!("+", IntLiteral(1), binexp!("*", IntLiteral(2), IntLiteral(3))),
+        IntLiteral(4)))]));
 
     parse_test!("(1 + 2) * 3", AST(vec!
-      [
-        exprstatement!(binexp!("*", binexp!("+", IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
-      ]));
+      [exprstatement!(binexp!("*", binexp!("+", IntLiteral(1), IntLiteral(2)), IntLiteral(3)))]));
 
     parse_test!(".1 + .2", AST(vec![exprstatement!(binexp!("+", FloatLiteral(0.1), FloatLiteral(0.2)))]));
   }
@@ -1046,5 +1041,14 @@ mod parse_tests {
            exprstatement!(Variable(rc!(b)))],
       Some(vec![exprstatement!(Variable(rc!(c)))])))])
     );
+  }
+
+  #[test]
+  fn parsing_type_annotations() {
+    parse_test!("const a = b : Int", AST(vec![
+      Declaration(Binding { name: rc!(a), constant: true, expr:
+        Expression(var!("b"), Some(TypeAnno(rc!(Int)))) })]));
+
+
   }
 }
