@@ -290,8 +290,10 @@ param_list := (IDENTIFIER type_anno+ ',')*
 binding_declaration: 'var' IDENTIFIER '=' expression
                       | 'const' IDENTIFIER '=' expression
 
-type_anno := ':' type
-type := IDENTIFIER (LAngleBracket type RAngleBracket)*
+type_anno := (':' type_name)+
+type_name := IDENTIFIER (type_params)* | '(' type_names ')'
+type_names := ε | type_name (, type_name)*
+type_params := '<' type_name (, type_name)* '>'
 
 expression := precedence_expr type_anno+
 
@@ -423,7 +425,13 @@ pub enum Variant {
 pub struct Expression(ExpressionType, Option<TypeAnno>);
 
 #[derive(Debug, PartialEq)]
-pub struct TypeAnno(Rc<String>);
+pub enum TypeAnno {
+  Tuple(Vec<TypeAnno>),
+  Singleton {
+    name: Rc<String>,
+    params: Vec<TypeAnno>,
+  }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum ExpressionType {
@@ -491,6 +499,15 @@ macro_rules! parse_method {
       $body
     }
   };
+}
+
+macro_rules! delimited {
+  ($self:expr, $parse_fn:expr, $delim:pat, $end:pat) => {
+    {
+    let mut acc = vec![];
+    acc
+    }
+  }
 }
 
 impl Parser {
@@ -574,10 +591,7 @@ impl Parser {
   parse_method!(expression(&mut self) -> ParseResult<Expression> {
     let mut expr_body = self.precedence_expr(Operation::min_precedence())?;
     let type_anno = match self.peek() {
-      Colon => {
-        self.next();
-        Some(self.type_anno()?)
-      },
+      Colon => Some(self.type_anno()?),
       _ => None
     };
     if let Some(a) = expr_body.1 {
@@ -588,17 +602,23 @@ impl Parser {
   });
 
   parse_method!(type_anno(&mut self) -> ParseResult<TypeAnno> {
-    let type_name = self.identifier()?;
-    let param = match self.peek() {
-      LAngleBracket => {
-        self.next();
-        let param = self.type_anno()?;
-        expect!(self, RAngleBracket, "Expected '>'");
-        Some(param)
+    expect!(self, Colon, "Expected ':'");
+    Ok(match self.peek() {
+      LParen => {
+        unimplemented!("Not done with tuple types yet")
       },
-      _ => None
-    };
-    Ok(TypeAnno(type_name))
+      _ => {
+        let type_name = self.identifier()?;
+        let params = match self.peek() {
+          LAngleBracket => delimited!(self, self.type_anno, Comma, RAngleBracket),
+          _ => vec![],
+        };
+        TypeAnno::Singleton {
+          name: type_name,
+          params: params,
+        }
+      }
+    })
   });
 
   // this implements Pratt parsing, see http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
