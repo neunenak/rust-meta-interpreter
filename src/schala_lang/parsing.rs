@@ -502,10 +502,22 @@ macro_rules! parse_method {
 }
 
 macro_rules! delimited {
-  ($self:expr, $parse_fn:expr, $delim:pat, $end:pat) => {
+  ($self:expr, $start:pat, $parse_fn:ident, $delim:pat, $end:pat) => {
     {
-    let mut acc = vec![];
-    acc
+      expect!($self, $start, "Expected <start symbol figure out string interpol in macros>");
+      let mut acc = vec![];
+      loop {
+        if let $end = $self.peek() {
+          break;
+        }
+        acc.push($self.$parse_fn()?);
+        match $self.peek() {
+          $delim => { $self.next(); continue },
+          _ => break
+        };
+      }
+      expect!($self, $end, "Expected <end symbol figure out string interpol in macros>");
+      acc
     }
   }
 }
@@ -603,6 +615,10 @@ impl Parser {
 
   parse_method!(type_anno(&mut self) -> ParseResult<TypeAnno> {
     expect!(self, Colon, "Expected ':'");
+    self.type_name()
+  });
+
+  parse_method!(type_name(&mut self) -> ParseResult<TypeAnno> {
     Ok(match self.peek() {
       LParen => {
         unimplemented!("Not done with tuple types yet")
@@ -610,7 +626,7 @@ impl Parser {
       _ => {
         let type_name = self.identifier()?;
         let params = match self.peek() {
-          LAngleBracket => delimited!(self, self.type_anno, Comma, RAngleBracket),
+          LAngleBracket => delimited!(self, LAngleBracket, type_name, Comma, RAngleBracket),
           _ => vec![],
         };
         TypeAnno::Singleton {
