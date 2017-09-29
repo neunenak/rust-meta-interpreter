@@ -1083,7 +1083,10 @@ mod parse_tests {
   fn parsing_type_annotations() {
     parse_test!("const a = b : Int", AST(vec![
       Declaration(Binding { name: rc!(a), constant: true, expr:
-        Expression(var!("b"), Some(TypeAnno(rc!(Int)))) })]));
+        Expression(var!("b"), Some(TypeAnno::Singleton {
+          name: rc!(Int),
+          params: vec![],
+        })) })]));
 
 
   }
