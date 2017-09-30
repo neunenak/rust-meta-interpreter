@@ -620,9 +620,7 @@ impl Parser {
 
   parse_method!(type_name(&mut self) -> ParseResult<TypeAnno> {
     Ok(match self.peek() {
-      LParen => {
-        unimplemented!("Not done with tuple types yet")
-      },
+      LParen => TypeAnno::Tuple(delimited!(self, LParen, type_name, Comma, RParen)),
       _ => {
         let type_name = self.identifier()?;
         let params = match self.peek() {
@@ -1105,5 +1103,11 @@ mod parse_tests {
         ty!("Kimchi"), TypeAnno::Singleton { name: rc!(Option), params: vec![ty!("Bulgogi")] }
       ] })
     ]));
+
+    parse_test!("a : (Int, Yolo<a>)", AST(vec![
+      exprstatement!(var!("a"), TypeAnno::Tuple(
+        vec![ty!("Int"), TypeAnno::Singleton {
+          name: rc!(Yolo), params: vec![ty!("a")]
+        }]))]));
   }
 }
