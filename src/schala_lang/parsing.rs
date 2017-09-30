@@ -370,16 +370,14 @@ impl Parser {
 }
 
 macro_rules! expect {
-  ($self:expr, $token_type:pat, $message:expr) => {
-    match $self.peek() {
-      $token_type => $self.next(),
-      _ => return Err(ParseError { msg: $message.to_string() }),
-    }
-  };
-  ($self:expr, $token_type:pat if $cond:expr, $message:expr) => {
+  ($self:expr, $token_type:pat, $expected_item:expr) => { expect!($self, $token_type if true, $expected_item) };
+  ($self:expr, $token_type:pat if $cond:expr, $expected_item:expr) => {
     match $self.peek() {
       $token_type if $cond => $self.next(),
-      _ => return Err(ParseError { msg: $message.to_string() }),
+      tok => {
+        let msg = format!("Expected {}, got {:?}", $expected_item, tok);
+        return Err(ParseError { msg })
+      }
     }
   }
 }
@@ -503,15 +501,15 @@ macro_rules! parse_method {
 }
 
 macro_rules! delimited {
-  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat, nonstrict) => {
-    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, false)
+  ($self:expr, $start:pat, $start_str:expr, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $end_str:expr, nonstrict) => {
+    delimited!($self, $start, $start_str, $parse_fn, $( $delim )|*, $end, $end_str, false)
   };
-  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat) => {
-    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, true)
+  ($self:expr, $start:pat, $start_str:expr, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $end_str:expr) => {
+    delimited!($self, $start, $start_str, $parse_fn, $( $delim )|*, $end, $end_str, true)
   };
-  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $strictness:expr) => {
+  ($self:expr, $start:pat, $start_str:expr, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $end_str:expr, $strictness:expr) => {
     {
-      expect!($self, $start, "Expected <start symbol figure out string interpol in macros>");
+      expect!($self, $start, $start_str);
       let mut acc = vec![];
       loop {
         let peek = $self.peek();
@@ -531,7 +529,7 @@ macro_rules! delimited {
           _ => break
         };
       }
-      expect!($self, $end, "Expected <end symbol figure out string interpol in macros>");
+      expect!($self, $end, $end_str);
       acc
     }
   };
@@ -565,17 +563,17 @@ impl Parser {
   });
 
   parse_method!(type_alias(&mut self) -> ParseResult<Declaration> {
-    expect!(self, Keyword(Alias), "Expected 'alias'");
+    expect!(self, Keyword(Alias), "'alias'");
     let alias = self.identifier()?;
-    expect!(self, Operator(ref c) if **c == "=", "Expected '='");
+    expect!(self, Operator(ref c) if **c == "=", "'='");
     let original = self.identifier()?;
     Ok(Declaration::TypeAlias(alias, original))
   });
 
   parse_method!(type_declaration(&mut self) -> ParseResult<Declaration> {
-    expect!(self, Keyword(Type), "Expected 'type'");
+    expect!(self, Keyword(Type), "'type'");
     let name = self.identifier()?;
-    expect!(self, Operator(ref c) if **c == "=", "Expected '='");
+    expect!(self, Operator(ref c) if **c == "=", "'='");
     let body = self.type_body()?;
     Ok(Declaration::TypeDecl(name, body))
   });
@@ -586,11 +584,11 @@ impl Parser {
   });
 
   parse_method!(func_declaration(&mut self) -> ParseResult<Declaration> {
-    expect!(self, Keyword(Func), "Expected 'fn'");
+    expect!(self, Keyword(Func), "'fn'");
     let name = self.identifier()?;
-    expect!(self, LParen, "Expected '('");
+    expect!(self, LParen, "'('");
     let params = self.param_list()?;
-    expect!(self, RParen, "Expected ')'");
+    expect!(self, RParen, "')'");
     let decl = Declaration::FuncDecl {
       name: name,
       params: params
@@ -609,7 +607,7 @@ impl Parser {
       _ => return ParseError::new("Expected 'var' or 'const'"),
     };
     let name = self.identifier()?;
-    expect!(self, Operator(ref o) if **o == "=", "Expected '='");
+    expect!(self, Operator(ref o) if **o == "=", "'='");
     let expr = self.expression()?;
 
     Ok(Declaration::Binding { name, constant, expr })
@@ -629,17 +627,17 @@ impl Parser {
   });
 
   parse_method!(type_anno(&mut self) -> ParseResult<TypeAnno> {
-    expect!(self, Colon, "Expected ':'");
+    expect!(self, Colon, "':'");
     self.type_name()
   });
 
   parse_method!(type_name(&mut self) -> ParseResult<TypeAnno> {
     Ok(match self.peek() {
-      LParen => TypeAnno::Tuple(delimited!(self, LParen, type_name, Comma, RParen)),
+      LParen => TypeAnno::Tuple(delimited!(self, LParen, '(', type_name, Comma, RParen, ')')),
       _ => TypeAnno::Singleton {
         name: self.identifier()?,
         params: match self.peek() {
-          LAngleBracket => delimited!(self, LAngleBracket, type_name, Comma, RAngleBracket),
+          LAngleBracket => delimited!(self, LAngleBracket, '<', type_name, Comma, RAngleBracket, '>'),
           _ => vec![],
         }
       }
@@ -705,9 +703,9 @@ impl Parser {
   });
 
   parse_method!(paren_expr(&mut self) -> ParseResult<Expression> {
-    expect!(self, LParen, "Expected '('");
+    expect!(self, LParen, "'('");
     let expr = self.expression()?;
-    expect!(self, RParen, "Expected ')'");
+    expect!(self, RParen, "')'");
     Ok(expr)
   });
 
@@ -734,15 +732,15 @@ impl Parser {
   });
 
   parse_method!(call_expr(&mut self) -> ParseResult<Vec<Expression>> {
-    Ok(delimited!(self, LParen, expression, Comma, RParen))
+    Ok(delimited!(self, LParen, ')', expression, Comma, RParen, '('))
   });
 
   parse_method!(index_expr(&mut self) -> ParseResult<Vec<Expression>> {
-    Ok(delimited!(self, LSquareBracket, expression, Comma, RSquareBracket))
+    Ok(delimited!(self, LSquareBracket, '[', expression, Comma, RSquareBracket, ']'))
   });
 
   parse_method!(if_expr(&mut self) -> ParseResult<Expression> {
-    expect!(self, Keyword(Kw::If), "Expected 'if'");
+    expect!(self, Keyword(Kw::If), "'if'");
     let condition = self.expression()?;
     let then_clause = self.block()?;
     let else_clause = self.else_clause()?;
@@ -759,11 +757,11 @@ impl Parser {
   });
 
   parse_method!(block(&mut self) -> ParseResult<Vec<Statement>> {
-    Ok(delimited!(self, LCurlyBrace, statement, Newline | Semicolon, RCurlyBrace, nonstrict))
+    Ok(delimited!(self, LCurlyBrace, '{', statement, Newline | Semicolon, RCurlyBrace, '}', nonstrict))
   });
 
   parse_method!(match_expr(&mut self) -> ParseResult<Expression> {
-    expect!(self, Keyword(Kw::Match), "Expected 'match'");
+    expect!(self, Keyword(Kw::Match), "'match'");
     let expr = self.expression()?;
     //TODO abstract these errors into the delimited macro
     //expect!(self, LCurlyBrace, "Expected '{'");
@@ -773,12 +771,12 @@ impl Parser {
   });
 
   parse_method!(match_body(&mut self) -> ParseResult<Vec<MatchArm>> {
-    Ok(delimited!(self, LCurlyBrace, match_arm, Comma, RCurlyBrace))
+    Ok(delimited!(self, LCurlyBrace, '{', match_arm, Comma, RCurlyBrace, '}'))
   });
 
   parse_method!(match_arm(&mut self) -> ParseResult<MatchArm> {
     let pat = self.pattern()?;
-    expect!(self, Operator(ref c) if **c == "=>", "Expected '=>'");
+    expect!(self, Operator(ref c) if **c == "=>", "'=>'");
     let expr = self.expression()?;
     Ok(MatchArm { pat, expr })
   });
