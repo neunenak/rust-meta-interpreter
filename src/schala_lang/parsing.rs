@@ -502,31 +502,28 @@ macro_rules! parse_method {
 }
 
 macro_rules! delimited {
-  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat) => {
-    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, strict_delimiters)
-  };
   ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat, nonstrict) => {
-    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, nonstrict_delimiters)
+    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, false)
   };
-  (_internal nonstrict_delimiters $self:expr, $( $delim:pat )|+, $end:pat) => {
-    match $self.peek() {
-      $end | EOF => break,
-      $( $delim )|* => { $self.next(); continue },
-      _ => (),
-    }
+  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat) => {
+    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, true)
   };
-  (_internal strict_delimiters $self:expr, $( $delim:pat )|+, $end:pat) => {
-    match $self.peek() {
-      $end | EOF => break,
-      _ => (),
-    }
-  };
-  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $strictness:tt) => {
+  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $strictness:expr) => {
     {
       expect!($self, $start, "Expected <start symbol figure out string interpol in macros>");
       let mut acc = vec![];
       loop {
-        delimited!(_internal $strictness $self, $( $delim )|*, $end);
+        let peek = $self.peek();
+        match peek {
+          $end | EOF => break,
+          _ => (),
+        }
+        if !$strictness {
+          match peek {
+            $( $delim )|* => { $self.next(); continue },
+            _ => ()
+          }
+        }
         acc.push($self.$parse_fn()?);
         match $self.peek() {
           $( $delim )|* => { $self.next(); continue },
