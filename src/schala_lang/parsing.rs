@@ -960,10 +960,14 @@ mod parse_tests {
     ($var:expr) => { Variable(Rc::new($var.to_string())) }
   }
   macro_rules! exprstatement {
-    ($expr_type:expr) => { Statement::ExpressionStatement(Expression($expr_type, None)) }
+    ($expr_type:expr) => { Statement::ExpressionStatement(Expression($expr_type, None)) };
+    ($expr_type:expr, $type_anno:expr) => { Statement::ExpressionStatement(Expression($expr_type, Some($type_anno))) };
   }
   macro_rules! ex {
     ($expr_type:expr) => { Expression($expr_type, None) }
+  }
+  macro_rules! ty {
+    ($name:expr) => { TypeAnno::Singleton { name: Rc::new($name.to_string()), params: vec![] } };
   }
 
   #[test]
@@ -1088,6 +1092,18 @@ mod parse_tests {
           params: vec![],
         })) })]));
 
+    parse_test!("a : Int", AST(vec![
+      exprstatement!(var!("a"), ty!("Int"))
+    ]));
 
+    parse_test!("a : Option<Int>", AST(vec![
+      exprstatement!(var!("a"), TypeAnno::Singleton { name: rc!(Option), params: vec![ty!("Int")] })
+    ]));
+
+    parse_test!("a : KoreanBBQSpecifier<Kimchi, Option<Bulgogi> >", AST(vec![
+      exprstatement!(var!("a"), TypeAnno::Singleton { name: rc!(KoreanBBQSpecifier), params: vec![
+        ty!("Kimchi"), TypeAnno::Singleton { name: rc!(Option), params: vec![ty!("Bulgogi")] }
+      ] })
+    ]));
   }
 }
