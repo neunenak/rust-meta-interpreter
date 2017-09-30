@@ -330,7 +330,7 @@ digits := (DIGIT_GROUP underscore)+
 
 type TokenIter = Peekable<IntoIter<Token>>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ParseError {
   pub msg: String,
 }
@@ -502,24 +502,41 @@ macro_rules! parse_method {
 }
 
 macro_rules! delimited {
-  ($self:expr, $start:pat, $parse_fn:ident, $delim:pat, $end:pat) => {
+  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat) => {
+    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, strict_delimiters)
+  };
+  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat, nonstrict) => {
+    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, nonstrict_delimiters)
+  };
+  (_internal nonstrict_delimiters $self:expr, $( $delim:pat )|+, $end:pat) => {
+    match $self.peek() {
+      $end | EOF => break,
+      $( $delim )|* => { $self.next(); continue },
+      _ => (),
+    }
+  };
+  (_internal strict_delimiters $self:expr, $( $delim:pat )|+, $end:pat) => {
+    match $self.peek() {
+      $end | EOF => break,
+      _ => (),
+    }
+  };
+  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $strictness:tt) => {
     {
       expect!($self, $start, "Expected <start symbol figure out string interpol in macros>");
       let mut acc = vec![];
       loop {
-        if let $end = $self.peek() {
-          break;
-        }
+        delimited!(_internal $strictness $self, $( $delim )|*, $end);
         acc.push($self.$parse_fn()?);
         match $self.peek() {
-          $delim => { $self.next(); continue },
+          $( $delim )|* => { $self.next(); continue },
           _ => break
         };
       }
       expect!($self, $end, "Expected <end symbol figure out string interpol in macros>");
       acc
     }
-  }
+  };
 }
 
 impl Parser {
@@ -621,15 +638,11 @@ impl Parser {
   parse_method!(type_name(&mut self) -> ParseResult<TypeAnno> {
     Ok(match self.peek() {
       LParen => TypeAnno::Tuple(delimited!(self, LParen, type_name, Comma, RParen)),
-      _ => {
-        let type_name = self.identifier()?;
-        let params = match self.peek() {
+      _ => TypeAnno::Singleton {
+        name: self.identifier()?,
+        params: match self.peek() {
           LAngleBracket => delimited!(self, LAngleBracket, type_name, Comma, RAngleBracket),
           _ => vec![],
-        };
-        TypeAnno::Singleton {
-          name: type_name,
-          params: params,
         }
       }
     })
@@ -723,20 +736,7 @@ impl Parser {
   });
 
   parse_method!(call_expr(&mut self) -> ParseResult<Vec<Expression>> {
-    let mut exprs = Vec::new();
-    expect!(self, LParen, "Expected '('");
-    loop {
-      if let RParen = self.peek() {
-        break;
-      }
-      exprs.push(self.expression()?);
-      match self.peek() {
-        Comma => { self.next(); },
-        _ => break,
-      }
-    }
-    expect!(self, RParen, "Expected ')'");
-    Ok(exprs)
+    Ok(delimited!(self, LParen, expression, Comma, RParen))
   });
 
   parse_method!(index_expr(&mut self) -> ParseResult<Vec<Expression>> {
@@ -774,20 +774,7 @@ impl Parser {
   });
 
   parse_method!(block(&mut self) -> ParseResult<Vec<Statement>> {
-    expect!(self, LCurlyBrace, "Expected '{'");
-    let mut statements = Vec::new();
-    loop {
-      match self.peek() {
-        EOF | RCurlyBrace => break,
-        Newline | Semicolon => {
-          self.next();
-          continue;
-        },
-        _ => statements.push(self.statement()?),
-      }
-    }
-    expect!(self, RCurlyBrace, "Expected '}'");
-    Ok(statements)
+    Ok(delimited!(self, LCurlyBrace, statement, Newline | Semicolon, RCurlyBrace, nonstrict))
   });
 
   parse_method!(match_expr(&mut self) -> ParseResult<Expression> {
@@ -940,11 +927,12 @@ mod parse_tests {
   macro_rules! rc {
     ($string:tt) => { Rc::new(stringify!($string).to_string()) }
   }
-
   macro_rules! parse_test {
     ($string:expr, $correct:expr) => { assert_eq!(parse(tokenize($string)).0.unwrap(), $correct) }
   }
-
+  macro_rules! parse_error {
+    ($string:expr) => { assert!(parse(tokenize($string)).0.is_err()) }
+  }
   macro_rules! binexp {
     ($op:expr, $lhs:expr, $rhs:expr) => { BinExp(op!($op), Box::new(Expression($lhs, None)), Box::new(Expression($rhs, None))) }
   }
@@ -1035,6 +1023,7 @@ mod parse_tests {
     { name: rc!(oi),
       params: vec![ex!(var!("a")), ex!(binexp!("+", IntLiteral(2), IntLiteral(2)))]
     })]));
+    parse_error!("a(b,,c)");
   }
 
   #[test]
