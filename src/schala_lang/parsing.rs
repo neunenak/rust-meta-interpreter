@@ -309,8 +309,9 @@ literal := 'true' | 'false' | number_literal | STR_LITERAL
 if_expr := 'if' expression block else_clause
 else_clause := ε | 'else' block
 
-match_expr := 'match' expression '{' match_body '}'
-match_body := pattern '=>' expression
+match_expr := 'match' expression match_body
+match_body := '{' (match_arm)* '}'
+match_arm := pattern '=>' expression
 pattern := identifier //TODO NOT DONE
 
 block := '{' (statement)* '}'
@@ -737,20 +738,7 @@ impl Parser {
   });
 
   parse_method!(index_expr(&mut self) -> ParseResult<Vec<Expression>> {
-    expect!(self, LSquareBracket, "Expected '['");
-    let mut exprs = Vec::new();
-    loop {
-      if let RSquareBracket = self.peek() {
-        break;
-      }
-      exprs.push(self.expression()?);
-      match self.peek() {
-        Comma => { self.next(); }
-        _ => break,
-      };
-    }
-    expect!(self, RSquareBracket, "Expected ']'");
-    Ok(exprs)
+    Ok(delimited!(self, LSquareBracket, expression, Comma, RSquareBracket))
   });
 
   parse_method!(if_expr(&mut self) -> ParseResult<Expression> {
@@ -777,28 +765,22 @@ impl Parser {
   parse_method!(match_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, Keyword(Kw::Match), "Expected 'match'");
     let expr = self.expression()?;
-    expect!(self, LCurlyBrace, "Expected '{'");
+    //TODO abstract these errors into the delimited macro
+    //expect!(self, LCurlyBrace, "Expected '{'");
     let body = self.match_body()?;
-    expect!(self, RCurlyBrace, "Expected '}'");
+    //expect!(self, RCurlyBrace, "Expected '}'");
     Ok(Expression(ExpressionType::MatchExpression(Box::new(expr), body), None))
   });
 
   parse_method!(match_body(&mut self) -> ParseResult<Vec<MatchArm>> {
-    let mut arms = Vec::new();
-    loop {
-      if let RCurlyBrace = self.peek() {
-        break;
-      }
-      let pat = self.pattern()?;
-      expect!(self, Operator(ref c) if **c == "=>", "Expected '=>'");
-      let expr = self.expression()?;
-      arms.push(MatchArm {pat, expr});
-      match self.peek() {
-        Comma => { self.next(); },
-        _ => break
-      }
-    }
-    Ok(arms)
+    Ok(delimited!(self, LCurlyBrace, match_arm, Comma, RCurlyBrace))
+  });
+
+  parse_method!(match_arm(&mut self) -> ParseResult<MatchArm> {
+    let pat = self.pattern()?;
+    expect!(self, Operator(ref c) if **c == "=>", "Expected '=>'");
+    let expr = self.expression()?;
+    Ok(MatchArm { pat, expr })
   });
 
   parse_method!(pattern(&mut self) -> ParseResult<Pattern> {
