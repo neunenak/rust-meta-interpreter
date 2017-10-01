@@ -17,8 +17,9 @@ impl ReplState {
     format!("Evaluated AST: {:?}", ast)
   }
 
-  pub fn type_check(&mut self, ast: &AST) -> TypeCheck {
-    TypeCheck::Error("type lol".to_string())
+  pub fn type_check(&mut self, _ast: &AST) -> TypeCheck {
+    //TypeCheck::Error("type lol".to_string())
+    TypeCheck::OK
   }
 }
 
