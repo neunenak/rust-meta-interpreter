@@ -4,6 +4,8 @@ use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOut
 mod parsing;
 mod eval;
 
+use self::eval::TypeCheck;
+
 pub struct Schala {
   state: eval::ReplState
 }
@@ -52,6 +54,15 @@ impl ProgrammingLanguageInterface for Schala {
         return output;
       }
     };
+
+    match self.state.type_check(&ast) {
+      TypeCheck::OK => (),
+      TypeCheck::Error(s) => {
+        output.add_artifact(TraceArtifact::new("type_check", s));
+        output.add_output(format!("Type error"));
+        return output;
+      }
+    }
 
     let evaluation_output = self.state.evaluate(ast);
     output.add_output(evaluation_output);

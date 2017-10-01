@@ -77,6 +77,7 @@ impl TraceArtifact {
     let color = match stage {
       "parse_trace" => "red",
       "tokens" => "green",
+      "type_check" => "magenta",
       _ => "blue",
     };
     TraceArtifact { stage_name: stage.to_string(), debug_output: debug, text_color: color}
