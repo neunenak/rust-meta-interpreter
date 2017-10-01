@@ -383,7 +383,7 @@ macro_rules! expect {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct AST(Vec<Statement>);
+pub struct AST(pub Vec<Statement>);
 
 #[derive(Debug, PartialEq)]
 pub enum Statement {
@@ -411,7 +411,7 @@ pub enum Declaration {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct TypeBody(Vec<Variant>);
+pub struct TypeBody(pub Vec<Variant>);
 
 #[derive(Debug, PartialEq)]
 pub enum Variant {
@@ -421,7 +421,7 @@ pub enum Variant {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Expression(ExpressionType, Option<TypeAnno>);
+pub struct Expression(pub ExpressionType, pub Option<TypeAnno>);
 
 #[derive(Debug, PartialEq)]
 pub enum TypeAnno {
