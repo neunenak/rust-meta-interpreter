@@ -620,7 +620,7 @@ impl Parser {
       _ => None
     };
     if let Some(a) = expr_body.1 {
-        panic!("UNexpected thing {:?}", a);
+      return ParseError::new("Bad parse state");
     }
     expr_body.1 = type_anno;
     Ok(expr_body)

@@ -2,13 +2,17 @@ use itertools::Itertools;
 use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
 
 mod parsing;
+mod eval;
 
 pub struct Schala {
+  state: eval::ReplState
 }
 
 impl Schala {
   pub fn new() -> Schala {
-    Schala { }
+    Schala {
+      state: eval::ReplState::new(),
+    }
   }
 }
 
@@ -49,7 +53,7 @@ impl ProgrammingLanguageInterface for Schala {
       }
     };
 
-    let evaluation_output = format!("{:?}", ast);
+    let evaluation_output = self.state.evaluate(ast);
     output.add_output(evaluation_output);
     return output;
   }
