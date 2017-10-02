@@ -50,6 +50,7 @@ of learning how to write a programming language.
 
 ### Evaluation
 *Understanding Computation*, Tom Stuart, O'Reilly 2013
+*Basics of Compiler Design*, Torben Mogensen
 
 ### Parsing
 http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
