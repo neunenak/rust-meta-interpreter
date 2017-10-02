@@ -19,23 +19,22 @@ impl ReplState {
     ReplState { }
   }
 
-  pub fn evaluate(&mut self, ast: AST) -> String {
-    let mut acc = String::new();
+  pub fn evaluate(&mut self, ast: AST) -> Vec<String> {
+    let mut acc = vec![];
     for statement in ast.0 {
       match self.eval_statement(statement) {
         Ok(output) => {
           if let Some(s) = output {
-            acc.push_str(&s);
-            acc.push_str("\n");
+            acc.push(s);
           }
         },
         Err(error) => {
-          acc.push_str(&format!("Error: {}", error));
+          acc.push(format!("Error: {}", error));
           return acc;
         },
       }
     }
-    format!("{}", acc)
+    acc
   }
 }
 

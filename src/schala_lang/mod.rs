@@ -65,7 +65,16 @@ impl ProgrammingLanguageInterface for Schala {
     }
 
     let evaluation_output = self.state.evaluate(ast);
-    output.add_output(evaluation_output);
+    let mut acc = String::new();
+    let mut iter = evaluation_output.iter().peekable();
+    while let Some(s) = iter.next() {
+      acc.push_str(&s);
+      if let Some(_) = iter.peek() {
+        acc.push_str("\n");
+      }
+    }
+
+    output.add_output(acc);
     return output;
   }
 }
