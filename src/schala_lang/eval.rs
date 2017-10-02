@@ -11,7 +11,6 @@ enum FullyEvaluatedExpr {
   Float(f64),
   Str(String),
   Bool(bool),
-  Other
 }
 
 impl ReplState {
@@ -50,7 +49,6 @@ impl ReplState {
             Float(f) => Some(format!("{}", f)),
             Str(s) => Some(format!("\"{}\"", s)),
             Bool(b) => Some(format!("{}", b)),
-            Other => None,
           }
         })
       },
@@ -60,7 +58,7 @@ impl ReplState {
     }
   }
 
-  fn eval_decl(&mut self, decl: Declaration) -> EvalResult<()> {
+  fn eval_decl(&mut self, _decl: Declaration) -> EvalResult<()> {
     Err("Not implmemented".to_string())
   }
 
@@ -94,7 +92,7 @@ impl ReplState {
     use self::ExpressionType::*;
     for statement in ast.0.iter() {
       match statement {
-        &Statement::Declaration(ref decl) => {
+        &Statement::Declaration(ref _decl) => {
           return TypeCheck::new("Declarations not supported");
         },
         &Statement::ExpressionStatement(ref expr) => {
