@@ -13,7 +13,7 @@ fn js_bundle() -> Result<NamedFile, ()> {
   NamedFile::open("static/bundle.js").map_err(|_| ())
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Input {
   source: String,
 }
@@ -25,6 +25,7 @@ struct Output {
 
 #[post("/input", format = "application/json", data = "<input>")]
 fn interpreter_input(input: Json<Input>) -> Json<Output> {
+  println!("INPUT {:?}", input);
   let output = Output { text: "test interpreter output".to_string() };
   Json(output)
 }
