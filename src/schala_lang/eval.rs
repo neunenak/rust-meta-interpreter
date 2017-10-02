@@ -3,6 +3,17 @@ use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionTy
 pub struct ReplState {
 }
 
+type EvalResult<T> = Result<T, String>;
+
+enum FullyEvaluatedExpr {
+  UnsignedInt(u64),
+  SignedInt(i64),
+  Float(f64),
+  Str(String),
+  Bool(bool),
+  Other
+}
+
 impl ReplState {
   pub fn new() -> ReplState {
     ReplState { }
@@ -11,9 +22,17 @@ impl ReplState {
   pub fn evaluate(&mut self, ast: AST) -> String {
     let mut acc = String::new();
     for statement in ast.0 {
-      if let Some(output) = self.eval_statement(statement) {
-        acc.push_str(&output);
-        acc.push_str("\n");
+      match self.eval_statement(statement) {
+        Ok(output) => {
+          if let Some(s) = output {
+            acc.push_str(&s);
+            acc.push_str("\n");
+          }
+        },
+        Err(error) => {
+          acc.push_str(&format!("Error: {}", error));
+          return acc;
+        },
       }
     }
     format!("{}", acc)
@@ -21,28 +40,44 @@ impl ReplState {
 }
 
 impl ReplState {
-  fn eval_statement(&mut self, statement: Statement) -> Option<String> {
+  fn eval_statement(&mut self, statement: Statement) -> EvalResult<Option<String>> {
+    use self::FullyEvaluatedExpr::*;
     match statement {
-      Statement::ExpressionStatement(expr) => self.eval_expr(expr),
-      Statement::Declaration(decl) => self.eval_decl(decl),
+      Statement::ExpressionStatement(expr) => {
+        self.eval_expr(expr).map( |eval| {
+          match eval {
+            UnsignedInt(n) => Some(format!("{}", n)),
+            SignedInt(n) => Some(format!("{}", n)),
+            Float(f) => Some(format!("{}", f)),
+            Str(s) => Some(format!("\"{}\"", s)),
+            Bool(b) => Some(format!("{}", b)),
+            _ => None,
+          }
+        })
+      },
+      Statement::Declaration(decl) => {
+        self.eval_decl(decl);
+        Ok(None)
+      }
     }
   }
 
-  fn eval_decl(&mut self, decl: Declaration) -> Option<String> {
-    Some("UNIMPLEMENTED".to_string())
+  fn eval_decl(&mut self, decl: Declaration) -> EvalResult<()> {
+    Err("Not implmemented".to_string())
   }
 
-  fn eval_expr(&mut self, expr: Expression) -> Option<String> {
+  fn eval_expr(&mut self, expr: Expression) -> EvalResult<FullyEvaluatedExpr> {
     use self::ExpressionType::*;
+    use self::FullyEvaluatedExpr::*;
 
     let expr_type = expr.0;
-    Some(match expr_type {
-      IntLiteral(n) => format!("{}", n),
-      FloatLiteral(f) => format!("{}", f),
-      StringLiteral(s) => format!("{}", s),
-      BoolLiteral(b) => format!("{}", b),
-      _ => format!("UNIMPLEMENTED"),
-    })
+    match expr_type {
+      IntLiteral(n) => Ok(UnsignedInt(n)),
+      FloatLiteral(f) => Ok(Float(f)),
+      StringLiteral(s) => Ok(Str(s.to_string())),
+      BoolLiteral(b) => Ok(Bool(b)),
+      _ => Err(format!("Unimplemented")),
+    }
   }
 }
 
