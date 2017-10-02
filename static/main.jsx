@@ -38,7 +38,7 @@ class CodeArea extends React.Component {
   }
 
   render() {
-    return (<div>
+    return (<div className="CodeArea">
       <div className="input">
         <textarea value={ this.state.value } onChange={this.handleChange}>
         </textarea>
