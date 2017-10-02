@@ -50,13 +50,12 @@ impl ReplState {
             Float(f) => Some(format!("{}", f)),
             Str(s) => Some(format!("\"{}\"", s)),
             Bool(b) => Some(format!("{}", b)),
-            _ => None,
+            Other => None,
           }
         })
       },
       Statement::Declaration(decl) => {
-        self.eval_decl(decl);
-        Ok(None)
+        self.eval_decl(decl).map(|_| None)
       }
     }
   }
