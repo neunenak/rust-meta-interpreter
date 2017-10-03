@@ -463,7 +463,7 @@ pub struct MatchArm {
 pub struct Pattern(Rc<String>);
 
 #[derive(Debug, PartialEq)]
-pub struct Operation(Rc<String>);
+pub struct Operation(pub Rc<String>);
 
 impl Operation {
   fn min_precedence() -> i32 {

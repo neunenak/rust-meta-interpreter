@@ -1,4 +1,4 @@
-use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, TypeAnno};
+use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation, TypeAnno};
 
 pub struct ReplState {
 }
@@ -72,8 +72,39 @@ impl ReplState {
       FloatLiteral(f) => Ok(Float(f)),
       StringLiteral(s) => Ok(Str(s.to_string())),
       BoolLiteral(b) => Ok(Bool(b)),
+      PrefixExp(op, expr) => self.eval_prefix_exp(op, expr),
+      BinExp(op, lhs, rhs) => self.eval_binexp(op, lhs, rhs),
       _ => Err(format!("Unimplemented")),
     }
+  }
+
+  fn eval_binexp(&mut self, op: Operation, lhs: Box<Expression>, rhs: Box<Expression>) -> EvalResult<FullyEvaluatedExpr> {
+    use self::FullyEvaluatedExpr::*;
+    let evaled_lhs = self.eval_expr(*lhs)?;
+    let evaled_rhs = self.eval_expr(*rhs)?;
+    let opstr: &str = &op.0;
+    Ok(match (opstr, evaled_lhs, evaled_rhs) {
+      ("+", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l + r),
+      ("-", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l - r),
+      ("*", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l * r),
+      ("/", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l / r),
+      ("%", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l % r),
+      _ => return Err(format!("Runtime error: not yet implemented")),
+    })
+  }
+
+  fn eval_prefix_exp(&mut self, op: Operation, expr: Box<Expression>) -> EvalResult<FullyEvaluatedExpr> {
+    use self::FullyEvaluatedExpr::*;
+    let evaled_expr = self.eval_expr(*expr)?;
+    let opstr: &str = &op.0;
+
+    Ok(match (opstr, evaled_expr) {
+      ("!", Bool(true)) => Bool(false),
+      ("!", Bool(false)) => Bool(true),
+      ("-", UnsignedInt(n)) => SignedInt(-1*(n as i64)),
+      ("-", SignedInt(n)) => SignedInt(-1*(n as i64)),
+      _ => return Err(format!("Runtime error: not yet implemented")),
+    })
   }
 }
 
