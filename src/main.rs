@@ -17,7 +17,7 @@ extern crate rocket_contrib;
 use std::path::Path;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::process;
+use std::process::exit;
 use std::default::Default;
 
 mod schala_lang;
@@ -40,24 +40,24 @@ fn main() {
 
   let option_matches = program_options().parse(std::env::args()).unwrap_or_else(|e| {
     println!("{:?}", e);
-    std::process::exit(1);
+    exit(1);
   });
 
   if option_matches.opt_present("list-languages") {
     for lang in languages {
       println!("{}", lang.get_language_name());
     }
-    std::process::exit(1);
+    exit(1);
   }
 
   if option_matches.opt_present("help") {
     println!("{}", program_options().usage("Schala metainterpreter"));
-    std::process::exit(0);
+    exit(0);
   }
 
   if option_matches.opt_present("webapp") {
     webapp::web_main();
-    std::process::exit(0);
+    exit(0);
   }
 
   let language_names: Vec<String> = languages.iter().map(|lang| {lang.get_language_name()}).collect();
@@ -207,7 +207,7 @@ impl Repl {
     match cmd {
       "exit" | "quit"  => {
         self.save_options();
-        process::exit(0)
+        exit(0)
       },
       "history"  => {
         for item in self.reader.history() {
