@@ -136,6 +136,10 @@ impl ProgrammingLanguageInterface for Robo {
     "Robo".to_string()
   }
 
+  fn get_source_file_suffix(&self) -> String {
+    format!("robo")
+  }
+
   fn evaluate_in_repl(&mut self, input: &str, _eval_options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
     let tokens = match tokenize(input) {

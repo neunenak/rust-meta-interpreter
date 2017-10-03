@@ -99,6 +99,7 @@ impl TraceArtifact {
 pub trait ProgrammingLanguageInterface {
   fn evaluate_in_repl(&mut self, input: &str, eval_options: &EvalOptions) -> ReplOutput;
   fn get_language_name(&self) -> String;
+  fn get_source_file_suffix(&self) -> String;
   fn compile(&mut self, _input: &str) -> LLVMCodeString {
     LLVMCodeString("".to_string())
   }

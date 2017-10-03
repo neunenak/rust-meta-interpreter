@@ -23,6 +23,10 @@ impl ProgrammingLanguageInterface for Schala {
     "Schala".to_string()
   }
 
+  fn get_source_file_suffix(&self) -> String {
+    format!("schala")
+  }
+
   fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
     let tokens = parsing::tokenize(input);

@@ -23,6 +23,9 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
   fn get_language_name(&self) -> String {
     "Maaru".to_string()
   }
+  fn get_source_file_suffix(&self) -> String {
+    format!("maaru")
+  }
 
   fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
