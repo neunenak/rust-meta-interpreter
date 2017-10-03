@@ -16,9 +16,8 @@ extern crate rocket_contrib;
 
 use std::path::Path;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::process;
-use std::io::Write;
 use std::default::Default;
 
 mod schala_lang;
@@ -39,14 +38,11 @@ fn main() {
       Box::new(robo_lang::Robo::new()),
     ];
 
-  let option_matches =
-    match program_options().parse(std::env::args()) {
-      Ok(o) => o,
-      Err(e) => {
-        println!("{:?}", e);
-        std::process::exit(1);
-      }
-    };
+  let option_matches = program_options().parse(std::env::args()).unwrap_or_else(|e| {
+    println!("{:?}", e);
+    std::process::exit(1);
+  });
+
   if option_matches.opt_present("list-languages") {
     for lang in languages {
       println!("{}", lang.get_language_name());
@@ -54,48 +50,49 @@ fn main() {
     std::process::exit(1);
   }
 
-  if option_matches.opt_present("h") {
+  if option_matches.opt_present("help") {
     println!("{}", program_options().usage("Schala metainterpreter"));
     std::process::exit(0);
   }
 
-  if option_matches.opt_present("w") {
+  if option_matches.opt_present("webapp") {
     webapp::web_main();
     std::process::exit(0);
   }
 
   let language_names: Vec<String> = languages.iter().map(|lang| {lang.get_language_name()}).collect();
   let initial_index: usize =
-    option_matches.opt_str("l")
+    option_matches.opt_str("lang")
     .and_then(|lang| { language_names.iter().position(|x| { *x == lang }) })
     .unwrap_or(0);
 
   let mut options = EvalOptions::default();
-  options.trace_evaluation = option_matches.opt_present("t");
-
-  let compile = !option_matches.opt_present("i");
+  options.compile = match option_matches.opt_str("eval-style") {
+    Some(ref s) if s == "compile" => true,
+    _ => false
+  };
 
   match option_matches.free[..] {
     [] | [_] => {
       let mut repl = Repl::new(languages, initial_index);
-      repl.options.show_llvm_ir = option_matches.opt_present("v");
+      repl.options.show_llvm_ir = true; //TODO make this be configurable
       repl.run();
     }
     [_, ref filename, _..] => {
-      let mut language = maaru_lang::Maaru::new();
-      run_noninteractive(filename, &mut language, options, compile);
+      run_noninteractive(filename, options);
     }
   };
 }
 
-fn run_noninteractive<T: ProgrammingLanguageInterface>(filename: &str, language: &mut T, options: EvalOptions, compile: bool) {
+fn run_noninteractive(filename: &str, options: EvalOptions) {
+  let mut language = maaru_lang::Maaru::new();
   let mut source_file = File::open(&Path::new(filename)).unwrap();
   let mut buffer = String::new();
   source_file.read_to_string(&mut buffer).unwrap();
 
-  if compile {
+  if options.compile {
     if !language.can_compile() {
-      panic!("Trying to compile a non-compileable  language");
+      panic!("Trying to compile a non-compileable language");
     } else {
       let llvm_bytecode = language.compile(&buffer);
       compilation_sequence(llvm_bytecode, filename);
@@ -331,15 +328,11 @@ pub fn compilation_sequence(llvm_code: LLVMCodeString, sourcefile: &str) {
 
 fn program_options() -> getopts::Options {
   let mut options = getopts::Options::new();
-  options.optflag("i",
-                  "interpret",
-                  "Interpret source file instead of compiling");
-  options.optflag("t",
-                  "trace-evaluation",
-                  "Print out trace of evaluation");
-  options.optflag("v",
-                  "llvm-in-repl",
-                  "Show LLVM IR in REPL");
+  options.optopt("s",
+                 "eval-style",
+                 "Specify whether to compile (if supported) or interpret the language. If not specified, the default is language-specific",
+                 "[compile|interpret]"
+                 );
   options.optflag("",
                   "list-languages",
                   "Show a list of all supported languages");

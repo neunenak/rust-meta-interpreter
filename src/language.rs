@@ -22,6 +22,7 @@ pub struct EvalOptions {
   pub debug_type: bool,
   pub show_llvm_ir: bool,
   pub trace_evaluation: bool,
+  pub compile: bool,
 }
 
 #[derive(Debug, Default)]
