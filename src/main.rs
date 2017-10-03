@@ -79,15 +79,27 @@ fn main() {
       repl.run();
     }
     [_, ref filename, _..] => {
-      run_noninteractive(filename, options);
+
+      run_noninteractive(filename, languages, options);
     }
   };
 }
 
-fn run_noninteractive(filename: &str, options: EvalOptions) {
-  let mut language = maaru_lang::Maaru::new();
-  let mut source_file = File::open(&Path::new(filename)).unwrap();
+fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInterface>>, options: EvalOptions) {
+  let path = Path::new(filename);
+  let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_else(|| {
+    println!("Source file lacks extension");
+    exit(1);
+  });
+  let mut language = Box::new(languages.into_iter().find(|lang| lang.get_source_file_suffix() == ext)
+    .unwrap_or_else(|| {
+      println!("Extension .{} not recognized", ext);
+      exit(1);
+    }));
+
+  let mut source_file = File::open(path).unwrap();
   let mut buffer = String::new();
+
   source_file.read_to_string(&mut buffer).unwrap();
 
   if options.compile {
