@@ -276,7 +276,7 @@ program := (statement delimiter)* EOF
 delimiter := NEWLINE | ';'
 statement := expression | declaration
 
-declaration := type_alias | type_declaration | func_declaration | binding_declaration
+declaration := type_alias | type_declaration | func_declaration | binding_declaration | impl_declaration
 
 type_alias := 'alias' IDENTIFIER '=' IDENTIFIER
 type_declaration := 'type' IDENTIFIER '=' type_body
@@ -289,6 +289,10 @@ param_list := (IDENTIFIER type_anno+ ',')*
 
 binding_declaration: 'var' IDENTIFIER '=' expression
                       | 'const' IDENTIFIER '=' expression
+
+trait_declaration := 'trait' trait_name decl_block
+impl_declaration := 'impl' IDENTIFIER decl_block | 'impl' trait_name 'for' IDENTIFIER decl_block
+trait_name := IDENTIFIER
 
 type_anno := (':' type_name)+
 type_name := IDENTIFIER (type_params)* | '(' type_names ')'
@@ -315,6 +319,7 @@ match_arm := pattern '=>' expression
 pattern := identifier //TODO NOT DONE
 
 block := '{' (statement)* '}'
+decl_block := '{' (declaration)* '}'
 
 call_expr := IDENTIFIER '(' expr_list ')' //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
 index_expr := '[' (expression (',' (expression)* | ε) ']'
@@ -393,6 +398,7 @@ pub enum Statement {
 
 type ParamName = Rc<String>;
 type TypeName = Rc<String>;
+type TraitName = Rc<String>;
 type FormalParamList = Vec<(ParamName, Option<TypeName>)>;
 
 #[derive(Debug, PartialEq)]
@@ -407,7 +413,12 @@ pub enum Declaration {
     name: Rc<String>,
     constant: bool,
     expr: Expression,
-  }
+  },
+  Impl {
+    type_name: TypeName,
+    trait_name: Option<TraitName>,
+    block: Vec<Declaration>,
+  },
 }
 
 #[derive(Debug, PartialEq)]
@@ -558,6 +569,8 @@ impl Parser {
       Keyword(Type) => self.type_declaration().map(|decl| { Statement::Declaration(decl) }),
       Keyword(Func)=> self.func_declaration().map(|func| { Statement::Declaration(func) }),
       Keyword(Var) | Keyword(Const) => self.binding_declaration().map(|decl| Statement::Declaration(decl)),
+      Keyword(Trait) => self.trait_declaration().map(|decl| Statement::Declaration(decl)),
+      Keyword(Impl) => self.impl_declaration().map(|decl| Statement::Declaration(decl)),
       _ => self.expression().map(|expr| { Statement::ExpressionStatement(expr) } ),
     }
   });
@@ -611,6 +624,22 @@ impl Parser {
     let expr = self.expression()?;
 
     Ok(Declaration::Binding { name, constant, expr })
+  });
+
+  parse_method!(trait_declaration(&mut self) -> ParseResult<Declaration> {
+    unimplemented!()
+  });
+
+  parse_method!(impl_declaration(&mut self) -> ParseResult<Declaration> {
+    expect!(self, Keyword(Impl), "'impl'");
+    let first = self.identifier()?;
+    let second = if let Keyword(For) = self.peek() {
+      self.next();
+      Some(self.identifier()?)
+    } else {
+      None
+    };
+    Ok(Declaration::Impl { type_name: first, trait_name: None, block: vec![] })
   });
 
   parse_method!(expression(&mut self) -> ParseResult<Expression> {
