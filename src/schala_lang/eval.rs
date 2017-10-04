@@ -1,4 +1,4 @@
-use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation, TypeAnno};
+use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation};
 
 pub struct ReplState {
 }
@@ -107,52 +107,3 @@ impl ReplState {
     })
   }
 }
-
-
-// from Niko's talk
-/* fn type_check(expression, expected_ty) -> Ty {
-    let ty = bare_type_check(expression, expected_type);
-    if ty icompatible with expected_ty {
-        try_coerce(expression, ty, expected_ty)
-    } else {
-      ty
-    }
-  }
-
-  fn bare_type_check(exprssion, expected_type) -> Ty { ... }
- */
-pub enum TypeCheck {
-  OK,
-  Error(String)
-}
-impl TypeCheck {
-  fn new(msg: &str) -> TypeCheck {
-    TypeCheck::Error(msg.to_string())
-  }
-}
-
-impl ReplState {
-  pub fn type_check(&mut self, ast: &AST) -> TypeCheck {
-    use self::ExpressionType::*;
-    for statement in ast.0.iter() {
-      match statement {
-        &Statement::Declaration(ref _decl) => {
-          return TypeCheck::new("Declarations not supported");
-        },
-        &Statement::ExpressionStatement(ref expr) => {
-          match (&expr.0, &expr.1) {
-            (&IntLiteral(_), &Some(ref t)) => {
-              match t {
-                &TypeAnno::Singleton { ref name, ref params } if **name == "Int" && params.len() == 0 => (),
-                t => return TypeCheck::new(&format!("Bad type {:?} for int literal", t)),
-              }
-            },
-            _ => (),
-          }
-        }
-      }
-    }
-    TypeCheck::OK
-  }
-}
-

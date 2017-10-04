@@ -2,18 +2,21 @@ use itertools::Itertools;
 use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
 
 mod parsing;
+mod type_check;
 mod eval;
 
-use self::eval::TypeCheck;
+use self::type_check::{TypeContext, TypeCheckResult};
 
 pub struct Schala {
-  state: eval::ReplState
+  state: eval::ReplState,
+  type_context: TypeContext
 }
 
 impl Schala {
   pub fn new() -> Schala {
     Schala {
       state: eval::ReplState::new(),
+      type_context: TypeContext::new(),
     }
   }
 }
@@ -59,9 +62,9 @@ impl ProgrammingLanguageInterface for Schala {
       }
     };
 
-    match self.state.type_check(&ast) {
-      TypeCheck::OK => (),
-      TypeCheck::Error(s) => {
+    match self.type_context.type_check(&ast) {
+      TypeCheckResult::OK => (),
+      TypeCheckResult::Error(s) => {
         output.add_artifact(TraceArtifact::new("type_check", s));
         output.add_output(format!("Type error"));
         return output;
