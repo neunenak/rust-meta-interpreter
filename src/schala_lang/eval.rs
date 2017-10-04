@@ -108,6 +108,19 @@ impl ReplState {
   }
 }
 
+
+// from Niko's talk
+/* fn type_check(expression, expected_ty) -> Ty {
+    let ty = bare_type_check(expression, expected_type);
+    if ty icompatible with expected_ty {
+        try_coerce(expression, ty, expected_ty)
+    } else {
+      ty
+    }
+  }
+
+  fn bare_type_check(exprssion, expected_type) -> Ty { ... }
+ */
 pub enum TypeCheck {
   OK,
   Error(String)

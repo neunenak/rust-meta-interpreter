@@ -48,8 +48,12 @@ much like Haskell
 Here's a partial list of resources I've made use of in the process
 of learning how to write a programming language.
 
+### Type-checking
+https://skillsmatter.com/skillscasts/10868-inside-the-rust-compiler
+
 ### Evaluation
 *Understanding Computation*, Tom Stuart, O'Reilly 2013
+
 *Basics of Compiler Design*, Torben Mogensen
 
 ### Parsing
