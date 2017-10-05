@@ -276,10 +276,11 @@ program := (statement delimiter)* EOF
 delimiter := NEWLINE | ';'
 statement := expression | declaration
 
-declaration := type_alias | type_declaration | func_declaration | binding_declaration | impl_declaration
+declaration := type_declaration | func_declaration | binding_declaration | impl_declaration
 
-type_alias := 'alias' IDENTIFIER '=' IDENTIFIER
-type_declaration := 'type' IDENTIFIER '=' type_body
+type_declaration := 'type' type_declaration_body
+type_declaration_body := 'alias' type_alias | IDENTIFIER '=' type_body
+type_alias := IDENTIFIER '=' IDENTIFIER
 type_body := variant_specifier ('|' variant_specifier)*
 variant_specifier := '{' member_list '}'
 member_list := (IDENTIFIER type_anno)*
@@ -565,7 +566,6 @@ impl Parser {
   parse_method!(statement(&mut self) -> ParseResult<Statement> {
     //TODO handle error recovery here
     match self.peek() {
-      Keyword(Alias) => self.type_alias().map(|alias| { Statement::Declaration(alias) }),
       Keyword(Type) => self.type_declaration().map(|decl| { Statement::Declaration(decl) }),
       Keyword(Func)=> self.func_declaration().map(|func| { Statement::Declaration(func) }),
       Keyword(Var) | Keyword(Const) => self.binding_declaration().map(|decl| Statement::Declaration(decl)),
@@ -575,20 +575,28 @@ impl Parser {
     }
   });
 
+  parse_method!(type_declaration(&mut self) -> ParseResult<Declaration> {
+    expect!(self, Keyword(Type), "'type'");
+    self.type_declaration_body()
+  });
+
+  parse_method!(type_declaration_body(&mut self) -> ParseResult<Declaration> {
+    if let Keyword(Alias) = self.peek() {
+      self.type_alias()
+    } else {
+      let name = self.identifier()?;
+      expect!(self, Operator(ref c) if **c == "=", "'='");
+      let body = self.type_body()?;
+      Ok(Declaration::TypeDecl(name, body))
+    }
+  });
+
   parse_method!(type_alias(&mut self) -> ParseResult<Declaration> {
     expect!(self, Keyword(Alias), "'alias'");
     let alias = self.identifier()?;
     expect!(self, Operator(ref c) if **c == "=", "'='");
     let original = self.identifier()?;
     Ok(Declaration::TypeAlias(alias, original))
-  });
-
-  parse_method!(type_declaration(&mut self) -> ParseResult<Declaration> {
-    expect!(self, Keyword(Type), "'type'");
-    let name = self.identifier()?;
-    expect!(self, Operator(ref c) if **c == "=", "'='");
-    let body = self.type_body()?;
-    Ok(Declaration::TypeDecl(name, body))
   });
 
   parse_method!(type_body(&mut self) -> ParseResult<TypeBody> {
@@ -1046,7 +1054,7 @@ mod parse_tests {
   #[test]
   fn parsing_types() {
     parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!(Yolo), TypeBody(vec![Variant::Singleton(rc!(Yolo))])))]));
-    parse_test!("alias Sex = Drugs", AST(vec![Declaration(TypeAlias(rc!(Sex), rc!(Drugs)))]));
+    parse_test!("type alias Sex = Drugs", AST(vec![Declaration(TypeAlias(rc!(Sex), rc!(Drugs)))]));
   }
 
   #[test]
