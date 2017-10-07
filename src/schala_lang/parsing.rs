@@ -307,7 +307,8 @@ prefix_expr := prefix_op primary
 prefix_op := '+' | '-' | '!' | '~'
 primary := literal | paren_expr | if_expr | match_expr | identifier_expr
 
-paren_expr := LParen expression RParen
+paren_expr := LParen paren_inner RParen
+paren_inner := (expression ',')*
 identifier_expr := call_expr | index_expr | IDENTIFIER
 literal := 'true' | 'false' | number_literal | STR_LITERAL
 
@@ -452,6 +453,7 @@ pub enum ExpressionType {
   BoolLiteral(bool),
   BinExp(Operation, Box<Expression>, Box<Expression>),
   PrefixExp(Operation, Box<Expression>),
+  TupleLiteral(Vec<Expression>),
   Variable(Rc<String>),
   Call {
     name: Rc<String>,
@@ -740,10 +742,13 @@ impl Parser {
   });
 
   parse_method!(paren_expr(&mut self) -> ParseResult<Expression> {
-    expect!(self, LParen, "'('");
-    let expr = self.expression()?;
-    expect!(self, RParen, "')'");
-    Ok(expr)
+    use self::ExpressionType::*;
+    let mut inner = delimited!(self, LParen, '(', expression, Comma, RParen, ')');
+    match inner.len() {
+      0 => Ok(Expression(TupleLiteral(vec![]), None)),
+      1 => Ok(inner.pop().unwrap()),
+      _ => Ok(Expression(TupleLiteral(inner), None)),
+    }
   });
 
   parse_method!(identifier_expr(&mut self) -> ParseResult<Expression> {
@@ -1000,6 +1005,20 @@ mod parse_tests {
       [exprstatement!(binexp!("*", binexp!("+", IntLiteral(1), IntLiteral(2)), IntLiteral(3)))]));
 
     parse_test!(".1 + .2", AST(vec![exprstatement!(binexp!("+", FloatLiteral(0.1), FloatLiteral(0.2)))]));
+  }
+
+  #[test]
+  fn parsing_tuples() {
+    parse_test!("()", AST(vec![exprstatement!(TupleLiteral(vec![]))]));
+    parse_test!("(\"hella\", 34)", AST(vec![exprstatement!(
+      TupleLiteral(
+        vec![ex!(StringLiteral(rc!(hella))), ex!(IntLiteral(34))]
+      )
+    )]));
+    parse_test!("((1+2), \"slough\")", AST(vec![exprstatement!(TupleLiteral(vec![
+      ex!(binexp!("+", IntLiteral(1), IntLiteral(2))),
+      ex!(StringLiteral(rc!(slough))),
+    ]))]))
   }
 
   #[test]
