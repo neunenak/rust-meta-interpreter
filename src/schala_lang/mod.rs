@@ -62,18 +62,18 @@ impl ProgrammingLanguageInterface for Schala {
       }
     };
 
+    if options.debug_symbol_table {
+      let text = self.type_context.debug_symbol_table();
+      output.add_artifact(TraceArtifact::new("symbol_table", text));
+    }
+
     match self.type_context.type_check(&ast) {
-      Ok(t) => (),
+      Ok(_) => (),
       Err(msg) => {
         output.add_artifact(TraceArtifact::new("type_check", msg));
         output.add_output(format!("Type error"));
         return output;
       }
-    }
-
-    if options.debug_symbol_table {
-      let text = self.type_context.debug_symbol_table();
-      output.add_artifact(TraceArtifact::new("symbol_table", text));
     }
 
     let evaluation_output = self.state.evaluate(ast);
