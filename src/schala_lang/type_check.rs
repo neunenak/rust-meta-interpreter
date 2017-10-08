@@ -22,15 +22,10 @@ impl TypeContext {
   }
 }
 
-pub enum TypeCheckResult {
-  OK,
-  Error(String)
+pub struct SchalaType {
 }
-impl TypeCheckResult {
-  fn new(msg: &str) -> TypeCheckResult {
-    TypeCheckResult::Error(msg.to_string())
-  }
-}
+
+type TypeCheckResult = Result<SchalaType, String>;
 
 // from Niko's talk
 /* fn type_check(expression, expected_ty) -> Ty {
@@ -53,14 +48,14 @@ impl TypeContext {
     for statement in ast.0.iter() {
       match statement {
         &Statement::Declaration(ref _decl) => {
-          return TypeCheckResult::new("Declarations not supported");
+          return Err(format!("Declarations not supported"));
         },
         &Statement::ExpressionStatement(ref expr) => {
           match (&expr.0, &expr.1) {
             (&IntLiteral(_), &Some(ref t)) => {
               match t {
                 &TypeAnno::Singleton { ref name, ref params } if **name == "Int" && params.len() == 0 => (),
-                t => return TypeCheckResult::new(&format!("Bad type {:?} for int literal", t)),
+                t => return Err(format!("Bad type {:?} for int literal", t)),
               }
             },
             _ => (),
@@ -68,6 +63,6 @@ impl TypeContext {
         }
       }
     }
-    TypeCheckResult::OK
+    Ok(SchalaType { })
   }
 }

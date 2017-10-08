@@ -5,7 +5,7 @@ mod parsing;
 mod type_check;
 mod eval;
 
-use self::type_check::{TypeContext, TypeCheckResult};
+use self::type_check::{TypeContext};
 
 pub struct Schala {
   state: eval::ReplState,
@@ -63,9 +63,9 @@ impl ProgrammingLanguageInterface for Schala {
     };
 
     match self.type_context.type_check(&ast) {
-      TypeCheckResult::OK => (),
-      TypeCheckResult::Error(s) => {
-        output.add_artifact(TraceArtifact::new("type_check", s));
+      Ok(t) => (),
+      Err(msg) => {
+        output.add_artifact(TraceArtifact::new("type_check", msg));
         output.add_output(format!("Type error"));
         return output;
       }
