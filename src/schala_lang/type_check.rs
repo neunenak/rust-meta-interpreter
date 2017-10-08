@@ -1,9 +1,14 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation, TypeAnno};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-struct PathSpecifier(String);
+struct PathSpecifier {
+  name: Rc<String>,
+  kind: &'static str,
+  constant: bool,
+}
 
 struct SymbolTable {
   map: HashMap<PathSpecifier, Expression>,
@@ -15,6 +20,30 @@ impl SymbolTable {
   }
 
   fn add_symbols(&mut self, ast: &AST) {
+    use self::Declaration::*;
+
+    for statement in ast.0.iter() {
+      match statement {
+        &Statement::ExpressionStatement(_) => (),
+        &Statement::Declaration(ref d) => {
+          match d {
+            &FuncDecl { .. } => (),
+            &TypeDecl { .. } => (),
+            &TypeAlias { .. } => (),
+            &Binding {ref name, ref constant, ref expr} => {
+              let spec = PathSpecifier {
+                name: name.clone(),
+                kind: "binding",
+                constant: *constant
+              };
+              let binding_contents = (*expr).clone();
+              self.map.insert(spec, binding_contents);
+            },
+            &Impl { .. } => (),
+          }
+        }
+      }
+    }
   }
 }
 

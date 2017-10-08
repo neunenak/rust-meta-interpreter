@@ -392,7 +392,7 @@ macro_rules! expect {
 #[derive(Debug, PartialEq)]
 pub struct AST(pub Vec<Statement>);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
   ExpressionStatement(Expression),
   Declaration(Declaration),
@@ -403,7 +403,7 @@ type TypeName = Rc<String>;
 type TraitName = Rc<String>;
 type FormalParamList = Vec<(ParamName, Option<TypeName>)>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Declaration {
   FuncDecl {
     name: Rc<String>,
@@ -423,20 +423,20 @@ pub enum Declaration {
   },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TypeBody(pub Vec<Variant>);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Variant {
   Singleton(Rc<String>),
   //ArgumentConstructor,
   //Record
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Expression(pub ExpressionType, pub Option<TypeAnno>);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TypeAnno {
   Tuple(Vec<TypeAnno>),
   Singleton {
@@ -445,7 +445,7 @@ pub enum TypeAnno {
   }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ExpressionType {
   IntLiteral(u64),
   FloatLiteral(f64),
@@ -467,16 +467,16 @@ pub enum ExpressionType {
   MatchExpression(Box<Expression>, Vec<MatchArm>)
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct MatchArm {
   pat: Pattern,
   expr: Expression,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Pattern(Rc<String>);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Operation(pub Rc<String>);
 
 impl Operation {
