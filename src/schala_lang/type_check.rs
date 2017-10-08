@@ -1,11 +1,24 @@
 use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation, TypeAnno};
 
+struct SymbolTable {
+}
+
+impl SymbolTable {
+  fn new() -> SymbolTable {
+    SymbolTable { }
+  }
+
+  fn add_symbols(&mut self, ast: &AST) {
+  }
+}
+
 pub struct TypeContext {
+  symbol_table: SymbolTable,
 }
 
 impl TypeContext {
   pub fn new() -> TypeContext {
-    TypeContext { }
+    TypeContext { symbol_table: SymbolTable::new() }
   }
 }
 
@@ -34,6 +47,9 @@ impl TypeCheckResult {
 impl TypeContext {
   pub fn type_check(&mut self, ast: &AST) -> TypeCheckResult {
     use self::ExpressionType::*;
+
+    self.symbol_table.add_symbols(ast);
+
     for statement in ast.0.iter() {
       match statement {
         &Statement::Declaration(ref _decl) => {
