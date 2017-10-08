@@ -55,6 +55,9 @@ impl TypeContext {
   pub fn new() -> TypeContext {
     TypeContext { symbol_table: SymbolTable::new() }
   }
+  pub fn debug_symbol_table(&self) -> String  {
+    format!("Symbol table:\n {:?}", self.symbol_table.map)
+  }
 }
 
 pub struct SchalaType {

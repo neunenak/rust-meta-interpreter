@@ -20,6 +20,7 @@ pub struct EvalOptions {
   pub debug_tokens: bool,
   pub debug_parse: bool,
   pub debug_type: bool,
+  pub debug_symbol_table: bool,
   pub show_llvm_ir: bool,
   pub trace_evaluation: bool,
   pub compile: bool,

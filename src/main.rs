@@ -230,7 +230,7 @@ impl Repl {
         println!("Commands:");
         println!("exit | quit");
         println!("lang [show|next|previous]");
-        println!("set [show|hide] [tokens|parse|eval|llvm]");
+        println!("set [show|hide] [tokens|parse|symbols|eval|llvm]");
       }
       "lang" => {
         match commands.get(1) {
@@ -271,6 +271,7 @@ impl Repl {
         match commands.get(2) {
           Some(&"tokens") => self.options.debug_tokens = show,
           Some(&"parse") => self.options.debug_parse = show,
+          Some(&"symbols") => self.options.debug_symbol_table = show,
           Some(&"eval") => {
             //let ref mut language = self.languages[self.current_language_index];
             //language.set_option("trace_evaluation", show);
