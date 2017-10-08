@@ -62,6 +62,8 @@ impl ProgrammingLanguageInterface for Schala {
       }
     };
 
+    self.type_context.add_symbols(&ast);
+
     if options.debug_symbol_table {
       let text = self.type_context.debug_symbol_table();
       output.add_artifact(TraceArtifact::new("symbol_table", text));

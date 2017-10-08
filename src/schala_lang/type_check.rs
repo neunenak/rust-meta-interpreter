@@ -55,6 +55,9 @@ impl TypeContext {
   pub fn new() -> TypeContext {
     TypeContext { symbol_table: SymbolTable::new() }
   }
+  pub fn add_symbols(&mut self, ast: &AST) {
+    self.symbol_table.add_symbols(ast)
+  }
   pub fn debug_symbol_table(&self) -> String  {
     format!("Symbol table:\n {:?}", self.symbol_table.map)
   }
@@ -80,8 +83,6 @@ type TypeCheckResult = Result<SchalaType, String>;
 impl TypeContext {
   pub fn type_check(&mut self, ast: &AST) -> TypeCheckResult {
     use self::ExpressionType::*;
-
-    self.symbol_table.add_symbols(ast);
 
     for statement in ast.0.iter() {
       match statement {
