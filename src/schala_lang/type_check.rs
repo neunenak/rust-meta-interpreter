@@ -1,11 +1,17 @@
+use std::collections::HashMap;
+
 use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation, TypeAnno};
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct PathSpecifier(String);
+
 struct SymbolTable {
+  map: HashMap<PathSpecifier, Expression>,
 }
 
 impl SymbolTable {
   fn new() -> SymbolTable {
-    SymbolTable { }
+    SymbolTable { map: HashMap::new() }
   }
 
   fn add_symbols(&mut self, ast: &AST) {
@@ -51,17 +57,24 @@ impl TypeContext {
           return Err(format!("Declarations not supported"));
         },
         &Statement::ExpressionStatement(ref expr) => {
-          match (&expr.0, &expr.1) {
-            (&IntLiteral(_), &Some(ref t)) => {
-              match t {
-                &TypeAnno::Singleton { ref name, ref params } if **name == "Int" && params.len() == 0 => (),
-                t => return Err(format!("Bad type {:?} for int literal", t)),
-              }
-            },
-            _ => (),
-          }
+          self.expr_type_check(expr)?;
         }
       }
+    }
+    Ok(SchalaType { })
+  }
+
+  fn expr_type_check(&mut self, expr: &Expression) -> TypeCheckResult {
+    use self::ExpressionType::*;
+
+    match (&expr.0, &expr.1) {
+      (&IntLiteral(_), &Some(ref t)) => {
+        match t {
+          &TypeAnno::Singleton { ref name, ref params } if **name == "Int" && params.len() == 0 => (),
+          t => return Err(format!("Bad type {:?} for int literal", t)),
+        }
+      },
+      _ => (),
     }
     Ok(SchalaType { })
   }
