@@ -293,6 +293,9 @@ binding_declaration: 'var' IDENTIFIER '=' expression
 
 trait_declaration := 'trait' trait_name decl_block
 impl_declaration := 'impl' IDENTIFIER decl_block | 'impl' trait_name 'for' IDENTIFIER decl_block
+
+decl_block := '{' (func_declaration)* '}'
+
 trait_name := IDENTIFIER
 
 type_anno := (':' type_name)+
@@ -321,7 +324,6 @@ match_arm := pattern '=>' expression
 pattern := identifier //TODO NOT DONE
 
 block := '{' (statement)* '}'
-decl_block := '{' (declaration)* '}'
 
 call_expr := IDENTIFIER '(' expr_list ')' //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
 index_expr := '[' (expression (',' (expression)* | ε) ']'
@@ -649,7 +651,18 @@ impl Parser {
     } else {
       None
     };
-    Ok(Declaration::Impl { type_name: first, trait_name: None, block: vec![] })
+
+    let block = self.decl_block()?;
+
+    let result = match (first, second) {
+      (first, Some(second)) => Declaration::Impl { type_name: second, trait_name: Some(first), block },
+      (first, None) => Declaration::Impl { type_name: first, trait_name: None, block }
+    };
+    Ok(result)
+  });
+
+  parse_method!(decl_block(&mut self) -> ParseResult<Vec<Declaration>> {
+    Ok(delimited!(self, LCurlyBrace, '{', func_declaration, Newline | Semicolon, RCurlyBrace, '}', nonstrict))
   });
 
   parse_method!(expression(&mut self) -> ParseResult<Expression> {
@@ -1101,6 +1114,27 @@ mod parse_tests {
            exprstatement!(Variable(rc!(b)))],
       Some(vec![exprstatement!(Variable(rc!(c)))])))])
     );
+  }
+
+  #[test]
+  fn parsing_impls() {
+    parse_test!("impl Heh { fn yolo(); fn swagg(); }", AST(vec![
+      Declaration(Impl {
+        type_name: rc!(Heh),
+        trait_name: None,
+        block: vec![
+          FuncDecl { name: rc!(yolo), params: vec![] },
+          FuncDecl { name: rc!(swagg), params: vec![] }
+        ] })]));
+
+    parse_test!("impl Mondai for Lollerino { fn yolo(); fn swagg(); }", AST(vec![
+      Declaration(Impl {
+        type_name: rc!(Lollerino),
+        trait_name: Some(rc!(Mondai)),
+        block: vec![
+          FuncDecl { name: rc!(yolo), params: vec![] },
+          FuncDecl { name: rc!(swagg), params: vec![] }
+        ] })]));
   }
 
   #[test]
