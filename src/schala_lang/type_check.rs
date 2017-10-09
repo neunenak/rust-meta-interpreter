@@ -10,37 +10,38 @@ struct PathSpecifier {
   constant: bool,
 }
 
-struct SymbolTable {
-  map: HashMap<PathSpecifier, Expression>,
+pub struct TypeContext {
+  symbol_table: HashMap<PathSpecifier, Expression>,
 }
 
-impl SymbolTable {
-  fn new() -> SymbolTable {
-    SymbolTable { map: HashMap::new() }
+impl TypeContext {
+  pub fn new() -> TypeContext {
+    TypeContext { symbol_table: HashMap::new() }
   }
-
-  fn add_symbols(&mut self, ast: &AST) {
+  pub fn add_symbols(&mut self, ast: &AST) {
     use self::Declaration::*;
 
     for statement in ast.0.iter() {
-      match statement {
-        &Statement::ExpressionStatement(_) => (),
-        &Statement::Declaration(ref d) => {
-          match d {
-            &FuncSig(_) => (),
-            &FuncDecl(_, _) => (),
-            &TypeDecl { .. } => (),
-            &TypeAlias { .. } => (),
-            &Binding {ref name, ref constant, ref expr} => {
+      match *statement {
+        Statement::ExpressionStatement(_) => (),
+        Statement::Declaration(ref decl) => {
+          match *decl {
+            FuncSig(_) => (),
+            Impl { .. } => (),
+            TypeDecl { .. } => (),
+            TypeAlias { .. } => (),
+            Binding {ref name, ref constant, ref expr} => {
               let spec = PathSpecifier {
                 name: name.clone(),
                 kind: "binding",
                 constant: *constant
               };
               let binding_contents = (*expr).clone();
-              self.map.insert(spec, binding_contents);
+              self.symbol_table.insert(spec, binding_contents);
             },
-            &Impl { .. } => (),
+            FuncDecl(ref signature, ref type_anno) => {
+
+            },
           }
         }
       }
@@ -51,24 +52,10 @@ impl SymbolTable {
     use self::UVar::*;
     Some(Univ(Function(Box::new(Univ(Integer)), Box::new(Univ(Boolean)))))
   }
-}
-
-pub struct TypeContext {
-  symbol_table: SymbolTable,
-}
-
-impl TypeContext {
-  pub fn new() -> TypeContext {
-    TypeContext { symbol_table: SymbolTable::new() }
-  }
-  pub fn add_symbols(&mut self, ast: &AST) {
-    self.symbol_table.add_symbols(ast)
-  }
   pub fn debug_symbol_table(&self) -> String  {
-    format!("Symbol table:\n {:?}", self.symbol_table.map)
+    format!("Symbol table:\n {:?}", self.symbol_table)
   }
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypeVariable {
@@ -149,10 +136,8 @@ impl TypeContext {
       },
       (&IntLiteral(_), _) => Univ(UVar::Integer),
       (&BoolLiteral(_), _) => Univ(UVar::Boolean),
-      (&Variable(ref name), _) => self.symbol_table
-        .lookup(name)
+      (&Variable(ref name), _) => self.lookup(name)
         .ok_or(format!("Couldn't find {}", name))?,
-
       (&Call { ref f, ref arguments }, _) => {
         let f_type = self.infer(&*f)?;
         let arg_type = self.infer(arguments.get(0).unwrap())?; // TODO fix later
