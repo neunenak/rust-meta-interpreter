@@ -445,7 +445,7 @@ pub enum ExpressionType {
   Variable(Rc<String>),
   Call {
     name: Rc<String>,
-    params: Vec<Expression>,
+    arguments: Vec<Expression>,
   },
   Index {
     indexee: Box<Expression>,
@@ -808,23 +808,20 @@ impl Parser {
   parse_method!(identifier_expr(&mut self) -> ParseResult<Expression> {
     use self::ExpressionType::*;
     let identifier = self.identifier()?;
-    match self.peek() {
+    Ok(match self.peek() {
       LParen => {
-        let call_params = self.call_expr()?;
-        Ok(Expression(Call {
-          name: identifier,
-          params: call_params,
-        }, None))
+        let arguments = self.call_expr()?;
+        Expression(Call { name: identifier, arguments }, None)
       },
       LSquareBracket => {
         let indexers = self.index_expr()?;
-        Ok(Expression(Index {
+        Expression(Index {
           indexee: Box::new(Expression(Variable(identifier), None)),
-          indexers: indexers,
-        }, None))
+          indexers,
+        }, None)
       }
-      _ => Ok(Expression(Variable(identifier), None))
-    }
+      _ => Expression(Variable(identifier), None)
+    })
   });
 
   parse_method!(call_expr(&mut self) -> ParseResult<Vec<Expression>> {
@@ -1112,10 +1109,10 @@ mod parse_tests {
   #[test]
   fn parsing_functions() {
     parse_test!("fn oi()",  AST(vec![Declaration(FuncSig(Signature { name: rc!(oi), params: vec![], type_anno: None }))]));
-    parse_test!("oi()", AST(vec![exprstatement!(Call { name: rc!(oi), params: vec![] })]));
+    parse_test!("oi()", AST(vec![exprstatement!(Call { name: rc!(oi), arguments: vec![] })]));
     parse_test!("oi(a, 2 + 2)", AST(vec![exprstatement!(Call
     { name: rc!(oi),
-      params: vec![ex!(var!("a")), ex!(binexp!("+", IntLiteral(2), IntLiteral(2)))]
+      arguments: vec![ex!(var!("a")), ex!(binexp!("+", IntLiteral(2), IntLiteral(2)))]
     })]));
     parse_error!("a(b,,c)");
 
@@ -1127,7 +1124,7 @@ mod parse_tests {
 
     parse_test!("fn a(x) { x() }", AST(vec![Declaration(
       FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
-        vec![exprstatement!(Call { name: rc!(x), params: vec![] })]))]));
+        vec![exprstatement!(Call { name: rc!(x), arguments: vec![] })]))]));
   }
 
   #[test]
@@ -1167,8 +1164,8 @@ mod parse_tests {
   #[test]
   fn parsing_block_expressions() {
     parse_test!("if a() { b(); c() }", AST(vec![exprstatement!(
-        IfExpression(Box::new(ex!(Call { name: rc!(a), params: vec![]})),
-          vec![exprstatement!(Call { name: rc!(b), params: vec![]}), exprstatement!(Call { name: rc!(c), params: vec![] })],
+        IfExpression(Box::new(ex!(Call { name: rc!(a), arguments: vec![]})),
+          vec![exprstatement!(Call { name: rc!(b), arguments: vec![]}), exprstatement!(Call { name: rc!(c), arguments: vec![] })],
           None)
         )]));
     parse_test!(r#"
