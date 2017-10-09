@@ -287,7 +287,9 @@ variant_specifier := IDENTIFIER | IDENTIFIER '{' typed_identifier_list '}' | IDE
 typed_identifier_list := typed_identifier*
 typed_identifier := IDENTIFIER type_anno
 
-func_declaration := 'fn' IDENTIFIER formal_param_list
+func_declaration := func_signature func_body
+func_body := ε | '{' (statement delimiter)* '}'
+func_signature := 'fn' IDENTIFIER formal_param_list func_body
 formal_param_list := '(' (formal_param ',')* ')'
 formal_param := IDENTIFIER type_anno+
 
@@ -409,10 +411,8 @@ type FormalParam = (ParamName, Option<TypeName>);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Declaration {
-  FuncDecl {
-    name: Rc<String>,
-    params: Vec<FormalParam>,
-  },
+  FuncSig(Signature),
+  FuncDecl(Signature, Vec<Statement>),
   TypeDecl(Rc<String>, TypeBody),
   TypeAlias(Rc<String>, Rc<String>),
   Binding {
@@ -425,6 +425,13 @@ pub enum Declaration {
     trait_name: Option<TraitName>,
     block: Vec<Declaration>,
   },
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Signature {
+  name: Rc<String>,
+  params: Vec<FormalParam>,
+  type_anno: Option<TypeName>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -644,10 +651,24 @@ impl Parser {
   });
 
   parse_method!(func_declaration(&mut self) -> ParseResult<Declaration> {
+    let signature = self.signature()?;
+    if let LCurlyBrace = self.peek() {
+      let statements = delimited!(self, LCurlyBrace, '{', statement, Newline | Semicolon, RCurlyBrace, '}');
+      Ok(Declaration::FuncDecl(signature, statements))
+    } else {
+      Ok(Declaration::FuncSig(signature))
+    }
+  });
+
+  parse_method!(signature(&mut self) -> ParseResult<Signature> {
     expect!(self, Keyword(Func), "'fn'");
     let name = self.identifier()?;
     let params = delimited!(self, LParen, '(', formal_param, Comma, RParen, ')');
-    Ok(Declaration::FuncDecl { name, params })
+    let type_anno = match self.peek() {
+      Colon => Some(self.type_anno()?),
+      _ => None,
+    };
+    Ok(Signature { name, params, type_anno })
   });
 
   parse_method!(formal_param(&mut self) -> ParseResult<FormalParam> {
@@ -994,6 +1015,7 @@ mod parse_tests {
   use super::{AST, Expression, Statement, Operation, TypeBody, Variant, parse, tokenize};
   use super::Statement::*;
   use super::Declaration::*;
+  use super::Signature;
   use super::TypeName::*;
   use super::ExpressionType::*;
   use super::Variant::*;
@@ -1105,7 +1127,7 @@ mod parse_tests {
 
   #[test]
   fn parsing_functions() {
-    parse_test!("fn oi()",  AST(vec![Declaration(FuncDecl { name: rc!(oi), params: vec![] })]));
+    parse_test!("fn oi()",  AST(vec![Declaration(FuncSig(Signature { name: rc!(oi), params: vec![], type_anno: None }))]));
     parse_test!("oi()", AST(vec![exprstatement!(Call { name: rc!(oi), params: vec![] })]));
     parse_test!("oi(a, 2 + 2)", AST(vec![exprstatement!(Call
     { name: rc!(oi),
@@ -1114,9 +1136,9 @@ mod parse_tests {
     parse_error!("a(b,,c)");
 
     parse_test!("fn a(b, c: Int)", AST(vec![Declaration(
-      FuncDecl { name: rc!(a), params: vec![
+      FuncSig(Signature { name: rc!(a), params: vec![
         (rc!(b), None), (rc!(c), Some(ty!("Int")))
-      ] })]));
+      ], type_anno: None }))]));
   }
 
   #[test]
@@ -1181,8 +1203,8 @@ mod parse_tests {
         type_name: ty!("Heh"),
         trait_name: None,
         block: vec![
-          FuncDecl { name: rc!(yolo), params: vec![] },
-          FuncDecl { name: rc!(swagg), params: vec![] }
+          FuncSig(Signature { name: rc!(yolo), params: vec![], type_anno: None }),
+          FuncSig(Signature { name: rc!(swagg), params: vec![], type_anno: None })
         ] })]));
 
     parse_test!("impl Mondai for Lollerino { fn yolo(); fn swagg(); }", AST(vec![
@@ -1190,15 +1212,15 @@ mod parse_tests {
         type_name: ty!("Lollerino"),
         trait_name: Some(rc!(Mondai)),
         block: vec![
-          FuncDecl { name: rc!(yolo), params: vec![] },
-          FuncDecl { name: rc!(swagg), params: vec![] }
+          FuncSig(Signature { name: rc!(yolo), params: vec![], type_anno: None}),
+          FuncSig(Signature { name: rc!(swagg), params: vec![], type_anno: None })
         ] })]));
     parse_test!("impl Option<WTFMate> { fn oi() }", AST(vec![
       Declaration(Impl {
         type_name: Singleton { name: rc!(Option), params: vec![ty!("WTFMate")]},
         trait_name: None,
         block: vec![
-          FuncDecl { name: rc!(oi), params: vec![] },
+          FuncSig(Signature { name: rc!(oi), params: vec![], type_anno: None }),
         ]
       })]));
   }

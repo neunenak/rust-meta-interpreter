@@ -27,7 +27,8 @@ impl SymbolTable {
         &Statement::ExpressionStatement(_) => (),
         &Statement::Declaration(ref d) => {
           match d {
-            &FuncDecl { .. } => (),
+            &FuncSig(_) => (),
+            &FuncDecl(_, _) => (),
             &TypeDecl { .. } => (),
             &TypeAlias { .. } => (),
             &Binding {ref name, ref constant, ref expr} => {
