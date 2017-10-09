@@ -48,7 +48,8 @@ impl SymbolTable {
   }
   fn lookup(&mut self, binding: &Rc<String>) -> Option<TypeVariable> {
     use self::TypeVariable::*;
-    Some(Function(Box::new(Integer), Box::new(Boolean)))
+    use self::UVar::*;
+    Some(Univ(Function(Box::new(Univ(Integer)), Box::new(Univ(Boolean)))))
   }
 }
 
@@ -68,8 +69,15 @@ impl TypeContext {
   }
 }
 
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypeVariable {
+  Univ(UVar),
+  Exist(u64),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum UVar {
   Integer,
   Boolean,
   Unit,
@@ -80,16 +88,17 @@ pub enum TypeVariable {
 impl TypeVariable {
   fn from_anno(anno: &TypeName) -> TypeVariable {
     use self::TypeVariable::*;
+    use self::UVar::*;
 
     match anno {
       &TypeName::Singleton { ref name, .. } => {
         match name.as_ref().as_ref() {
-          "Int" => Integer,
-          "Bool" => Boolean,
-          _ => Bottom,
+          "Int" => Univ(Integer),
+          "Bool" => Univ(Boolean),
+          _ => Univ(Bottom),
         }
       },
-      _ => Bottom,
+      _ => Univ(Bottom),
     }
   }
 }
@@ -115,7 +124,7 @@ type TypeCheckResult = Result<TypeVariable, String>;
 
 impl TypeContext {
   pub fn type_check(&mut self, ast: &AST) -> TypeCheckResult {
-    let mut last = TypeVariable::Unit;
+    let mut last = TypeVariable::Univ(UVar::Unit);
     for statement in ast.0.iter() {
       match statement {
         &Statement::Declaration(ref _decl) => {
@@ -131,14 +140,15 @@ impl TypeContext {
 
   fn infer(&mut self, expr: &Expression) -> TypeCheckResult {
     use self::ExpressionType::*;
+    use self::TypeVariable::*;
 
     Ok(match (&expr.0, &expr.1) {
       (ref _t, &Some(ref anno)) => {
         //TODO make this better,
         TypeVariable::from_anno(anno)
       },
-      (&IntLiteral(_), _) => TypeVariable::Integer,
-      (&BoolLiteral(_), _) => TypeVariable::Boolean,
+      (&IntLiteral(_), _) => Univ(UVar::Integer),
+      (&BoolLiteral(_), _) => Univ(UVar::Boolean),
       (&Variable(ref name), _) => self.symbol_table
         .lookup(name)
         .ok_or(format!("Couldn't find {}", name))?,
@@ -147,14 +157,14 @@ impl TypeContext {
         let f_type = self.infer(&*f)?;
         let arg_type = self.infer(arguments.get(0).unwrap())?; // TODO fix later
         match f_type {
-          TypeVariable::Function(box t1, box ret_type) => {
+          Univ(UVar::Function(box t1, box ret_type)) => {
             let _ = self.unify(&t1, &arg_type)?;
             ret_type
           },
           _ => return Err(format!("Type error"))
         }
       },
-      _ => TypeVariable::Unit,
+      _ => Univ(UVar::Unit),
     })
   }
 
