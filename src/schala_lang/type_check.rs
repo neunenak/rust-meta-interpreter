@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation, TypeName};
+use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, TypeName};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct PathSpecifier {
@@ -11,12 +11,16 @@ struct PathSpecifier {
 }
 
 pub struct TypeContext {
-  symbol_table: HashMap<PathSpecifier, Expression>,
+  symbol_table: HashMap<PathSpecifier, TypeVariable>,
+  existential_type_label_count: u64
 }
 
 impl TypeContext {
   pub fn new() -> TypeContext {
-    TypeContext { symbol_table: HashMap::new() }
+    TypeContext {
+      symbol_table: HashMap::new(),
+      existential_type_label_count: 0,
+    }
   }
   pub fn add_symbols(&mut self, ast: &AST) {
     use self::Declaration::*;
@@ -36,11 +40,20 @@ impl TypeContext {
                 kind: "binding",
                 constant: *constant
               };
-              let binding_contents = (*expr).clone();
+              let binding_contents = expr.1.as_ref()
+                .map(|ty| self.from_anno(ty))
+                .unwrap_or_else(|| { self.get_existential_type() });
               self.symbol_table.insert(spec, binding_contents);
             },
-            FuncDecl(ref signature, ref type_anno) => {
+            FuncDecl(ref signature, _) => {
+              let spec = PathSpecifier {
+                name: signature.name.clone(),
+                kind: "binding",
+                constant: true
+              };
 
+              let func_type = self.from_signature(signature);
+              self.symbol_table.insert(spec, func_type);
             },
           }
         }
@@ -50,10 +63,54 @@ impl TypeContext {
   fn lookup(&mut self, binding: &Rc<String>) -> Option<TypeVariable> {
     use self::TypeVariable::*;
     use self::UVar::*;
-    Some(Univ(Function(Box::new(Univ(Integer)), Box::new(Univ(Boolean)))))
+
+    let key = PathSpecifier {
+      name: binding.clone(),
+      kind: "binding",
+      constant: true
+    };
+
+    self.symbol_table.get(&key).map(|x| x.clone())
   }
   pub fn debug_symbol_table(&self) -> String  {
     format!("Symbol table:\n {:?}", self.symbol_table)
+  }
+  fn get_existential_type(&mut self) -> TypeVariable {
+    let ret = TypeVariable::Exist(self.existential_type_label_count);
+    self.existential_type_label_count += 1;
+    ret
+  }
+
+  fn from_anno(&mut self, anno: &TypeName) -> TypeVariable {
+    use self::TypeVariable::*;
+    use self::UVar::*;
+
+    match anno {
+      &TypeName::Singleton { ref name, .. } => {
+        match name.as_ref().as_ref() {
+          "Int" => Univ(Integer),
+          "Bool" => Univ(Boolean),
+          _ => self.get_existential_type()
+        }
+      },
+      _ => Univ(Bottom),
+    }
+  }
+
+  fn from_signature(&mut self, sig: &Signature) -> TypeVariable {
+    use self::TypeVariable::Univ;
+    use self::UVar::{Unit, Function};
+    let return_type = sig.type_anno.as_ref().map(|anno| self.from_anno(&anno)).unwrap_or_else(|| { self.get_existential_type() });
+    if sig.params.len() == 0 {
+      Univ(Function(Box::new(Univ(Unit)), Box::new(return_type)))
+    } else {
+      let mut output_type = return_type;
+      for p in sig.params.iter() {
+        let p_type = p.1.as_ref().map(|anno| self.from_anno(anno)).unwrap_or_else(|| { self.get_existential_type() });
+        output_type = Univ(Function(Box::new(p_type), Box::new(output_type)));
+      }
+      output_type
+    }
   }
 }
 
@@ -70,24 +127,6 @@ pub enum UVar {
   Unit,
   Function(Box<TypeVariable>, Box<TypeVariable>),
   Bottom,
-}
-
-impl TypeVariable {
-  fn from_anno(anno: &TypeName) -> TypeVariable {
-    use self::TypeVariable::*;
-    use self::UVar::*;
-
-    match anno {
-      &TypeName::Singleton { ref name, .. } => {
-        match name.as_ref().as_ref() {
-          "Int" => Univ(Integer),
-          "Bool" => Univ(Boolean),
-          _ => Univ(Bottom),
-        }
-      },
-      _ => Univ(Bottom),
-    }
-  }
 }
 
 type TypeCheckResult = Result<TypeVariable, String>;
@@ -132,7 +171,7 @@ impl TypeContext {
     Ok(match (&expr.0, &expr.1) {
       (ref _t, &Some(ref anno)) => {
         //TODO make this better,
-        TypeVariable::from_anno(anno)
+        self.from_anno(anno)
       },
       (&IntLiteral(_), _) => Univ(UVar::Integer),
       (&BoolLiteral(_), _) => Univ(UVar::Boolean),
