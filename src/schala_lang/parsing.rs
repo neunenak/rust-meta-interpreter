@@ -1135,10 +1135,15 @@ mod parse_tests {
     })]));
     parse_error!("a(b,,c)");
 
-    parse_test!("fn a(b, c: Int)", AST(vec![Declaration(
+    parse_test!("fn a(b, c: Int): Int", AST(vec![Declaration(
       FuncSig(Signature { name: rc!(a), params: vec![
         (rc!(b), None), (rc!(c), Some(ty!("Int")))
-      ], type_anno: None }))]));
+      ], type_anno: Some(ty!("Int")) }))]));
+
+
+    parse_test!("fn a(x) { x() }", AST(vec![Declaration(
+      FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
+        vec![exprstatement!(Call { name: rc!(x), params: vec![] })]))]));
   }
 
   #[test]
