@@ -74,6 +74,24 @@ pub enum SchalaType {
   Boolean,
   Unit,
   Function(Box<SchalaType>, Box<SchalaType>),
+  Bottom,
+}
+
+impl SchalaType {
+  fn from_anno(anno: &TypeName) -> SchalaType {
+    use self::SchalaType::*;
+
+    match anno {
+      &TypeName::Singleton { ref name, .. } => {
+        match name.as_ref().as_ref() {
+          "Int" => Integer,
+          "Bool" => Boolean,
+          _ => Bottom,
+        }
+      },
+      _ => Bottom,
+    }
+  }
 }
 
 type TypeCheckResult = Result<SchalaType, String>;
@@ -115,6 +133,10 @@ impl TypeContext {
     use self::ExpressionType::*;
 
     Ok(match (&expr.0, &expr.1) {
+      (ref _t, &Some(ref anno)) => {
+        //TODO make this better,
+        SchalaType::from_anno(anno)
+      },
       (&IntLiteral(_), _) => SchalaType::Integer,
       (&BoolLiteral(_), _) => SchalaType::Boolean,
       (&Variable(ref name), _) => self.symbol_table
