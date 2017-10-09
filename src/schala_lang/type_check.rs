@@ -211,3 +211,25 @@ impl TypeContext {
   }
 }
 
+#[cfg(test)]
+mod tests {
+  use super::{TypeContext, TypeVariable, UVar};
+  use super::TypeVariable::*;
+  use schala_lang::parsing::{parse, tokenize};
+
+  macro_rules! type_test {
+    ($input:expr, $correct:expr) => {
+      {
+      let mut tc = TypeContext::new();
+      let ast = parse(tokenize($input)).0.unwrap() ;
+      assert_eq!($correct, tc.type_check(&ast).unwrap())
+      }
+    }
+  }
+
+  #[test]
+  fn basic_inference() {
+    type_test!("30", Univ(UVar::Integer))
+  }
+}
+
