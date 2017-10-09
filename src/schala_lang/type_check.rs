@@ -46,8 +46,8 @@ impl SymbolTable {
       }
     }
   }
-  fn lookup(&mut self, binding: &Rc<String>) -> Option<SchalaType> {
-    use self::SchalaType::*;
+  fn lookup(&mut self, binding: &Rc<String>) -> Option<TypeVariable> {
+    use self::TypeVariable::*;
     Some(Function(Box::new(Integer), Box::new(Boolean)))
   }
 }
@@ -69,17 +69,17 @@ impl TypeContext {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum SchalaType {
+pub enum TypeVariable {
   Integer,
   Boolean,
   Unit,
-  Function(Box<SchalaType>, Box<SchalaType>),
+  Function(Box<TypeVariable>, Box<TypeVariable>),
   Bottom,
 }
 
-impl SchalaType {
-  fn from_anno(anno: &TypeName) -> SchalaType {
-    use self::SchalaType::*;
+impl TypeVariable {
+  fn from_anno(anno: &TypeName) -> TypeVariable {
+    use self::TypeVariable::*;
 
     match anno {
       &TypeName::Singleton { ref name, .. } => {
@@ -94,7 +94,7 @@ impl SchalaType {
   }
 }
 
-type TypeCheckResult = Result<SchalaType, String>;
+type TypeCheckResult = Result<TypeVariable, String>;
 
 // from Niko's talk
 /* fn type_check(expression, expected_ty) -> Ty {
@@ -115,7 +115,7 @@ type TypeCheckResult = Result<SchalaType, String>;
 
 impl TypeContext {
   pub fn type_check(&mut self, ast: &AST) -> TypeCheckResult {
-    let mut last = SchalaType::Unit;
+    let mut last = TypeVariable::Unit;
     for statement in ast.0.iter() {
       match statement {
         &Statement::Declaration(ref _decl) => {
@@ -135,10 +135,10 @@ impl TypeContext {
     Ok(match (&expr.0, &expr.1) {
       (ref _t, &Some(ref anno)) => {
         //TODO make this better,
-        SchalaType::from_anno(anno)
+        TypeVariable::from_anno(anno)
       },
-      (&IntLiteral(_), _) => SchalaType::Integer,
-      (&BoolLiteral(_), _) => SchalaType::Boolean,
+      (&IntLiteral(_), _) => TypeVariable::Integer,
+      (&BoolLiteral(_), _) => TypeVariable::Boolean,
       (&Variable(ref name), _) => self.symbol_table
         .lookup(name)
         .ok_or(format!("Couldn't find {}", name))?,
@@ -147,18 +147,18 @@ impl TypeContext {
         let f_type = self.infer(&*f)?;
         let arg_type = self.infer(arguments.get(0).unwrap())?; // TODO fix later
         match f_type {
-          SchalaType::Function(box t1, box ret_type) => {
+          TypeVariable::Function(box t1, box ret_type) => {
             let _ = self.unify(&t1, &arg_type)?;
             ret_type
           },
           _ => return Err(format!("Type error"))
         }
       },
-      _ => SchalaType::Unit,
+      _ => TypeVariable::Unit,
     })
   }
 
-  fn unify(&mut self, t1: &SchalaType, t2: &SchalaType) -> TypeCheckResult {
+  fn unify(&mut self, t1: &TypeVariable, t2: &TypeVariable) -> TypeCheckResult {
     if t1 == t2 {
       Ok(t1.clone())
     } else {
