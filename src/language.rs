@@ -77,7 +77,7 @@ pub struct TraceArtifact {
 impl TraceArtifact {
   pub fn new(stage: &str, debug: String) -> TraceArtifact {
     let color = match stage {
-      "parse_trace" => "red",
+      "parse_trace"  | "ast" => "red",
       "tokens" => "green",
       "type_check" => "magenta",
       _ => "blue",
