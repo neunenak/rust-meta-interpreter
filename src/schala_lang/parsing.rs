@@ -403,7 +403,6 @@ pub enum Statement {
 }
 
 type ParamName = Rc<String>;
-type TypeName = Rc<String>; //TODO change TypeName to TypeAnno everywhere
 type TraitName = Rc<String>;
 type FormalParamList = Vec<(ParamName, Option<TypeName>)>;
 
@@ -433,19 +432,19 @@ pub struct TypeBody(pub Vec<Variant>);
 #[derive(Debug, PartialEq, Clone)]
 pub enum Variant {
   UnitStruct(Rc<String>),
-  TupleStruct(Rc<String>, Vec<TypeAnno>),
-  Record(Rc<String>, Vec<(Rc<String>, TypeAnno)>),
+  TupleStruct(Rc<String>, Vec<TypeName>),
+  Record(Rc<String>, Vec<(Rc<String>, TypeName)>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Expression(pub ExpressionType, pub Option<TypeAnno>);
+pub struct Expression(pub ExpressionType, pub Option<TypeName>);
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum TypeAnno {
-  Tuple(Vec<TypeAnno>),
+pub enum TypeName {
+  Tuple(Vec<TypeName>),
   Singleton {
     name: Rc<String>,
-    params: Vec<TypeAnno>,
+    params: Vec<TypeName>,
   }
 }
 
@@ -636,7 +635,7 @@ impl Parser {
     }
   });
 
-  parse_method!(typed_identifier(&mut self) -> ParseResult<(Rc<String>, TypeAnno)> {
+  parse_method!(typed_identifier(&mut self) -> ParseResult<(Rc<String>, TypeName)> {
     let identifier = self.identifier()?;
     expect!(self, Colon, "':'");
     let type_name = self.type_name()?;
@@ -679,10 +678,10 @@ impl Parser {
 
   parse_method!(impl_declaration(&mut self) -> ParseResult<Declaration> {
     expect!(self, Keyword(Impl), "'impl'");
-    let first = self.identifier()?;
+    let first = self.type_name()?;
     let second = if let Keyword(For) = self.peek() {
       self.next();
-      Some(self.identifier()?)
+      Some(self.type_name()?)
     } else {
       None
     };
@@ -690,7 +689,13 @@ impl Parser {
     let block = self.decl_block()?;
 
     let result = match (first, second) {
-      (first, Some(second)) => Declaration::Impl { type_name: second, trait_name: Some(first), block },
+      (first, Some(second)) => {
+        match first {
+          TypeName::Singleton { ref name, ref params } if params.len() == 0 =>
+            Declaration::Impl { type_name: second, trait_name: Some(name.clone()), block },
+          _ => return ParseError::new(&format!("Invalid name for a trait")),
+        }
+      },
       (first, None) => Declaration::Impl { type_name: first, trait_name: None, block }
     };
     Ok(result)
@@ -713,15 +718,16 @@ impl Parser {
     Ok(expr_body)
   });
 
-  parse_method!(type_anno(&mut self) -> ParseResult<TypeAnno> {
+  parse_method!(type_anno(&mut self) -> ParseResult<TypeName> {
     expect!(self, Colon, "':'");
     self.type_name()
   });
 
-  parse_method!(type_name(&mut self) -> ParseResult<TypeAnno> {
+  parse_method!(type_name(&mut self) -> ParseResult<TypeName> {
+    use self::TypeName::*;
     Ok(match self.peek() {
-      LParen => TypeAnno::Tuple(delimited!(self, LParen, '(', type_name, Comma, RParen, ')')),
-      _ => TypeAnno::Singleton {
+      LParen => Tuple(delimited!(self, LParen, '(', type_name, Comma, RParen, ')')),
+      _ => Singleton {
         name: self.identifier()?,
         params: match self.peek() {
           LAngleBracket => delimited!(self, LAngleBracket, '<', type_name, Comma, RAngleBracket, '>'),
@@ -988,7 +994,7 @@ mod parse_tests {
   use super::{AST, Expression, Statement, Operation, TypeBody, Variant, parse, tokenize};
   use super::Statement::*;
   use super::Declaration::*;
-  use super::TypeAnno::*;
+  use super::TypeName::*;
   use super::ExpressionType::*;
   use super::Variant::*;
 

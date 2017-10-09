@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation, TypeAnno};
+use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation, TypeName};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct PathSpecifier {
@@ -103,7 +103,7 @@ impl TypeContext {
     match (&expr.0, &expr.1) {
       (&IntLiteral(_), &Some(ref t)) => {
         match t {
-          &TypeAnno::Singleton { ref name, ref params } if **name == "Int" && params.len() == 0 => (),
+          &TypeName::Singleton { ref name, ref params } if **name == "Int" && params.len() == 0 => (),
           t => return Err(format!("Bad type {:?} for int literal", t)),
         }
       },
