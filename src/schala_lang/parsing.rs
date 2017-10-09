@@ -280,9 +280,10 @@ declaration := type_declaration | func_declaration | binding_declaration | impl_
 
 type_declaration := 'type' type_declaration_body
 type_declaration_body := 'alias' type_alias | IDENTIFIER '=' type_body
-type_alias := IDENTIFIER '=' IDENTIFIER
+type_alias := IDENTIFIER '=' type_name
 type_body := variant_specifier ('|' variant_specifier)*
-variant_specifier := '{' member_list '}'
+
+variant_specifier := IDENTIFIER | IDENTIFIER '{' member_list '}' | IDENTIFIER '(' type_name* ')'
 member_list := (IDENTIFIER type_anno)*
 
 func_declaration := 'fn' IDENTIFIER '(' param_list ')'
@@ -401,7 +402,7 @@ pub enum Statement {
 }
 
 type ParamName = Rc<String>;
-type TypeName = Rc<String>;
+type TypeName = Rc<String>; //TODO change TypeName to TypeAnno everywhere
 type TraitName = Rc<String>;
 type FormalParamList = Vec<(ParamName, Option<TypeName>)>;
 
@@ -431,8 +432,8 @@ pub struct TypeBody(pub Vec<Variant>);
 #[derive(Debug, PartialEq, Clone)]
 pub enum Variant {
   Singleton(Rc<String>),
-  //ArgumentConstructor,
-  //Record
+  ArgumentConstructor(Rc<String>, Vec<TypeAnno>),
+  Record(Rc<String>, Vec<(Rc<String>, TypeAnno)>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -604,8 +605,21 @@ impl Parser {
   });
 
   parse_method!(type_body(&mut self) -> ParseResult<TypeBody> {
-    let variant = Variant::Singleton(self.identifier()?);
-    Ok(TypeBody(vec!(variant)))
+    let mut variants = Vec::new();
+    variants.push(self.variant_specifier()?);
+    loop {
+      if let Pipe = self.peek() {
+        self.next();
+        variants.push(self.variant_specifier()?);
+      } else {
+        break;
+      }
+    }
+    Ok(TypeBody(variants))
+  });
+
+  parse_method!(variant_specifier(&mut self) -> ParseResult<Variant> {
+    Ok(Variant::Singleton(self.identifier()?))
   });
 
   parse_method!(func_declaration(&mut self) -> ParseResult<Declaration> {
