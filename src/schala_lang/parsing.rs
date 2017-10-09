@@ -1173,7 +1173,7 @@ mod parse_tests {
   fn parsing_impls() {
     parse_test!("impl Heh { fn yolo(); fn swagg(); }", AST(vec![
       Declaration(Impl {
-        type_name: rc!(Heh),
+        type_name: ty!("Heh"),
         trait_name: None,
         block: vec![
           FuncDecl { name: rc!(yolo), params: vec![] },
@@ -1182,22 +1182,27 @@ mod parse_tests {
 
     parse_test!("impl Mondai for Lollerino { fn yolo(); fn swagg(); }", AST(vec![
       Declaration(Impl {
-        type_name: rc!(Lollerino),
+        type_name: ty!("Lollerino"),
         trait_name: Some(rc!(Mondai)),
         block: vec![
           FuncDecl { name: rc!(yolo), params: vec![] },
           FuncDecl { name: rc!(swagg), params: vec![] }
         ] })]));
+    parse_test!("impl Option<WTFMate> { fn oi() }", AST(vec![
+      Declaration(Impl {
+        type_name: Singleton { name: rc!(Option), params: vec![ty!("WTFMate")]},
+        trait_name: None,
+        block: vec![
+          FuncDecl { name: rc!(oi), params: vec![] },
+        ]
+      })]));
   }
 
   #[test]
   fn parsing_type_annotations() {
     parse_test!("const a = b : Int", AST(vec![
       Declaration(Binding { name: rc!(a), constant: true, expr:
-        Expression(var!("b"), Some(Singleton {
-          name: rc!(Int),
-          params: vec![],
-        })) })]));
+        Expression(var!("b"), Some(ty!("Int"))) })]));
 
     parse_test!("a : Int", AST(vec![
       exprstatement!(var!("a"), ty!("Int"))
