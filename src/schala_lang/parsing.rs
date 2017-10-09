@@ -432,7 +432,7 @@ pub struct TypeBody(pub Vec<Variant>);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Variant {
-  Singleton(Rc<String>),
+  UnitStruct(Rc<String>),
   TupleStruct(Rc<String>, Vec<TypeAnno>),
   Record(Rc<String>, Vec<(Rc<String>, TypeAnno)>),
 }
@@ -632,7 +632,7 @@ impl Parser {
         let typed_identifier_list = delimited!(self, LCurlyBrace, '{', typed_identifier, Comma, RCurlyBrace, '}');
         Ok(Record(name, typed_identifier_list))
       },
-      _ => Ok(Singleton(name))
+      _ => Ok(UnitStruct(name))
     }
   });
 
@@ -988,8 +988,9 @@ mod parse_tests {
   use super::{AST, Expression, Statement, Operation, TypeBody, Variant, parse, tokenize};
   use super::Statement::*;
   use super::Declaration::*;
-  use super::TypeAnno;
+  use super::TypeAnno::*;
   use super::ExpressionType::*;
+  use super::Variant::*;
 
   macro_rules! rc {
     ($string:tt) => { Rc::new(stringify!($string).to_string()) }
@@ -1020,7 +1021,7 @@ mod parse_tests {
     ($expr_type:expr) => { Expression($expr_type, None) }
   }
   macro_rules! ty {
-    ($name:expr) => { TypeAnno::Singleton { name: Rc::new($name.to_string()), params: vec![] } };
+    ($name:expr) => { Singleton { name: Rc::new($name.to_string()), params: vec![] } };
   }
 
   #[test]
@@ -1120,8 +1121,19 @@ mod parse_tests {
 
   #[test]
   fn parsing_types() {
-    parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!(Yolo), TypeBody(vec![Variant::Singleton(rc!(Yolo))])))]));
+    parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!(Yolo), TypeBody(vec![UnitStruct(rc!(Yolo))])))]));
     parse_test!("type alias Sex = Drugs", AST(vec![Declaration(TypeAlias(rc!(Sex), rc!(Drugs)))]));
+    parse_test!("type Sanchez = Miguel | Alejandro(Int, Option<a>) | Esparanza { a: Int, b: String }",
+      AST(vec![Declaration(TypeDecl(rc!(Sanchez), TypeBody(vec![
+        UnitStruct(rc!(Miguel)),
+        TupleStruct(rc!(Alejandro), vec![
+          Singleton { name: rc!(Int), params: vec![] },
+          Singleton { name: rc!(Option), params: vec![Singleton { name: rc!(a), params: vec![] }] },
+        ]),
+        Record(rc!(Esparanza), vec![
+          (rc!(a), Singleton { name: rc!(Int), params: vec![] }),
+          (rc!(b), Singleton { name: rc!(String), params: vec![] }),
+        ])])))]));
   }
 
   #[test]
@@ -1176,7 +1188,7 @@ mod parse_tests {
   fn parsing_type_annotations() {
     parse_test!("const a = b : Int", AST(vec![
       Declaration(Binding { name: rc!(a), constant: true, expr:
-        Expression(var!("b"), Some(TypeAnno::Singleton {
+        Expression(var!("b"), Some(Singleton {
           name: rc!(Int),
           params: vec![],
         })) })]));
@@ -1186,18 +1198,18 @@ mod parse_tests {
     ]));
 
     parse_test!("a : Option<Int>", AST(vec![
-      exprstatement!(var!("a"), TypeAnno::Singleton { name: rc!(Option), params: vec![ty!("Int")] })
+      exprstatement!(var!("a"), Singleton { name: rc!(Option), params: vec![ty!("Int")] })
     ]));
 
     parse_test!("a : KoreanBBQSpecifier<Kimchi, Option<Bulgogi> >", AST(vec![
-      exprstatement!(var!("a"), TypeAnno::Singleton { name: rc!(KoreanBBQSpecifier), params: vec![
-        ty!("Kimchi"), TypeAnno::Singleton { name: rc!(Option), params: vec![ty!("Bulgogi")] }
+      exprstatement!(var!("a"), Singleton { name: rc!(KoreanBBQSpecifier), params: vec![
+        ty!("Kimchi"), Singleton { name: rc!(Option), params: vec![ty!("Bulgogi")] }
       ] })
     ]));
 
     parse_test!("a : (Int, Yolo<a>)", AST(vec![
-      exprstatement!(var!("a"), TypeAnno::Tuple(
-        vec![ty!("Int"), TypeAnno::Singleton {
+      exprstatement!(var!("a"), Tuple(
+        vec![ty!("Int"), Singleton {
           name: rc!(Yolo), params: vec![ty!("a")]
         }]))]));
   }
