@@ -244,30 +244,6 @@ mod schala_tokenizer_tests {
   }
 }
 
-/* for reference, here is the scala EBNF for expressions:
- * see http://scala-lang.org/files/archive/spec/2.12/06-expressions.html
-
-Expr ::= (Bindings | id | ‘_’) ‘=>’ Expr
-| Expr1
-Expr1 ::= ‘if’ ‘(’ Expr ‘)’ {nl} Expr [[semi] else Expr]
-| ‘while’ ‘(’ Expr ‘)’ {nl} Expr
-| ‘try’ ‘{’ Block ‘}’ [‘catch’ ‘{’ CaseClauses ‘}’]
-[‘finally’ Expr]
-| ‘do’ Expr [semi] ‘while’ ‘(’ Expr ’)’
-| ‘for’ (‘(’ Enumerators ‘)’ | ‘{’ Enumerators ‘}’)
-{nl} [‘yield’] Expr
-| ‘throw’ Expr
-| ‘return’ [Expr]
-| [SimpleExpr ‘.’] id ‘=’ Expr
-| SimpleExpr1 ArgumentExprs ‘=’ Expr
-| PostfixExpr
-| PostfixExpr Ascription
-| PostfixExpr ‘match’ ‘{’ CaseClauses ‘}’
-
-PrefixExpr ::= [‘-’ | ‘+’ | ‘~’ | ‘!’] SimpleExpr
-
-*/
-
 /* Schala EBNF Grammar */
 /* Terminal productions are in 'single quotes' or UPPERCASE if they are a class
  * or not representable in ASCII
