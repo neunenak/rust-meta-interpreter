@@ -289,7 +289,7 @@ expression := precedence_expr type_anno+
 precedence_expr := prefix_expr
 prefix_expr := prefix_op primary
 prefix_op := '+' | '-' | '!' | '~'
-primary := literal | paren_expr | if_expr | match_expr | identifier_expr
+primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_expr
 
 paren_expr := LParen paren_inner RParen
 paren_inner := (expression ',')*
@@ -310,6 +310,7 @@ call_expr := IDENTIFIER '(' expr_list ')' //TODO maybe make this optional? or no
 index_expr := '[' (expression (',' (expression)* | ε) ']'
 expr_list := expression (',' expression)* | ε
 
+for_expr := 'for' ... ????
 
 // a float_literal can still be assigned to an int in type-checking
 number_literal := int_literal | float_literal
@@ -451,7 +452,8 @@ pub enum ExpressionType {
     indexers: Vec<Expression>,
   },
   IfExpression(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
-  MatchExpression(Box<Expression>, Vec<MatchArm>)
+  MatchExpression(Box<Expression>, Vec<MatchArm>),
+  ForExpression
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -787,6 +789,7 @@ impl Parser {
       LParen => self.paren_expr(),
       Keyword(Kw::If) => self.if_expr(),
       Keyword(Kw::Match) => self.match_expr(),
+      Keyword(Kw::For) => self.for_expr(),
       Identifier(_) => self.identifier_expr(),
       _ => self.literal(),
     }
@@ -877,6 +880,11 @@ impl Parser {
   parse_method!(pattern(&mut self) -> ParseResult<Pattern> {
     let identifier = self.identifier()?;
     Ok(Pattern(identifier))
+  });
+
+  parse_method!(for_expr(&mut self) -> ParseResult<Expression> {
+    expect!(self, Keyword(Kw::For), "'for'");
+    Ok(Expression(ExpressionType::ForExpression, None))
   });
 
   parse_method!(identifier(&mut self) -> ParseResult<Rc<String>> {
