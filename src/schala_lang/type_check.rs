@@ -112,6 +112,12 @@ impl TypeContext {
     Ok(match (&expr.0, &expr.1) {
       (&IntLiteral(_), _) => SchalaType::Integer,
       (&BoolLiteral(_), _) => SchalaType::Boolean,
+      /*
+      (&Call { name, arguments }, _) => {
+        let f_type = self.infer
+
+      },
+      */
       _ => SchalaType::Unit,
     })
   }

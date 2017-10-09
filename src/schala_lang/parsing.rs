@@ -444,7 +444,7 @@ pub enum ExpressionType {
   TupleLiteral(Vec<Expression>),
   Variable(Rc<String>),
   Call {
-    name: Rc<String>,
+    f: Box<Expression>,
     arguments: Vec<Expression>,
   },
   Index {
@@ -811,7 +811,9 @@ impl Parser {
     Ok(match self.peek() {
       LParen => {
         let arguments = self.call_expr()?;
-        Expression(Call { name: identifier, arguments }, None)
+        //TODO make this be more general
+        let f = Box::new(Expression(Variable(identifier), None));
+        Expression(Call { f, arguments }, None)
       },
       LSquareBracket => {
         let indexers = self.index_expr()?;
@@ -1109,9 +1111,9 @@ mod parse_tests {
   #[test]
   fn parsing_functions() {
     parse_test!("fn oi()",  AST(vec![Declaration(FuncSig(Signature { name: rc!(oi), params: vec![], type_anno: None }))]));
-    parse_test!("oi()", AST(vec![exprstatement!(Call { name: rc!(oi), arguments: vec![] })]));
+    parse_test!("oi()", AST(vec![exprstatement!(Call { f: Box::new(ex!(var!("oi"))), arguments: vec![] })]));
     parse_test!("oi(a, 2 + 2)", AST(vec![exprstatement!(Call
-    { name: rc!(oi),
+    { f: Box::new(ex!(var!("oi"))),
       arguments: vec![ex!(var!("a")), ex!(binexp!("+", IntLiteral(2), IntLiteral(2)))]
     })]));
     parse_error!("a(b,,c)");
@@ -1124,7 +1126,7 @@ mod parse_tests {
 
     parse_test!("fn a(x) { x() }", AST(vec![Declaration(
       FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
-        vec![exprstatement!(Call { name: rc!(x), arguments: vec![] })]))]));
+        vec![exprstatement!(Call { f: Box::new(ex!(var!("x"))), arguments: vec![] })]))]));
   }
 
   #[test]
@@ -1164,8 +1166,8 @@ mod parse_tests {
   #[test]
   fn parsing_block_expressions() {
     parse_test!("if a() { b(); c() }", AST(vec![exprstatement!(
-        IfExpression(Box::new(ex!(Call { name: rc!(a), arguments: vec![]})),
-          vec![exprstatement!(Call { name: rc!(b), arguments: vec![]}), exprstatement!(Call { name: rc!(c), arguments: vec![] })],
+        IfExpression(Box::new(ex!(Call { f: Box::new(ex!(var!("a"))), arguments: vec![]})),
+          vec![exprstatement!(Call { f: Box::new(ex!(var!("b"))), arguments: vec![]}), exprstatement!(Call { f: Box::new(ex!(var!("c"))), arguments: vec![] })],
           None)
         )]));
     parse_test!(r#"
