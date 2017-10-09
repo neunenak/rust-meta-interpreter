@@ -287,8 +287,9 @@ variant_specifier := IDENTIFIER | IDENTIFIER '{' typed_identifier_list '}' | IDE
 typed_identifier_list := typed_identifier*
 typed_identifier := IDENTIFIER type_anno
 
-func_declaration := 'fn' IDENTIFIER '(' param_list ')'
-param_list := (IDENTIFIER type_anno+ ',')*
+func_declaration := 'fn' IDENTIFIER formal_param_list
+formal_param_list := '(' (formal_param ',')* ')'
+formal_param := IDENTIFIER type_anno+
 
 binding_declaration: 'var' IDENTIFIER '=' expression
                       | 'const' IDENTIFIER '=' expression
@@ -404,13 +405,13 @@ pub enum Statement {
 
 type ParamName = Rc<String>;
 type TraitName = Rc<String>;
-type FormalParamList = Vec<(ParamName, Option<TypeName>)>;
+type FormalParam = (ParamName, Option<TypeName>);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Declaration {
   FuncDecl {
     name: Rc<String>,
-    params: FormalParamList,
+    params: Vec<FormalParam>,
   },
   TypeDecl(Rc<String>, TypeBody),
   TypeAlias(Rc<String>, Rc<String>),
@@ -645,18 +646,17 @@ impl Parser {
   parse_method!(func_declaration(&mut self) -> ParseResult<Declaration> {
     expect!(self, Keyword(Func), "'fn'");
     let name = self.identifier()?;
-    expect!(self, LParen, "'('");
-    let params = self.param_list()?;
-    expect!(self, RParen, "')'");
-    let decl = Declaration::FuncDecl {
-      name: name,
-      params: params
-    };
-    Ok(decl)
+    let params = delimited!(self, LParen, '(', formal_param, Comma, RParen, ')');
+    Ok(Declaration::FuncDecl { name, params })
   });
 
-  parse_method!(param_list(&mut self) -> ParseResult<FormalParamList> {
-    Ok(vec!())
+  parse_method!(formal_param(&mut self) -> ParseResult<FormalParam> {
+    let name = self.identifier()?;
+    let ty = match self.peek() {
+      Colon => Some(self.type_anno()?),
+      _ => None
+    };
+    Ok((name, ty))
   });
 
   parse_method!(binding_declaration(&mut self) -> ParseResult<Declaration> {
@@ -1112,6 +1112,11 @@ mod parse_tests {
       params: vec![ex!(var!("a")), ex!(binexp!("+", IntLiteral(2), IntLiteral(2)))]
     })]));
     parse_error!("a(b,,c)");
+
+    parse_test!("fn a(b, c: Int)", AST(vec![Declaration(
+      FuncDecl { name: rc!(a), params: vec![
+        (rc!(b), None), (rc!(c), Some(ty!("Int")))
+      ] })]));
   }
 
   #[test]
