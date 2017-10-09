@@ -283,8 +283,9 @@ type_declaration_body := 'alias' type_alias | IDENTIFIER '=' type_body
 type_alias := IDENTIFIER '=' type_name
 type_body := variant_specifier ('|' variant_specifier)*
 
-variant_specifier := IDENTIFIER | IDENTIFIER '{' member_list '}' | IDENTIFIER '(' type_name* ')'
-member_list := (IDENTIFIER type_anno)*
+variant_specifier := IDENTIFIER | IDENTIFIER '{' typed_identifier_list '}' | IDENTIFIER '(' type_name* ')'
+typed_identifier_list := typed_identifier*
+typed_identifier := IDENTIFIER type_anno
 
 func_declaration := 'fn' IDENTIFIER '(' param_list ')'
 param_list := (IDENTIFIER type_anno+ ',')*
@@ -432,7 +433,7 @@ pub struct TypeBody(pub Vec<Variant>);
 #[derive(Debug, PartialEq, Clone)]
 pub enum Variant {
   Singleton(Rc<String>),
-  ArgumentConstructor(Rc<String>, Vec<TypeAnno>),
+  TupleStruct(Rc<String>, Vec<TypeAnno>),
   Record(Rc<String>, Vec<(Rc<String>, TypeAnno)>),
 }
 
@@ -619,7 +620,27 @@ impl Parser {
   });
 
   parse_method!(variant_specifier(&mut self) -> ParseResult<Variant> {
-    Ok(Variant::Singleton(self.identifier()?))
+    use self::Variant::*;
+
+    let name = self.identifier()?;
+    match self.peek() {
+      LParen => {
+        let tuple_members = delimited!(self, LParen, '(', type_name, Comma, RParen, ')');
+        Ok(TupleStruct(name, tuple_members))
+      },
+      LCurlyBrace => {
+        let typed_identifier_list = delimited!(self, LCurlyBrace, '{', typed_identifier, Comma, RCurlyBrace, '}');
+        Ok(Record(name, typed_identifier_list))
+      },
+      _ => Ok(Singleton(name))
+    }
+  });
+
+  parse_method!(typed_identifier(&mut self) -> ParseResult<(Rc<String>, TypeAnno)> {
+    let identifier = self.identifier()?;
+    expect!(self, Colon, "':'");
+    let type_name = self.type_name()?;
+    Ok((identifier, type_name))
   });
 
   parse_method!(func_declaration(&mut self) -> ParseResult<Declaration> {
