@@ -111,6 +111,7 @@ pub enum TypeVariable {
 pub enum UVar {
   Integer,
   Float,
+  String,
   Boolean,
   Unit,
   Function(Box<TypeVariable>, Box<TypeVariable>),
@@ -163,6 +164,7 @@ impl TypeContext {
       },
       (&IntLiteral(_), _) => Univ(UVar::Integer),
       (&FloatLiteral(_), _) => Univ(UVar::Float),
+      (&StringLiteral(_), _) => Univ(UVar::String),
       (&BoolLiteral(_), _) => Univ(UVar::Boolean),
       (&Variable(ref name), _) => self.lookup(name).map(|entry| entry.type_var)
         .ok_or(format!("Couldn't find {}", name))?,
