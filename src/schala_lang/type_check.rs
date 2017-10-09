@@ -46,6 +46,10 @@ impl SymbolTable {
       }
     }
   }
+  fn lookup(&mut self, binding: &Rc<String>) -> Option<SchalaType> {
+    use self::SchalaType::*;
+    Some(Function(Box::new(Integer), Box::new(Boolean)))
+  }
 }
 
 pub struct TypeContext {
@@ -64,11 +68,12 @@ impl TypeContext {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SchalaType {
   Integer,
   Boolean,
   Unit,
+  Function(Box<SchalaType>, Box<SchalaType>),
 }
 
 type TypeCheckResult = Result<SchalaType, String>;
@@ -112,15 +117,31 @@ impl TypeContext {
     Ok(match (&expr.0, &expr.1) {
       (&IntLiteral(_), _) => SchalaType::Integer,
       (&BoolLiteral(_), _) => SchalaType::Boolean,
-      /*
-      (&Call { name, arguments }, _) => {
-        let f_type = self.infer
+      (&Variable(ref name), _) => self.symbol_table
+        .lookup(name)
+        .ok_or(format!("Couldn't find {}", name))?,
 
+      (&Call { ref f, ref arguments }, _) => {
+        let f_type = self.infer(&*f)?;
+        let arg_type = self.infer(arguments.get(0).unwrap())?; // TODO fix later
+        match f_type {
+          SchalaType::Function(box t1, box ret_type) => {
+            let _ = self.unify(&t1, &arg_type)?;
+            ret_type
+          },
+          _ => return Err(format!("Type error"))
+        }
       },
-      */
       _ => SchalaType::Unit,
     })
   }
-}
 
+  fn unify(&mut self, t1: &SchalaType, t2: &SchalaType) -> TypeCheckResult {
+    if t1 == t2 {
+      Ok(t1.clone())
+    } else {
+      Err(format!("Types {:?} and {:?} don't unify", t1, t2))
+    }
+  }
+}
 

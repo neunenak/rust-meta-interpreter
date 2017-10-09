@@ -1,4 +1,4 @@
-#![feature(advanced_slice_patterns, slice_patterns, box_patterns)]
+#![feature(advanced_slice_patterns, slice_patterns, box_patterns, box_syntax)]
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
 extern crate getopts;
