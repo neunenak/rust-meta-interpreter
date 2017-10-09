@@ -70,7 +70,9 @@ impl ProgrammingLanguageInterface for Schala {
     }
 
     match self.type_context.type_check(&ast) {
-      Ok(_) => (),
+      Ok(ty) => {
+        output.add_artifact(TraceArtifact::new("type_check", format!("type: {:?}", ty)));
+      },
       Err(msg) => {
         output.add_artifact(TraceArtifact::new("type_check", msg));
         output.add_output(format!("Type error"));
@@ -87,7 +89,6 @@ impl ProgrammingLanguageInterface for Schala {
         acc.push_str("\n");
       }
     }
-
     output.add_output(acc);
     return output;
   }

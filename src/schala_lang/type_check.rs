@@ -64,7 +64,11 @@ impl TypeContext {
   }
 }
 
-pub struct SchalaType {
+#[derive(Debug)]
+pub enum SchalaType {
+  Integer,
+  Boolean,
+  Unit,
 }
 
 type TypeCheckResult = Result<SchalaType, String>;
@@ -81,35 +85,36 @@ type TypeCheckResult = Result<SchalaType, String>;
 
   fn bare_type_check(exprssion, expected_type) -> Ty { ... }
  */
+
+// from https://www.youtube.com/watch?v=il3gD7XMdmA
+// typeInfer :: Expr a -> Matching (Type a)
+// unify :: Type a -> Type b -> Matching (Type c)
+
 impl TypeContext {
   pub fn type_check(&mut self, ast: &AST) -> TypeCheckResult {
-    use self::ExpressionType::*;
-
+    let mut last = SchalaType::Unit;
     for statement in ast.0.iter() {
       match statement {
         &Statement::Declaration(ref _decl) => {
-          return Err(format!("Declarations not supported"));
+          //return Err(format!("Declarations not supported"));
         },
         &Statement::ExpressionStatement(ref expr) => {
-          self.expr_type_check(expr)?;
+          last = self.infer(expr)?;
         }
       }
     }
-    Ok(SchalaType { })
+    Ok(last)
   }
 
-  fn expr_type_check(&mut self, expr: &Expression) -> TypeCheckResult {
+  fn infer(&mut self, expr: &Expression) -> TypeCheckResult {
     use self::ExpressionType::*;
 
-    match (&expr.0, &expr.1) {
-      (&IntLiteral(_), &Some(ref t)) => {
-        match t {
-          &TypeName::Singleton { ref name, ref params } if **name == "Int" && params.len() == 0 => (),
-          t => return Err(format!("Bad type {:?} for int literal", t)),
-        }
-      },
-      _ => (),
-    }
-    Ok(SchalaType { })
+    Ok(match (&expr.0, &expr.1) {
+      (&IntLiteral(_), _) => SchalaType::Integer,
+      (&BoolLiteral(_), _) => SchalaType::Boolean,
+      _ => SchalaType::Unit,
+    })
   }
 }
+
+
