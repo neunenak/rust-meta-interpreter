@@ -4,9 +4,7 @@ use std::rc::Rc;
 use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, TypeName};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-struct PathSpecifier {
-  name: Rc<String>,
-}
+struct PathSpecifier(Rc<String>);
 
 #[derive(Debug, PartialEq, Clone)]
 struct TypeContextEntry {
@@ -39,9 +37,7 @@ impl TypeContext {
             TypeDecl { .. } => (),
             TypeAlias { .. } => (),
             Binding {ref name, ref constant, ref expr} => {
-              let spec = PathSpecifier {
-                name: name.clone(),
-              };
+              let spec = PathSpecifier(name.clone());
               let type_var = expr.1.as_ref()
                 .map(|ty| self.from_anno(ty))
                 .unwrap_or_else(|| { self.get_existential_type() });
@@ -49,10 +45,7 @@ impl TypeContext {
               self.symbol_table.insert(spec, entry);
             },
             FuncDecl(ref signature, _) => {
-              let spec = PathSpecifier {
-                name: signature.name.clone(),
-              };
-
+              let spec = PathSpecifier(signature.name.clone());
               let type_var = self.from_signature(signature);
               let entry = TypeContextEntry { type_var, constant: true };
               self.symbol_table.insert(spec, entry);
@@ -63,10 +56,7 @@ impl TypeContext {
     }
   }
   fn lookup(&mut self, binding: &Rc<String>) -> Option<TypeContextEntry> {
-    let key = PathSpecifier {
-      name: binding.clone(),
-    };
-
+    let key = PathSpecifier(binding.clone());
     self.symbol_table.get(&key).map(|entry| entry.clone())
   }
   pub fn debug_symbol_table(&self) -> String  {
@@ -120,6 +110,7 @@ pub enum TypeVariable {
 #[derive(Debug, PartialEq, Clone)]
 pub enum UVar {
   Integer,
+  Float,
   Boolean,
   Unit,
   Function(Box<TypeVariable>, Box<TypeVariable>),
@@ -171,6 +162,7 @@ impl TypeContext {
         self.from_anno(anno)
       },
       (&IntLiteral(_), _) => Univ(UVar::Integer),
+      (&FloatLiteral(_), _) => Univ(UVar::Float),
       (&BoolLiteral(_), _) => Univ(UVar::Boolean),
       (&Variable(ref name), _) => self.lookup(name).map(|entry| entry.type_var)
         .ok_or(format!("Couldn't find {}", name))?,
