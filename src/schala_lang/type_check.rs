@@ -181,10 +181,23 @@ impl TypeContext {
           .ok_or(format!("Couldn't find {}", name))?
       },
       (&BinExp(ref op, box ref lhs, box ref rhs), _) => {
-        let _f_type = self.infer_op(op);
-        let _lhs_type = self.infer(&lhs);
-        let _rhs_type = self.infer(&rhs);
-        unimplemented!()
+        let op_type = self.infer_op(op)?;
+        let lhs_type = self.infer(&lhs)?;
+
+        match op_type {
+          TConst(FunctionT(box t1, box t2)) => {
+            let _ = self.unify(&t1, &lhs_type)?;
+            let rhs_type = self.infer(&rhs)?;
+            match t2 {
+              TConst(FunctionT(box t3, box t_ret)) => {
+                let _ = self.unify(&t3, &rhs_type)?;
+                t_ret
+              },
+              _ => return Err(format!("Another bad type for operator"))
+            }
+          },
+          _ => return Err(format!("Bad type for operator")),
+        }
       },
       (&Call { ref f, ref arguments }, _) => {
         let f_type = self.infer(&*f)?;
@@ -245,6 +258,7 @@ mod tests {
   #[test]
   fn basic_inference() {
     type_test!("30", TConst(Integer));
+    type_test!("1 + 2", TConst(Integer));
   }
 }
 
