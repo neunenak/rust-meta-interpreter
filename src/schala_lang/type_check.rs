@@ -248,10 +248,12 @@ impl TypeContext {
   }
 
   fn unify(&mut self, t1: Type, t2: Type) -> TypeCheckResult {
-    if t1 == t2 {
-      Ok(t1.clone())
-    } else {
-      Err(format!("Types {:?} and {:?} don't unify", t1, t2))
+    use self::Type::*;
+    use self::TypeConst::*;
+
+    match (&t1, &t2) {
+      (&TConst(ref c1), &TConst(ref c2)) if c1 == c2 => Ok(TConst(c1.clone())),
+      _ => Err(format!("Types {:?} and {:?} don't unify", t1, t2))
     }
   }
 }
