@@ -28,8 +28,13 @@ pub enum Type {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypeVar {
-  Univ(String),
+  Univ(Rc<String>),
   Exist(u64),
+}
+impl TypeVar {
+  fn univ(label: &str) -> TypeVar {
+    TypeVar::Univ(Rc::new(label.to_string()))
+  }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -186,11 +191,11 @@ impl TypeContext {
 
         match op_type {
           TConst(FunctionT(box t1, box t2)) => {
-            let _ = self.unify(&t1, &lhs_type)?;
+            let _ = self.unify(t1, lhs_type)?;
             let rhs_type = self.infer(&rhs)?;
             match t2 {
               TConst(FunctionT(box t3, box t_ret)) => {
-                let _ = self.unify(&t3, &rhs_type)?;
+                let _ = self.unify(t3, rhs_type)?;
                 t_ret
               },
               _ => return Err(format!("Another bad type for operator"))
@@ -204,7 +209,7 @@ impl TypeContext {
         let arg_type = self.infer(arguments.get(0).unwrap())?; // TODO fix later
         match f_type {
           TConst(FunctionT(box t1, box ret_type)) => {
-            let _ = self.unify(&t1, &arg_type)?;
+            let _ = self.unify(t1, arg_type)?;
             ret_type
           },
           _ => return Err(format!("Type error"))
@@ -222,10 +227,10 @@ impl TypeContext {
     if opstr == "+" {
       return Ok(
         TConst(FunctionT(
-            Box::new(TConst(StringT)),
+            Box::new(TVar(TypeVar::univ("a"))),
             Box::new(TConst(FunctionT(
-                  Box::new(TConst(StringT)),
-                  Box::new(TConst(StringT))
+                  Box::new(TVar(TypeVar::univ("a"))),
+                  Box::new(TVar(TypeVar::univ("a")))
                   )))
             ))
         )
@@ -242,7 +247,7 @@ impl TypeContext {
       )
   }
 
-  fn unify(&mut self, t1: &Type, t2: &Type) -> TypeCheckResult {
+  fn unify(&mut self, t1: Type, t2: Type) -> TypeCheckResult {
     if t1 == t2 {
       Ok(t1.clone())
     } else {
