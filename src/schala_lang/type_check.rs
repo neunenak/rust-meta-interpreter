@@ -166,6 +166,12 @@ impl TypeContext {
       (&BoolLiteral(_), _) => Univ(UVar::Boolean),
       (&Variable(ref name), _) => self.lookup(name).map(|entry| entry.type_var)
         .ok_or(format!("Couldn't find {}", name))?,
+      (&BinExp(ref op, box ref lhs, box ref rhs), _) => {
+        let _f_type = self.infer_op(op);
+        let _lhs_type = self.infer(&lhs);
+        let _rhs_type = self.infer(&rhs);
+        unimplemented!()
+      },
       (&Call { ref f, ref arguments }, _) => {
         let f_type = self.infer(&*f)?;
         let arg_type = self.infer(arguments.get(0).unwrap())?; // TODO fix later
@@ -179,6 +185,19 @@ impl TypeContext {
       },
       _ => Univ(UVar::Unit),
     })
+  }
+
+  fn infer_op(&mut self, _op: &Operation) -> TypeCheckResult {
+    use self::TypeVariable::*;
+    Ok(
+      Univ(UVar::Function(
+        Box::new(Univ(UVar::Integer)),
+        Box::new(Univ(UVar::Function(
+          Box::new(Univ(UVar::Integer)),
+          Box::new(Univ(UVar::Integer))
+          )))
+        ))
+      )
   }
 
   fn unify(&mut self, t1: &TypeVariable, t2: &TypeVariable) -> TypeCheckResult {
