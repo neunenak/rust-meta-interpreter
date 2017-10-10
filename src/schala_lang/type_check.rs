@@ -3,6 +3,43 @@ use std::rc::Rc;
 
 use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, TypeName};
 
+// from Niko's talk
+/* fn type_check(expression, expected_ty) -> Ty {
+    let ty = bare_type_check(expression, expected_type);
+    if ty icompatible with expected_ty {
+        try_coerce(expression, ty, expected_ty)
+    } else {
+      ty
+    }
+  }
+
+  fn bare_type_check(exprssion, expected_type) -> Ty { ... }
+ */
+
+// from https://www.youtube.com/watch?v=il3gD7XMdmA
+// typeInfer :: Expr a -> Matching (Type a)
+// unify :: Type a -> Type b -> Matching (Type c)
+
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum TypeVariable {
+  Univ(UVar),
+  Exist(u64),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum UVar {
+  Integer,
+  Float,
+  String,
+  Boolean,
+  Unit,
+  Function(Box<TypeVariable>, Box<TypeVariable>),
+  Bottom,
+}
+
+type TypeCheckResult = Result<TypeVariable, String>;
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct PathSpecifier(Rc<String>);
 
@@ -99,45 +136,7 @@ impl TypeContext {
       output_type
     }
   }
-}
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum TypeVariable {
-  Univ(UVar),
-  Exist(u64),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum UVar {
-  Integer,
-  Float,
-  String,
-  Boolean,
-  Unit,
-  Function(Box<TypeVariable>, Box<TypeVariable>),
-  Bottom,
-}
-
-type TypeCheckResult = Result<TypeVariable, String>;
-
-// from Niko's talk
-/* fn type_check(expression, expected_ty) -> Ty {
-    let ty = bare_type_check(expression, expected_type);
-    if ty icompatible with expected_ty {
-        try_coerce(expression, ty, expected_ty)
-    } else {
-      ty
-    }
-  }
-
-  fn bare_type_check(exprssion, expected_type) -> Ty { ... }
- */
-
-// from https://www.youtube.com/watch?v=il3gD7XMdmA
-// typeInfer :: Expr a -> Matching (Type a)
-// unify :: Type a -> Type b -> Matching (Type c)
-
-impl TypeContext {
   pub fn type_check(&mut self, ast: &AST) -> TypeCheckResult {
     let mut last = TypeVariable::Univ(UVar::Unit);
     for statement in ast.0.iter() {
