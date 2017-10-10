@@ -214,9 +214,22 @@ impl TypeContext {
     })
   }
 
-  fn infer_op(&mut self, _op: &Operation) -> TypeCheckResult {
+  fn infer_op(&mut self, op: &Operation) -> TypeCheckResult {
     use self::Type::*;
     use self::TypeConst::*;
+
+    let opstr: &str = &op.0;
+    if opstr == "+" {
+      return Ok(
+        TConst(FunctionT(
+            Box::new(TConst(StringT)),
+            Box::new(TConst(FunctionT(
+                  Box::new(TConst(StringT)),
+                  Box::new(TConst(StringT))
+                  )))
+            ))
+        )
+    }
 
     Ok(
       TConst(FunctionT(
