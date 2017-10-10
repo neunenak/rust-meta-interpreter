@@ -169,15 +169,17 @@ impl TypeContext {
 
     Ok(match (&expr.0, &expr.1) {
       (ref _t, &Some(ref anno)) => {
-        //TODO make this better,
-        self.from_anno(anno)
+        self.from_anno(anno)// TODO make this better,
       },
       (&IntLiteral(_), _) => TConst(Integer),
       (&FloatLiteral(_), _) => TConst(Float),
       (&StringLiteral(_), _) => TConst(StringT),
       (&BoolLiteral(_), _) => TConst(Boolean),
-      (&Variable(ref name), _) => self.lookup(name).map(|entry| entry.type_var)
-        .ok_or(format!("Couldn't find {}", name))?,
+      (&Variable(ref name), _) => {
+        self.lookup(name)
+          .map(|entry| entry.type_var)
+          .ok_or(format!("Couldn't find {}", name))?
+      },
       (&BinExp(ref op, box ref lhs, box ref rhs), _) => {
         let _f_type = self.infer_op(op);
         let _lhs_type = self.infer(&lhs);
