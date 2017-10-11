@@ -56,7 +56,7 @@ struct PathSpecifier(Rc<String>);
 
 #[derive(Debug, PartialEq, Clone)]
 struct TypeContextEntry {
-  type_var: Type,
+  ty: Type,
   constant: bool
 }
 
@@ -86,43 +86,43 @@ impl TypeContext {
             Impl { .. } => (),
             TypeDecl(ref type_constructor, ref body) => {
               for variant in body.0.iter() {
-                let (spec, type_var) = match variant {
+                let (spec, ty) = match variant {
                   &Variant::UnitStruct(ref data_constructor) => {
                     let spec = PathSpecifier(data_constructor.clone());
-                    let type_var = TConst(UserT(type_constructor.clone()));
-                    (spec, type_var)
+                    let ty = TConst(UserT(type_constructor.clone()));
+                    (spec, ty)
                   },
                   &Variant::TupleStruct(ref data_construcor, ref args) => {
                     //TODO fix
                     let arg = args.get(0).unwrap();
                     let type_arg = self.from_anno(arg);
                     let spec = PathSpecifier(data_construcor.clone());
-                    let type_var = TConst(FunctionT(
+                    let ty = TConst(FunctionT(
                       Box::new(type_arg),
                       Box::new(TConst(UserT(type_constructor.clone()))),
                       ));
-                    (spec, type_var)
+                    (spec, ty)
 
                   },
                   &Variant::Record(_, _) => unimplemented!(),
                 };
-                let entry = TypeContextEntry { type_var, constant: true };
+                let entry = TypeContextEntry { ty, constant: true };
                 self.symbol_table.insert(spec, entry);
               }
             },
             TypeAlias { .. } => (),
             Binding {ref name, ref constant, ref expr} => {
               let spec = PathSpecifier(name.clone());
-              let type_var = expr.1.as_ref()
+              let ty = expr.1.as_ref()
                 .map(|ty| self.from_anno(ty))
                 .unwrap_or_else(|| { self.get_existential_type() });
-              let entry = TypeContextEntry { type_var, constant: *constant };
+              let entry = TypeContextEntry { ty, constant: *constant };
               self.symbol_table.insert(spec, entry);
             },
             FuncDecl(ref signature, _) => {
               let spec = PathSpecifier(signature.name.clone());
-              let type_var = self.from_signature(signature);
-              let entry = TypeContextEntry { type_var, constant: true };
+              let ty = self.from_signature(signature);
+              let entry = TypeContextEntry { ty, constant: true };
               self.symbol_table.insert(spec, entry);
             },
           }
@@ -234,7 +234,7 @@ impl TypeContext {
       },
       (&Value(ref name), ref _anno) => {
         self.lookup(name)
-          .map(|entry| entry.type_var)
+          .map(|entry| entry.ty)
           .ok_or(format!("Couldn't find {}", name))?
       },
       (&BinExp(ref op, box ref lhs, box ref rhs), ref _anno) => {
