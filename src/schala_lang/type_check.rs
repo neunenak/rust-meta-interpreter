@@ -401,6 +401,7 @@ mod tests {
       {
       let mut tc = TypeContext::new();
       let ast = parse(tokenize($input)).0.unwrap() ;
+      tc.add_symbols(&ast);
       assert_eq!($correct, tc.type_check(&ast).unwrap())
       }
     }
@@ -409,6 +410,6 @@ mod tests {
   #[test]
   fn basic_inference() {
     type_test!("30", TConst(Integer));
-    type_test!("1 + 2", TConst(Integer));
+    type_test!("fn x(a: Int): Bool {}; x(1)", TConst(Boolean));
   }
 }
