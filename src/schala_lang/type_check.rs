@@ -62,6 +62,7 @@ struct TypeContextEntry {
 
 pub struct TypeContext {
   symbol_table: HashMap<PathSpecifier, TypeContextEntry>,
+  evar_table: HashMap<u64, Type>,
   existential_type_label_count: u64
 }
 
@@ -69,6 +70,7 @@ impl TypeContext {
   pub fn new() -> TypeContext {
     TypeContext {
       symbol_table: HashMap::new(),
+      evar_table: HashMap::new(),
       existential_type_label_count: 0,
     }
   }
@@ -342,6 +344,7 @@ impl TypeContext {
   fn unify(&mut self, t1: Type, t2: Type) -> TypeCheckResult {
     use self::Type::*;
     use self::TypeConst::*;
+    use self::TypeVar::*;
 
     match (&t1, &t2) {
       (&TConst(ref c1), &TConst(ref c2)) if c1 == c2 => Ok(TConst(c1.clone())),
@@ -349,6 +352,22 @@ impl TypeContext {
         let t5 = self.unify(*t1.clone().clone(), *t3.clone().clone())?;
         let t6 = self.unify(*t2.clone().clone(), *t4.clone().clone())?;
         Ok(TFunc(Box::new(t5), Box::new(t6)))
+      },
+      (&TVar(Univ(ref a)), &TVar(Univ(ref b))) => {
+        if a == b {
+          Ok(TVar(Univ(a.clone())))
+        } else {
+          Err(format!("Couldn't unify universal types {} and {}", a, b))
+        }
+      },
+      (&TVar(Exist(ref a)), &TVar(Exist(ref b))) => {
+        //the interesting case!!
+
+        if a == b {
+          Ok(TVar(Exist(a.clone())))
+        } else {
+          Err(format!("Couldn't unify existential types {} and {}", a, b))
+        }
       },
       _ => Err(format!("Types {:?} and {:?} don't unify", t1, t2))
     }
