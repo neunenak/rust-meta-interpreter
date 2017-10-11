@@ -24,6 +24,7 @@ use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, E
 pub enum Type {
   TVar(TypeVar),
   TConst(TypeConst),
+  TFunc(Box<Type>, Box<Type>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -45,7 +46,6 @@ pub enum TypeConst {
   StringT,
   Boolean,
   Unit,
-  FunctionT(Box<Type>, Box<Type>),
   Bottom,
 }
 
@@ -97,10 +97,7 @@ impl TypeContext {
                     let arg = args.get(0).unwrap();
                     let type_arg = self.from_anno(arg);
                     let spec = PathSpecifier(data_construcor.clone());
-                    let ty = TConst(FunctionT(
-                      Box::new(type_arg),
-                      Box::new(TConst(UserT(type_constructor.clone()))),
-                      ));
+                    let ty = TFunc(Box::new(type_arg), Box::new(TConst(UserT(type_constructor.clone()))));
                     (spec, ty)
 
                   },
@@ -181,12 +178,12 @@ impl TypeContext {
 
     let return_type = sig.type_anno.as_ref().map(|anno| self.from_anno(&anno)).unwrap_or_else(|| { get_type() });
     if sig.params.len() == 0 {
-      TConst(FunctionT(Box::new(TConst(Unit)), Box::new(return_type)))
+      TFunc(Box::new(TConst(Unit)), Box::new(return_type))
     } else {
       let mut output_type = return_type;
       for p in sig.params.iter() {
         let p_type = p.1.as_ref().map(|anno| self.from_anno(anno)).unwrap_or_else(|| { get_type() });
-        output_type = TConst(FunctionT(Box::new(p_type), Box::new(output_type)));
+        output_type = TFunc(Box::new(p_type), Box::new(output_type));
       }
       output_type
     }
@@ -331,7 +328,7 @@ impl TypeContext {
         let tf = self.infer(f)?;
         let targ = self.infer(arguments.get(0).unwrap())?;
         match tf {
-          TConst(FunctionT(box t1, box t2)) => {
+          TFunc(box t1, box t2) => {
             let _ = self.unify(t1, targ);
             t2
           },
