@@ -442,7 +442,7 @@ pub enum ExpressionType {
   BinExp(Operation, Box<Expression>, Box<Expression>),
   PrefixExp(Operation, Box<Expression>),
   TupleLiteral(Vec<Expression>),
-  Variable(Rc<String>),
+  Value(Rc<String>),
   Call {
     f: Box<Expression>,
     arguments: Vec<Expression>,
@@ -812,17 +812,17 @@ impl Parser {
       LParen => {
         let arguments = self.call_expr()?;
         //TODO make this be more general
-        let f = Box::new(Expression(Variable(identifier), None));
+        let f = Box::new(Expression(Value(identifier), None));
         Expression(Call { f, arguments }, None)
       },
       LSquareBracket => {
         let indexers = self.index_expr()?;
         Expression(Index {
-          indexee: Box::new(Expression(Variable(identifier), None)),
+          indexee: Box::new(Expression(Value(identifier), None)),
           indexers,
         }, None)
       }
-      _ => Expression(Variable(identifier), None)
+      _ => Expression(Value(identifier), None)
     })
   });
 
@@ -1021,8 +1021,8 @@ mod parse_tests {
   macro_rules! op {
     ($op:expr) => { Operation(Rc::new($op.to_string())) }
   }
-  macro_rules! var {
-    ($var:expr) => { Variable(Rc::new($var.to_string())) }
+  macro_rules! val {
+    ($var:expr) => { Value(Rc::new($var.to_string())) }
   }
   macro_rules! exprstatement {
     ($expr_type:expr) => { Statement::ExpressionStatement(Expression($expr_type, None)) };
@@ -1083,38 +1083,38 @@ mod parse_tests {
 
   #[test]
   fn parsing_identifiers() {
-    parse_test!("a", AST(vec![exprstatement!(var!("a"))]));
-    parse_test!("a + b", AST(vec![exprstatement!(binexp!("+", var!("a"), var!("b")))]));
+    parse_test!("a", AST(vec![exprstatement!(val!("a"))]));
+    parse_test!("a + b", AST(vec![exprstatement!(binexp!("+", val!("a"), val!("b")))]));
     //parse_test!("a[b]", AST(vec![Expression(
     //parse_test!("a[]", <- TODO THIS NEEDS TO FAIL
     //parse_test!(damn()[a] ,<- TODO needs to succeed
-    parse_test!("a[b,c]", AST(vec![exprstatement!(Index { indexee: Box::new(ex!(var!("a"))), indexers: vec![ex!(var!("b")), ex!(var!("c"))]} )]));     
+    parse_test!("a[b,c]", AST(vec![exprstatement!(Index { indexee: Box::new(ex!(val!("a"))), indexers: vec![ex!(val!("b")), ex!(val!("c"))]} )]));     
   }
 
   #[test]
   fn parsing_complicated_operators() {
-    parse_test!("a <- b", AST(vec![exprstatement!(binexp!("<-", var!("a"), var!("b")))]));
-    parse_test!("a || b", AST(vec![exprstatement!(binexp!("||", var!("a"), var!("b")))]));
-    parse_test!("a<>b", AST(vec![exprstatement!(binexp!("<>", var!("a"), var!("b")))]));
+    parse_test!("a <- b", AST(vec![exprstatement!(binexp!("<-", val!("a"), val!("b")))]));
+    parse_test!("a || b", AST(vec![exprstatement!(binexp!("||", val!("a"), val!("b")))]));
+    parse_test!("a<>b", AST(vec![exprstatement!(binexp!("<>", val!("a"), val!("b")))]));
     parse_test!("a.b.c.d", AST(vec![exprstatement!(binexp!(".",
                                                 binexp!(".",
-                                                  binexp!(".", var!("a"), var!("b")),
-                                                var!("c")),
-                                               var!("d")))]));
+                                                  binexp!(".", val!("a"), val!("b")),
+                                                val!("c")),
+                                               val!("d")))]));
     parse_test!("-3", AST(vec![exprstatement!(prefexp!("-", IntLiteral(3)))]));
     parse_test!("-0.2", AST(vec![exprstatement!(prefexp!("-", FloatLiteral(0.2)))]));
     parse_test!("!3", AST(vec![exprstatement!(prefexp!("!", IntLiteral(3)))]));
-    parse_test!("a <- -b", AST(vec![exprstatement!(binexp!("<-", var!("a"), prefexp!("-", var!("b"))))]));
-    parse_test!("a <--b", AST(vec![exprstatement!(binexp!("<--", var!("a"), var!("b")))]));
+    parse_test!("a <- -b", AST(vec![exprstatement!(binexp!("<-", val!("a"), prefexp!("-", val!("b"))))]));
+    parse_test!("a <--b", AST(vec![exprstatement!(binexp!("<--", val!("a"), val!("b")))]));
   }
 
   #[test]
   fn parsing_functions() {
     parse_test!("fn oi()",  AST(vec![Declaration(FuncSig(Signature { name: rc!(oi), params: vec![], type_anno: None }))]));
-    parse_test!("oi()", AST(vec![exprstatement!(Call { f: Box::new(ex!(var!("oi"))), arguments: vec![] })]));
+    parse_test!("oi()", AST(vec![exprstatement!(Call { f: Box::new(ex!(val!("oi"))), arguments: vec![] })]));
     parse_test!("oi(a, 2 + 2)", AST(vec![exprstatement!(Call
-    { f: Box::new(ex!(var!("oi"))),
-      arguments: vec![ex!(var!("a")), ex!(binexp!("+", IntLiteral(2), IntLiteral(2)))]
+    { f: Box::new(ex!(val!("oi"))),
+      arguments: vec![ex!(val!("a")), ex!(binexp!("+", IntLiteral(2), IntLiteral(2)))]
     })]));
     parse_error!("a(b,,c)");
 
@@ -1126,7 +1126,7 @@ mod parse_tests {
 
     parse_test!("fn a(x) { x() }", AST(vec![Declaration(
       FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
-        vec![exprstatement!(Call { f: Box::new(ex!(var!("x"))), arguments: vec![] })]))]));
+        vec![exprstatement!(Call { f: Box::new(ex!(val!("x"))), arguments: vec![] })]))]));
   }
 
   #[test]
@@ -1166,8 +1166,8 @@ mod parse_tests {
   #[test]
   fn parsing_block_expressions() {
     parse_test!("if a() { b(); c() }", AST(vec![exprstatement!(
-        IfExpression(Box::new(ex!(Call { f: Box::new(ex!(var!("a"))), arguments: vec![]})),
-          vec![exprstatement!(Call { f: Box::new(ex!(var!("b"))), arguments: vec![]}), exprstatement!(Call { f: Box::new(ex!(var!("c"))), arguments: vec![] })],
+        IfExpression(Box::new(ex!(Call { f: Box::new(ex!(val!("a"))), arguments: vec![]})),
+          vec![exprstatement!(Call { f: Box::new(ex!(val!("b"))), arguments: vec![]}), exprstatement!(Call { f: Box::new(ex!(val!("c"))), arguments: vec![] })],
           None)
         )]));
     parse_test!(r#"
@@ -1179,8 +1179,8 @@ mod parse_tests {
     }"#,
     AST(vec![exprstatement!(IfExpression(Box::new(ex!(BoolLiteral(true))),
       vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(IntLiteral(10)) }),
-           exprstatement!(Variable(rc!(b)))],
-      Some(vec![exprstatement!(Variable(rc!(c)))])))])
+           exprstatement!(Value(rc!(b)))],
+      Some(vec![exprstatement!(Value(rc!(c)))])))])
     );
   }
 
@@ -1217,24 +1217,24 @@ mod parse_tests {
   fn parsing_type_annotations() {
     parse_test!("const a = b : Int", AST(vec![
       Declaration(Binding { name: rc!(a), constant: true, expr:
-        Expression(var!("b"), Some(ty!("Int"))) })]));
+        Expression(val!("b"), Some(ty!("Int"))) })]));
 
     parse_test!("a : Int", AST(vec![
-      exprstatement!(var!("a"), ty!("Int"))
+      exprstatement!(val!("a"), ty!("Int"))
     ]));
 
     parse_test!("a : Option<Int>", AST(vec![
-      exprstatement!(var!("a"), Singleton { name: rc!(Option), params: vec![ty!("Int")] })
+      exprstatement!(val!("a"), Singleton { name: rc!(Option), params: vec![ty!("Int")] })
     ]));
 
     parse_test!("a : KoreanBBQSpecifier<Kimchi, Option<Bulgogi> >", AST(vec![
-      exprstatement!(var!("a"), Singleton { name: rc!(KoreanBBQSpecifier), params: vec![
+      exprstatement!(val!("a"), Singleton { name: rc!(KoreanBBQSpecifier), params: vec![
         ty!("Kimchi"), Singleton { name: rc!(Option), params: vec![ty!("Bulgogi")] }
       ] })
     ]));
 
     parse_test!("a : (Int, Yolo<a>)", AST(vec![
-      exprstatement!(var!("a"), Tuple(
+      exprstatement!(val!("a"), Tuple(
         vec![ty!("Int"), Singleton {
           name: rc!(Yolo), params: vec![ty!("a")]
         }]))]));

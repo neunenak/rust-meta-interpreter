@@ -208,7 +208,7 @@ impl TypeContext {
       (&FloatLiteral(_), _) => TConst(Float),
       (&StringLiteral(_), _) => TConst(StringT),
       (&BoolLiteral(_), _) => TConst(Boolean),
-      (&Variable(ref name), _) => {
+      (&Value(ref name), _) => {
         self.lookup(name)
           .map(|entry| entry.type_var)
           .ok_or(format!("Couldn't find {}", name))?
@@ -309,4 +309,3 @@ mod tests {
     type_test!("1 + 2", TConst(Integer));
   }
 }
-
