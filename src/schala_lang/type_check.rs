@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, TypeName};
+use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName};
 
 // from Niko's talk
 /* fn type_check(expression, expected_ty) -> Ty {
@@ -39,6 +39,7 @@ impl TypeVar {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypeConst {
+  UserT(Rc<String>),
   Integer,
   Float,
   StringT,
@@ -73,6 +74,8 @@ impl TypeContext {
   }
   pub fn add_symbols(&mut self, ast: &AST) {
     use self::Declaration::*;
+    use self::Type::*;
+    use self::TypeConst::*;
 
     for statement in ast.0.iter() {
       match *statement {
@@ -81,7 +84,32 @@ impl TypeContext {
           match *decl {
             FuncSig(_) => (),
             Impl { .. } => (),
-            TypeDecl { .. } => (),
+            TypeDecl(ref type_constructor, ref body) => {
+              for variant in body.0.iter() {
+                let (spec, type_var) = match variant {
+                  &Variant::UnitStruct(ref data_constructor) => {
+                    let spec = PathSpecifier(data_constructor.clone());
+                    let type_var = TConst(UserT(type_constructor.clone()));
+                    (spec, type_var)
+                  },
+                  &Variant::TupleStruct(ref data_construcor, ref args) => {
+                    //TODO fix
+                    let arg = args.get(0).unwrap();
+                    let type_arg = self.from_anno(arg);
+                    let spec = PathSpecifier(data_construcor.clone());
+                    let type_var = TConst(FunctionT(
+                      Box::new(type_arg),
+                      Box::new(TConst(UserT(type_constructor.clone()))),
+                      ));
+                    (spec, type_var)
+
+                  },
+                  &Variant::Record(_, _) => unimplemented!(),
+                };
+                let entry = TypeContextEntry { type_var, constant: true };
+                self.symbol_table.insert(spec, entry);
+              }
+            },
             TypeAlias { .. } => (),
             Binding {ref name, ref constant, ref expr} => {
               let spec = PathSpecifier(name.clone());
