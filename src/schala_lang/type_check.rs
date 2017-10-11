@@ -345,6 +345,11 @@ impl TypeContext {
 
     match (&t1, &t2) {
       (&TConst(ref c1), &TConst(ref c2)) if c1 == c2 => Ok(TConst(c1.clone())),
+      (&TFunc(ref t1, ref t2), &TFunc(ref t3, ref t4)) => {
+        let t5 = self.unify(*t1.clone().clone(), *t3.clone().clone())?;
+        let t6 = self.unify(*t2.clone().clone(), *t4.clone().clone())?;
+        Ok(TFunc(Box::new(t5), Box::new(t6)))
+      },
       _ => Err(format!("Types {:?} and {:?} don't unify", t1, t2))
     }
   }
