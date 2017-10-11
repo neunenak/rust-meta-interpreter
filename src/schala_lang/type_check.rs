@@ -201,19 +201,36 @@ impl TypeContext {
     use self::TypeConst::*;
 
     Ok(match (&expr.0, &expr.1) {
-      (ref _t, &Some(ref anno)) => {
-        self.from_anno(anno)// TODO make this better,
+      (&IntLiteral(_), anno) => {
+        match *anno {
+          None => TConst(Integer),
+          Some(ref t) => self.from_anno(t)
+        }
+      }
+      (&FloatLiteral(_), anno) => {
+        match *anno {
+          None => TConst(Float),
+          Some(ref t) => self.from_anno(t),
+        }
       },
-      (&IntLiteral(_), _) => TConst(Integer),
-      (&FloatLiteral(_), _) => TConst(Float),
-      (&StringLiteral(_), _) => TConst(StringT),
-      (&BoolLiteral(_), _) => TConst(Boolean),
-      (&Value(ref name), _) => {
+      (&StringLiteral(_), anno) => {
+        match *anno {
+          None => TConst(StringT),
+          Some(ref t) => self.from_anno(t),
+        }
+      },
+      (&BoolLiteral(_), anno) => {
+        match *anno {
+          None => TConst(Boolean),
+          Some(ref t) => self.from_anno(t),
+        }
+      },
+      (&Value(ref name), ref _anno) => {
         self.lookup(name)
           .map(|entry| entry.type_var)
           .ok_or(format!("Couldn't find {}", name))?
       },
-      (&BinExp(ref op, box ref lhs, box ref rhs), _) => {
+      (&BinExp(ref op, box ref lhs, box ref rhs), ref _anno) => {
         let op_type = self.infer_op(op)?;
         let lhs_type = self.infer(&lhs)?;
 
@@ -232,7 +249,7 @@ impl TypeContext {
           _ => return Err(format!("Bad type for operator")),
         }
       },
-      (&Call { ref f, ref arguments }, _) => {
+      (&Call { ref f, ref arguments }, ref _anno) => {
         let f_type = self.infer(&*f)?;
         let arg_type = self.infer(arguments.get(0).unwrap())?; // TODO fix later
         match f_type {
