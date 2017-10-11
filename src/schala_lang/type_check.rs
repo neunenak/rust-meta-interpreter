@@ -115,7 +115,7 @@ impl TypeContext {
               let spec = PathSpecifier(name.clone());
               let ty = expr.1.as_ref()
                 .map(|ty| self.from_anno(ty))
-                .unwrap_or_else(|| { self.get_existential_type() });
+                .unwrap_or_else(|| { self.alloc_existential_type() }); // this call to alloc_existential is OK b/c a binding only ever has one type, so if the annotation is absent, it's fine to just make one de novo
               let entry = TypeContextEntry { ty, constant: *constant };
               self.symbol_table.insert(spec, entry);
             },
@@ -137,7 +137,7 @@ impl TypeContext {
   pub fn debug_symbol_table(&self) -> String  {
     format!("Symbol table:\n {:?}", self.symbol_table)
   }
-  fn get_existential_type(&mut self) -> Type {
+  fn alloc_existential_type(&mut self) -> Type {
     let ret = Type::TVar(TypeVar::Exist(self.existential_type_label_count));
     self.existential_type_label_count += 1;
     ret
@@ -153,7 +153,7 @@ impl TypeContext {
           "Int" => TConst(Integer),
           "Bool" => TConst(Boolean),
           "String" => TConst(StringT),
-          _ => self.get_existential_type()
+          s => TVar(TypeVar::Univ(Rc::new(format!("{}",s)))),
         }
       },
       &TypeName::Tuple(ref items) => {
@@ -170,13 +170,22 @@ impl TypeContext {
     use self::Type::*;
     use self::TypeConst::*;
 
-    let return_type = sig.type_anno.as_ref().map(|anno| self.from_anno(&anno)).unwrap_or_else(|| { self.get_existential_type() });
+    //TODO this won't work properly until you make sure that all (universal) type vars in the function have the same existential type var
+    // actually this should never even put existential types into the symbol table at all
+
+    //this will crash if more than 5 arg function is used
+    let names = vec!["a", "b", "c", "d", "e", "f"];
+    let mut idx = 0;
+    
+    let mut get_type = || { let q = TVar(TypeVar::Univ(Rc::new(format!("{}", names.get(idx).unwrap())))); idx += 1; q };
+
+    let return_type = sig.type_anno.as_ref().map(|anno| self.from_anno(&anno)).unwrap_or_else(|| { get_type() });
     if sig.params.len() == 0 {
       TConst(FunctionT(Box::new(TConst(Unit)), Box::new(return_type)))
     } else {
       let mut output_type = return_type;
       for p in sig.params.iter() {
-        let p_type = p.1.as_ref().map(|anno| self.from_anno(anno)).unwrap_or_else(|| { self.get_existential_type() });
+        let p_type = p.1.as_ref().map(|anno| self.from_anno(anno)).unwrap_or_else(|| { get_type() });
         output_type = TConst(FunctionT(Box::new(p_type), Box::new(output_type)));
       }
       output_type
@@ -202,6 +211,7 @@ impl TypeContext {
     Ok(last)
   }
 
+  /*
   fn infer(&mut self, expr: &Expression) -> TypeCheckResult {
     use self::ExpressionType::*;
     use self::Type::*;
@@ -297,6 +307,39 @@ impl TypeContext {
           )))
         ))
       )
+  }
+    */
+  fn infer(&mut self, expr: &Expression) -> TypeCheckResult {
+    use self::ExpressionType::*;
+    use self::Type::*;
+    use self::TypeConst::*;
+
+    Ok(match (&expr.0, &expr.1) {
+      (ex, &Some(ref anno)) => {
+        let tx = self.infer(&Expression(ex.clone(), None))?; //TODO rewrite this to call into a function that takes just an ExprType, to avoid this cloning
+        let ty = self.from_anno(anno);
+        self.unify(tx, ty)?
+      },
+      (&IntLiteral(_), _) => TConst(Integer),
+      (&BoolLiteral(_), _) => TConst(Boolean),
+      (&Value(ref name), _) => {
+        self.lookup(name)
+          .map(|entry| entry.ty)
+          .ok_or(format!("Couldn't find {}", name))?
+      },
+      (&Call { ref f, ref arguments }, _) => {
+        let tf = self.infer(f)?;
+        let targ = self.infer(arguments.get(0).unwrap())?;
+        match tf {
+          TConst(FunctionT(box t1, box t2)) => {
+            let _ = self.unify(t1, targ);
+            t2
+          },
+          _ => return Err(format!("Not a function!")),
+        }
+      },
+      _ => TConst(Bottom),
+    })
   }
 
   fn unify(&mut self, t1: Type, t2: Type) -> TypeCheckResult {
