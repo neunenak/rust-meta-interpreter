@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+
+//SKOLEMIZATION - how you prevent an unassigned existential type variable from leaking!
+
 use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName};
 
 // from Niko's talk
@@ -134,7 +137,7 @@ impl TypeContext {
     self.symbol_table.get(&key).map(|entry| entry.clone())
   }
   pub fn debug_symbol_table(&self) -> String  {
-    format!("Symbol table:\n {:?}", self.symbol_table)
+    format!("Symbol table:\n {:?}\nEvar table:\n{:?}", self.symbol_table, self.evar_table)
   }
   fn alloc_existential_type(&mut self) -> Type {
     let ret = Type::TVar(TypeVar::Exist(self.existential_type_label_count));
@@ -360,13 +363,25 @@ impl TypeContext {
           Err(format!("Couldn't unify universal types {} and {}", a, b))
         }
       },
-      (&TVar(Exist(ref a)), &TVar(Exist(ref b))) => {
-        //the interesting case!!
-
-        if a == b {
-          Ok(TVar(Exist(a.clone())))
-        } else {
-          Err(format!("Couldn't unify existential types {} and {}", a, b))
+      //the interesting case!!
+      (&TVar(Exist(ref a)), ref t2) => {
+        let x = self.evar_table.get(a).map(|x| x.clone());
+        match x {
+          Some(ref t1) => self.unify(t1.clone().clone(), t2.clone().clone()),
+          None => {
+            self.evar_table.insert(*a, t2.clone().clone());
+            Ok(t2.clone().clone())
+          }
+        }
+      },
+      (ref t1, &TVar(Exist(ref a))) => {
+        let x = self.evar_table.get(a).map(|x| x.clone());
+        match x {
+          Some(ref t2) => self.unify(t2.clone().clone(), t1.clone().clone()),
+          None => {
+            self.evar_table.insert(*a, t1.clone().clone());
+            Ok(t1.clone().clone())
+          }
         }
       },
       _ => Err(format!("Types {:?} and {:?} don't unify", t1, t2))
