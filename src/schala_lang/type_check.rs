@@ -152,10 +152,17 @@ impl TypeContext {
         match name.as_ref().as_ref() {
           "Int" => TConst(Integer),
           "Bool" => TConst(Boolean),
+          "String" => TConst(StringT),
           _ => self.get_existential_type()
         }
       },
-      _ => TConst(Bottom)
+      &TypeName::Tuple(ref items) => {
+        if items.len() == 1 {
+          TConst(Unit)
+        } else {
+          TConst(Bottom)
+        }
+      }
     }
   }
 
