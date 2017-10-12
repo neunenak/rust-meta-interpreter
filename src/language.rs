@@ -52,7 +52,10 @@ impl ReplOutput {
 
   pub fn print_to_screen(&self) {
     for line in self.artifacts.iter() {
-      println!("{}: {}", line.stage_name, line.debug_output);
+      let color = line.text_color;
+      let stage = line.stage_name.color(color).to_string();
+      let output = line.debug_output.color(color).to_string();
+      println!("{}: {}", stage, output);
     }
     println!("{}", self.output);
   }
