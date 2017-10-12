@@ -1,17 +1,24 @@
 use rocket;
-use rocket::response::NamedFile;
+use rocket::response::Content;
+use rocket::http::ContentType;
 use rocket_contrib::Json;
 use schala_lang;
 use language::{ProgrammingLanguageInterface, EvalOptions};
+use WEBFILES;
+
 
 #[get("/")]
-fn index() -> Result<NamedFile, ()> {
-  NamedFile::open("static/index.html").map_err(|_| ())
+fn index() -> Content<String> {
+  let path = "static/index.html";
+  let html_contents = String::from_utf8(WEBFILES.get(path).unwrap().into_owned()).unwrap();
+  Content(ContentType::HTML, html_contents)
 }
 
 #[get("/bundle.js")]
-fn js_bundle() -> Result<NamedFile, ()> {
-  NamedFile::open("static/bundle.js").map_err(|_| ())
+fn js_bundle() -> Content<String> {
+  let path = "static/bundle.js";
+  let js_contents = String::from_utf8(WEBFILES.get(path).unwrap().into_owned()).unwrap();
+  Content(ContentType::JavaScript, js_contents)
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -13,6 +13,8 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate rocket;
 extern crate rocket_contrib;
+extern crate includedir;
+extern crate phf;
 
 use std::path::Path;
 use std::fs::File;
@@ -29,6 +31,8 @@ use language::{ProgrammingLanguageInterface, EvalOptions, LLVMCodeString};
 
 mod webapp;
 mod llvm_wrap;
+
+include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
 fn main() {
   let languages: Vec<Box<ProgrammingLanguageInterface>> =
