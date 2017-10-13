@@ -312,10 +312,6 @@ impl TypeContext {
   }
     */
   fn infer(&mut self, expr: &Expression) -> TypeCheckResult {
-    use self::ExpressionType::*;
-    use self::Type::*;
-    use self::TypeConst::*;
-
     match (&expr.0, &expr.1) {
       (exprtype, &Some(ref anno)) => {
         let tx = self.infer_no_anno(exprtype)?;
@@ -327,6 +323,10 @@ impl TypeContext {
   }
 
   fn infer_no_anno(&mut self, ex: &ExpressionType) -> TypeCheckResult { 
+    use self::ExpressionType::*;
+    use self::Type::*;
+    use self::TypeConst::*;
+
     Ok(match ex {
       &IntLiteral(_) => TConst(Integer),
       &BoolLiteral(_) => TConst(Boolean),
