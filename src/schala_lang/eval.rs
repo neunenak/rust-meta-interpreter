@@ -85,7 +85,7 @@ impl ReplState {
     let opstr: &str = &op.0;
     Ok(match (opstr, evaled_lhs, evaled_rhs) {
       ("+", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l + r),
-      ("+", Str(s1), Str(s2)) => Str(format!("{}{}", s1, s2)),
+      ("++", Str(s1), Str(s2)) => Str(format!("{}{}", s1, s2)),
       ("-", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l - r),
       ("*", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l * r),
       ("/", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l / r),

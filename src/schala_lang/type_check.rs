@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-
 //SKOLEMIZATION - how you prevent an unassigned existential type variable from leaking!
 
 use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName};
@@ -329,18 +328,38 @@ impl TypeContext {
 
     Ok(match ex {
       &IntLiteral(_) => TConst(Integer),
+      &FloatLiteral(_) => TConst(Float),
+      &StringLiteral(_) => TConst(StringT),
       &BoolLiteral(_) => TConst(Boolean),
       &Value(ref name) => {
         self.lookup(name)
           .map(|entry| entry.ty)
           .ok_or(format!("Couldn't find {}", name))?
       },
+      &BinExp(ref op, ref lhs, ref rhs) => {
+        let t_lhs = self.infer(lhs)?;
+        match self.infer_op(op)? {
+          TFunc(t1, t2) => {
+            let _ = self.unify(t_lhs, *t1)?;
+            let t_rhs = self.infer(rhs)?;
+            let x = *t2;
+            match x {
+              TFunc(t3, t4) => {
+                let _ = self.unify(t_rhs, *t3)?;
+                *t4
+              },
+              _ => return Err(format!("Not a function type either")),
+            }
+          },
+          _ => return Err(format!("Op {:?} is not a function type", op)),
+        }
+      },
       &Call { ref f, ref arguments } => {
         let tf = self.infer(f)?;
         let targ = self.infer(arguments.get(0).unwrap())?;
         match tf {
           TFunc(box t1, box t2) => {
-            let _ = self.unify(t1, targ);
+            let _ = self.unify(t1, targ)?;
             t2
           },
           _ => return Err(format!("Not a function!")),
@@ -350,10 +369,29 @@ impl TypeContext {
     })
   }
 
-  fn unify(&mut self, t1: Type, t2: Type) -> TypeCheckResult {
+  fn infer_op(&mut self, op: &Operation) -> TypeCheckResult {
     use self::Type::*;
     use self::TypeConst::*;
+    macro_rules! binoptype {
+      ($lhs:expr, $rhs:expr, $out:expr) => { TFunc(Box::new($lhs), Box::new(TFunc(Box::new($rhs), Box::new($out)))) };
+    }
+
+    Ok(match (*op.0).as_ref() {
+      "+" => binoptype!(TConst(Integer), TConst(Integer), TConst(Integer)),
+      "++" => binoptype!(TConst(StringT), TConst(StringT), TConst(StringT)),
+      "-" => binoptype!(TConst(Integer), TConst(Integer), TConst(Integer)),
+      "*" => binoptype!(TConst(Integer), TConst(Integer), TConst(Integer)),
+      "/" => binoptype!(TConst(Integer), TConst(Integer), TConst(Integer)),
+      "%" => binoptype!(TConst(Integer), TConst(Integer), TConst(Integer)),
+      _ => TConst(Bottom)
+    })
+  }
+
+  fn unify(&mut self, t1: Type, t2: Type) -> TypeCheckResult {
+    use self::Type::*;
     use self::TypeVar::*;
+
+    println!("Calling unify with `{:?}` and `{:?}`", t1, t2);
 
     match (&t1, &t2) {
       (&TConst(ref c1), &TConst(ref c2)) if c1 == c2 => Ok(TConst(c1.clone())),
