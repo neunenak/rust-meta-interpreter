@@ -152,6 +152,7 @@ impl TypeContext {
       &TypeName::Singleton { ref name, .. } => {
         match name.as_ref().as_ref() {
           "Int" => TConst(Integer),
+          "Float" => TConst(Float),
           "Bool" => TConst(Boolean),
           "String" => TConst(StringT),
           s => TVar(TypeVar::Univ(Rc::new(format!("{}",s)))),
@@ -211,105 +212,6 @@ impl TypeContext {
     }
     Ok(last)
   }
-
-  /*
-  fn infer(&mut self, expr: &Expression) -> TypeCheckResult {
-    use self::ExpressionType::*;
-    use self::Type::*;
-    use self::TypeConst::*;
-
-    Ok(match (&expr.0, &expr.1) {
-      (&IntLiteral(_), anno) => {
-        match *anno {
-          None => TConst(Integer),
-          Some(ref t) => self.from_anno(t)
-        }
-      }
-      (&FloatLiteral(_), anno) => {
-        match *anno {
-          None => TConst(Float),
-          Some(ref t) => self.from_anno(t),
-        }
-      },
-      (&StringLiteral(_), anno) => {
-        match *anno {
-          None => TConst(StringT),
-          Some(ref t) => self.from_anno(t),
-        }
-      },
-      (&BoolLiteral(_), anno) => {
-        match *anno {
-          None => TConst(Boolean),
-          Some(ref t) => self.from_anno(t),
-        }
-      },
-      (&Value(ref name), ref _anno) => {
-        self.lookup(name)
-          .map(|entry| entry.ty)
-          .ok_or(format!("Couldn't find {}", name))?
-      },
-      (&BinExp(ref op, box ref lhs, box ref rhs), ref _anno) => {
-        let op_type = self.infer_op(op)?;
-        let lhs_type = self.infer(&lhs)?;
-
-        match op_type {
-          TConst(FunctionT(box t1, box t2)) => {
-            let _ = self.unify(t1, lhs_type)?;
-            let rhs_type = self.infer(&rhs)?;
-            match t2 {
-              TConst(FunctionT(box t3, box t_ret)) => {
-                let _ = self.unify(t3, rhs_type)?;
-                t_ret
-              },
-              _ => return Err(format!("Another bad type for operator"))
-            }
-          },
-          _ => return Err(format!("Bad type for operator")),
-        }
-      },
-      (&Call { ref f, ref arguments }, ref _anno) => {
-        let f_type = self.infer(&*f)?;
-        let arg_type = self.infer(arguments.get(0).unwrap())?; // TODO fix later
-        match f_type {
-          TConst(FunctionT(box t1, box ret_type)) => {
-            let _ = self.unify(t1, arg_type)?;
-            ret_type
-          },
-          _ => return Err(format!("Type error"))
-        }
-      },
-      _ => TConst(Unit)
-    })
-  }
-
-  fn infer_op(&mut self, op: &Operation) -> TypeCheckResult {
-    use self::Type::*;
-    use self::TypeConst::*;
-
-    let opstr: &str = &op.0;
-    if opstr == "+" {
-      return Ok(
-        TConst(FunctionT(
-            Box::new(TVar(TypeVar::univ("a"))),
-            Box::new(TConst(FunctionT(
-                  Box::new(TVar(TypeVar::univ("a"))),
-                  Box::new(TVar(TypeVar::univ("a")))
-                  )))
-            ))
-        )
-    }
-
-    Ok(
-      TConst(FunctionT(
-        Box::new(TConst(Integer)),
-        Box::new(TConst(FunctionT(
-          Box::new(TConst(Integer)),
-          Box::new(TConst(Integer))
-          )))
-        ))
-      )
-  }
-    */
   fn infer(&mut self, expr: &Expression) -> TypeCheckResult {
     match (&expr.0, &expr.1) {
       (exprtype, &Some(ref anno)) => {
