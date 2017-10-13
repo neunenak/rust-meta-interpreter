@@ -316,20 +316,26 @@ impl TypeContext {
     use self::Type::*;
     use self::TypeConst::*;
 
-    Ok(match (&expr.0, &expr.1) {
-      (ex, &Some(ref anno)) => {
-        let tx = self.infer(&Expression(ex.clone(), None))?; //TODO rewrite this to call into a function that takes just an ExprType, to avoid this cloning
+    match (&expr.0, &expr.1) {
+      (exprtype, &Some(ref anno)) => {
+        let tx = self.infer_no_anno(exprtype)?;
         let ty = self.from_anno(anno);
-        self.unify(tx, ty)?
+        self.unify(tx, ty)
       },
-      (&IntLiteral(_), _) => TConst(Integer),
-      (&BoolLiteral(_), _) => TConst(Boolean),
-      (&Value(ref name), _) => {
+      (exprtype, &None) => self.infer_no_anno(exprtype),
+    }
+  }
+
+  fn infer_no_anno(&mut self, ex: &ExpressionType) -> TypeCheckResult { 
+    Ok(match ex {
+      &IntLiteral(_) => TConst(Integer),
+      &BoolLiteral(_) => TConst(Boolean),
+      &Value(ref name) => {
         self.lookup(name)
           .map(|entry| entry.ty)
           .ok_or(format!("Couldn't find {}", name))?
       },
-      (&Call { ref f, ref arguments }, _) => {
+      &Call { ref f, ref arguments } => {
         let tf = self.infer(f)?;
         let targ = self.infer(arguments.get(0).unwrap())?;
         match tf {
