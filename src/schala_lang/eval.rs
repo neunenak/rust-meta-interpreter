@@ -1,21 +1,37 @@
-use schala_lang::parsing::{AST, Statement, Declaration, Expression, ExpressionType, Operation};
+use schala_lang::parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType, Operation};
+use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct ReplState {
+  values: HashMap<Rc<String>, ValueEntry>,
+}
+
+enum ValueEntry {
+  Binding {
+    val: FullyEvaluatedExpr,
+  },
+  Function {
+    body: Vec<Statement>,
+  }
 }
 
 type EvalResult<T> = Result<T, String>;
 
+#[derive(Debug, PartialEq, Clone)]
 enum FullyEvaluatedExpr {
   UnsignedInt(u64),
   SignedInt(i64),
   Float(f64),
   Str(String),
   Bool(bool),
+  Custom {
+    string_rep: Rc<String>,
+  }
 }
 
 impl ReplState {
   pub fn new() -> ReplState {
-    ReplState { }
+    ReplState { values: HashMap::new() }
   }
 
   pub fn evaluate(&mut self, ast: AST) -> Vec<String> {
@@ -28,7 +44,7 @@ impl ReplState {
           }
         },
         Err(error) => {
-          acc.push(format!("Error: {}", error));
+          acc.push(format!("Eval error: {}", error));
           return acc;
         },
       }
@@ -49,6 +65,7 @@ impl ReplState {
             Float(f) => Some(format!("{}", f)),
             Str(s) => Some(format!("\"{}\"", s)),
             Bool(b) => Some(format!("{}", b)),
+            Custom { string_rep } => Some(format!("{}", string_rep)),
           }
         })
       },
@@ -58,8 +75,28 @@ impl ReplState {
     }
   }
 
-  fn eval_decl(&mut self, _decl: Declaration) -> EvalResult<()> {
-    Err("Not implmemented".to_string())
+  fn eval_decl(&mut self, decl: Declaration) -> EvalResult<()> {
+    use self::Declaration::*;
+    use self::Variant::*;
+
+    match decl {
+      FuncDecl(signature, statements) => {
+        let name = signature.name;
+        self.values.insert(name, ValueEntry::Function { body: statements.clone() });
+      },
+      TypeDecl(_name, body) => {
+        for variant in body.0.iter() {
+          match variant {
+            &UnitStruct(ref name) => self.values.insert(name.clone(),
+              ValueEntry::Binding { val: FullyEvaluatedExpr::Custom { string_rep: name.clone() } }),
+            &TupleStruct(ref name, ref args) =>  unimplemented!(),
+            &Record(ref name, ref fields) => unimplemented!(),
+          };
+        }
+      },
+      _ => return Err(format!("Declaration evaluation not yet implemented"))
+    }
+    Ok(())
   }
 
   fn eval_expr(&mut self, expr: Expression) -> EvalResult<FullyEvaluatedExpr> {
@@ -74,7 +111,25 @@ impl ReplState {
       BoolLiteral(b) => Ok(Bool(b)),
       PrefixExp(op, expr) => self.eval_prefix_exp(op, expr),
       BinExp(op, lhs, rhs) => self.eval_binexp(op, lhs, rhs),
+      Value(name) => self.eval_value(name),
       _ => Err(format!("Unimplemented")),
+    }
+  }
+
+  fn eval_value(&mut self, name: Rc<String>) -> EvalResult<FullyEvaluatedExpr> {
+    use self::ValueEntry::*;
+    match self.values.get(&name) {
+      None => return Err(format!("Value {} not found", *name)),
+      Some(lookup) => {
+        match lookup {
+          &Binding { ref val } => Ok(val.clone()),
+          &Function { ref body } => {
+            Ok(FullyEvaluatedExpr::Custom {
+              string_rep: Rc::new(format!("<function {}>", *name))
+            })
+          }
+        }
+      }
     }
   }
 
