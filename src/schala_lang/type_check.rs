@@ -233,7 +233,7 @@ impl TypeContext {
       &FloatLiteral(_) => TConst(Float),
       &StringLiteral(_) => TConst(StringT),
       &BoolLiteral(_) => TConst(Boolean),
-      &Value(ref name) => {
+      &Value(ref name, _) => {
         self.lookup(name)
           .map(|entry| entry.ty)
           .ok_or(format!("Couldn't find {}", name))?

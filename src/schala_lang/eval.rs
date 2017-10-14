@@ -111,7 +111,7 @@ impl ReplState {
       BoolLiteral(b) => Ok(Bool(b)),
       PrefixExp(op, expr) => self.eval_prefix_exp(op, expr),
       BinExp(op, lhs, rhs) => self.eval_binexp(op, lhs, rhs),
-      Value(name) => self.eval_value(name),
+      Value(name, _) => self.eval_value(name),
       _ => Err(format!("Unimplemented")),
     }
   }

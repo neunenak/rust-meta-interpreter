@@ -297,9 +297,8 @@ identifier_expr := named_struct | call_expr | index_expr | IDENTIFIER
 literal := 'true' | 'false' | number_literal | STR_LITERAL
 
 named_struct := IDENTIFIER record_block
-record_block :=  '{' record_entry* | '}' //TODO support anonymus structs, update syntax
-
-record_entry := IDENTIFIER ':' expression ','+
+record_block :=  '{' (record_entry, ',')* | '}' //TODO support anonymus structs, update syntax
+record_entry := IDENTIFIER ':' expression
 
 if_expr := 'if' expression block else_clause
 else_clause := ε | 'else' block
@@ -447,7 +446,7 @@ pub enum ExpressionType {
   BinExp(Operation, Box<Expression>, Box<Expression>),
   PrefixExp(Operation, Box<Expression>),
   TupleLiteral(Vec<Expression>),
-  Value(Rc<String>),
+  Value(Rc<String>, Vec<(Rc<String>, Expression)>),
   Call {
     f: Box<Expression>,
     arguments: Vec<Expression>,
@@ -815,24 +814,35 @@ impl Parser {
     let identifier = self.identifier()?;
     Ok(match self.peek() {
       LCurlyBrace => {
-        self.named_struct()?;
-
+        let fields = self.record_block()?;
+        Expression(Value(identifier, fields), None)
       },
       LParen => {
         let arguments = self.call_expr()?;
         //TODO make this be more general
-        let f = Box::new(Expression(Value(identifier), None));
+        let f = Box::new(Expression(Value(identifier, vec![]), None));
         Expression(Call { f, arguments }, None)
       },
       LSquareBracket => {
         let indexers = self.index_expr()?;
         Expression(Index {
-          indexee: Box::new(Expression(Value(identifier), None)),
+          indexee: Box::new(Expression(Value(identifier, vec![]), None)),
           indexers,
         }, None)
       }
-      _ => Expression(Value(identifier), None)
+      _ => Expression(Value(identifier, vec![]), None)
     })
+  });
+
+  parse_method!(record_block(&mut self) -> ParseResult<Vec<(Rc<String>, Expression)>> {
+    Ok(delimited!(self, LCurlyBrace, '{', record_entry, Comma, RCurlyBrace, '}'))
+  });
+
+  parse_method!(record_entry(&mut self) -> ParseResult<(Rc<String>, Expression)> {
+    let field_name = self.identifier()?;
+    expect!(self, Colon, ":");
+    let value = self.expression()?;
+    Ok((field_name, value))
   });
 
   parse_method!(call_expr(&mut self) -> ParseResult<Vec<Expression>> {
@@ -1031,7 +1041,7 @@ mod parse_tests {
     ($op:expr) => { Operation(Rc::new($op.to_string())) }
   }
   macro_rules! val {
-    ($var:expr) => { Value(Rc::new($var.to_string())) }
+    ($var:expr) => { Value(Rc::new($var.to_string()), vec![]) }
   }
   macro_rules! exprstatement {
     ($expr_type:expr) => { Statement::ExpressionStatement(Expression($expr_type, None)) };
@@ -1100,6 +1110,8 @@ mod parse_tests {
     parse_test!("a[b,c]", AST(vec![exprstatement!(Index { indexee: Box::new(ex!(val!("a"))), indexers: vec![ex!(val!("b")), ex!(val!("c"))]} )]));     
 
     parse_test!("None", AST(vec![exprstatement!(val!("None"))]));
+    parse_test!("Pandas {  a: x + y }", AST(vec![
+      exprstatement!(Value(rc!(Pandas), vec![(rc!(a), ex!(binexp!("+", val!("x"), val!("y"))))]))]));
   }
 
   #[test]
@@ -1190,8 +1202,8 @@ mod parse_tests {
     }"#,
     AST(vec![exprstatement!(IfExpression(Box::new(ex!(BoolLiteral(true))),
       vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(IntLiteral(10)) }),
-           exprstatement!(Value(rc!(b)))],
-      Some(vec![exprstatement!(Value(rc!(c)))])))])
+           exprstatement!(Value(rc!(b), vec![]))],
+      Some(vec![exprstatement!(Value(rc!(c), vec![]))])))])
     );
   }
 
