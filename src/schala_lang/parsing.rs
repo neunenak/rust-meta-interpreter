@@ -293,8 +293,13 @@ primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_e
 
 paren_expr := LParen paren_inner RParen
 paren_inner := (expression ',')*
-identifier_expr := call_expr | index_expr | IDENTIFIER
+identifier_expr := named_struct | call_expr | index_expr | IDENTIFIER
 literal := 'true' | 'false' | number_literal | STR_LITERAL
+
+named_struct := IDENTIFIER record_block
+record_block :=  '{' record_entry* | '}' //TODO support anonymus structs, update syntax
+
+record_entry := IDENTIFIER ':' expression ','+
 
 if_expr := 'if' expression block else_clause
 else_clause := ε | 'else' block
@@ -809,6 +814,10 @@ impl Parser {
     use self::ExpressionType::*;
     let identifier = self.identifier()?;
     Ok(match self.peek() {
+      LCurlyBrace => {
+        self.named_struct()?;
+
+      },
       LParen => {
         let arguments = self.call_expr()?;
         //TODO make this be more general
@@ -1089,6 +1098,8 @@ mod parse_tests {
     //parse_test!("a[]", <- TODO THIS NEEDS TO FAIL
     //parse_test!(damn()[a] ,<- TODO needs to succeed
     parse_test!("a[b,c]", AST(vec![exprstatement!(Index { indexee: Box::new(ex!(val!("a"))), indexers: vec![ex!(val!("b")), ex!(val!("c"))]} )]));     
+
+    parse_test!("None", AST(vec![exprstatement!(val!("None"))]));
   }
 
   #[test]
