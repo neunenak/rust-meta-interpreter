@@ -1,6 +1,6 @@
 const React = require("react");
 const ReactDOM = require("react-dom");
-const request = require("request");
+const superagent = require("superagent");
 
 const serverAddress = "http://localhost:8000";
 
@@ -20,14 +20,17 @@ class CodeArea extends React.Component {
     console.log("Event", this.state.value);
     const source = this.state.value;
 
-    const options = {
-      url: `${serverAddress}/input`,
-      json: true,
-      body: { source }
-    };
-    request.post(options, (error, response, body) => {
-      this.setState({lastOutput: body.text})
-    });
+    superagent.post(`${serverAddress}/input`)
+      .send({ source })
+      .set("accept", "json")
+      .end((error, response) => {
+        if (response) {
+          console.log("Resp", response);
+          this.setState({lastOutput: response.body.text})
+        } else {
+          console.error("Error: ", error);
+        }
+      });
   }
 
   renderOutput() {
