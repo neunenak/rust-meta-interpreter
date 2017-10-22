@@ -39,7 +39,8 @@ pub enum Kw {
   Return,
   Alias, Type, SelfType, SelfIdent,
   Trait, Impl,
-  True, False
+  True, False,
+  Module
 }
 use self::Kw::*;
 
@@ -64,6 +65,7 @@ lazy_static! {
       "impl" => Kw::Impl,
       "true" => Kw::True,
       "false" => Kw::False,
+      "module" => Kw::Module,
     };
 }
 
