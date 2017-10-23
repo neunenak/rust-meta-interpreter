@@ -1,7 +1,6 @@
+use schala_lang::parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType, Operation};
 use std::collections::HashMap;
 use std::rc::Rc;
-
-use parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType, Operation};
 
 pub struct ReplState {
   values: HashMap<Rc<String>, ValueEntry>,
