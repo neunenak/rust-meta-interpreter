@@ -24,6 +24,7 @@ enum FullyEvaluatedExpr {
   Float(f64),
   Str(String),
   Bool(bool),
+  FuncLit(Rc<String>),
   Custom {
     string_rep: Rc<String>,
   },
@@ -68,6 +69,7 @@ impl ReplState {
             Bool(b) => Some(format!("{}", b)),
             Custom { string_rep } => Some(format!("{}", string_rep)),
             Tuple(_items) => Some(format!("(tuple to be defined later)")),
+            FuncLit(name) => Some(format!("<function {}>", name)),
           }
         })
       },
@@ -91,8 +93,8 @@ impl ReplState {
           match variant {
             &UnitStruct(ref name) => self.values.insert(name.clone(),
               ValueEntry::Binding { val: FullyEvaluatedExpr::Custom { string_rep: name.clone() } }),
-            &TupleStruct(ref name, ref args) =>  unimplemented!(),
-            &Record(ref name, ref fields) => unimplemented!(),
+            &TupleStruct(ref _name, ref _args) =>  unimplemented!(),
+            &Record(ref _name, ref _fields) => unimplemented!(),
           };
         }
       },
@@ -124,7 +126,24 @@ impl ReplState {
         }
         Ok(Tuple(evals))
       }
+      Call { f, arguments } => self.eval_application(*f, arguments),
       x => Err(format!("Unimplemented thing {:?}", x)),
+    }
+  }
+
+  fn eval_application(&mut self, f: Expression, _arguments: Vec<Expression>) -> EvalResult<FullyEvaluatedExpr> {
+    use self::ExpressionType::*;
+    match f {
+      Expression(Value(identifier, _), _) => {
+        match self.values.get(&identifier) {
+          Some(&ValueEntry::Function { ref body }) => {
+            println!("LOL ALL FUNCTIONS EVALUATE TO 2!");
+            Ok(FullyEvaluatedExpr::UnsignedInt(2))
+          },
+          _ => Err(format!("Function {} not found", identifier)),
+        }
+      },
+      x => Err(format!("Trying to apply {:?} which is not a function", x)),
     }
   }
 
@@ -135,11 +154,7 @@ impl ReplState {
       Some(lookup) => {
         match lookup {
           &Binding { ref val } => Ok(val.clone()),
-          &Function { ref body } => {
-            Ok(FullyEvaluatedExpr::Custom {
-              string_rep: Rc::new(format!("<function {}>", *name))
-            })
-          }
+          &Function { .. } =>  Ok(FullyEvaluatedExpr::FuncLit(name.clone()))
         }
       }
     }
