@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName};
+
 //SKOLEMIZATION - how you prevent an unassigned existential type variable from leaking!
 
-use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName};
 
 // from Niko's talk
 /* fn type_check(expression, expected_ty) -> Ty {

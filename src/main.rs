@@ -16,13 +16,17 @@ extern crate rocket_contrib;
 extern crate includedir;
 extern crate phf;
 
+
+extern crate schala_lang;
+
 use std::path::Path;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::process::exit;
 use std::default::Default;
 
-mod schala_lang;
+
+mod schala_language;
 mod maaru_lang;
 mod robo_lang;
 
@@ -365,4 +369,7 @@ fn program_options() -> getopts::Options {
                   "Start up web interpreter");
   options
 }
+
+
+
 

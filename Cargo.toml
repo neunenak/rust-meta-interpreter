@@ -22,5 +22,9 @@ rocket_contrib = "*"
 phf = "0.7.12"
 includedir = "0.2.0"
 
+schala-lang = { path = "schala-lang" }
+
 [build-dependencies]
 includedir_codegen = "0.2.0"
+
+[workspace]
