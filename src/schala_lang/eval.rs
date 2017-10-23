@@ -26,7 +26,8 @@ enum FullyEvaluatedExpr {
   Bool(bool),
   Custom {
     string_rep: Rc<String>,
-  }
+  },
+  Tuple(Vec<FullyEvaluatedExpr>),
 }
 
 impl ReplState {
@@ -66,6 +67,7 @@ impl ReplState {
             Str(s) => Some(format!("\"{}\"", s)),
             Bool(b) => Some(format!("{}", b)),
             Custom { string_rep } => Some(format!("{}", string_rep)),
+            Tuple(_items) => Some(format!("(tuple to be defined later)")),
           }
         })
       },
@@ -112,7 +114,17 @@ impl ReplState {
       PrefixExp(op, expr) => self.eval_prefix_exp(op, expr),
       BinExp(op, lhs, rhs) => self.eval_binexp(op, lhs, rhs),
       Value(name, _) => self.eval_value(name),
-      _ => Err(format!("Unimplemented")),
+      TupleLiteral(expressions) => {
+        let mut evals = Vec::new();
+        for expr in expressions {
+          match self.eval_expr(expr) {
+            Ok(fully_evaluated) => evals.push(fully_evaluated),
+            error => return error,
+          }
+        }
+        Ok(Tuple(evals))
+      }
+      x => Err(format!("Unimplemented thing {:?}", x)),
     }
   }
 
