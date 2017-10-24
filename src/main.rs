@@ -41,6 +41,10 @@ fn main() {
       Box::new(maaru_lang::Maaru::new()),
       Box::new(robo_lang::Robo::new()),
     ];
+  schala_main(languages);
+}
+
+fn schala_main(languages: Vec<Box<ProgrammingLanguageInterface>>) {
 
   let option_matches = program_options().parse(std::env::args()).unwrap_or_else(|e| {
     println!("{:?}", e);
@@ -60,7 +64,7 @@ fn main() {
   }
 
   if option_matches.opt_present("webapp") {
-    webapp::web_main();
+    webapp::web_main(languages);
     exit(0);
   }
 

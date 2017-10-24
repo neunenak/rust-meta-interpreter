@@ -38,6 +38,6 @@ fn interpreter_input(input: Json<Input>) -> Json<Output> {
   Json(Output { text: code_output.to_string() })
 }
 
-pub fn web_main() {
+pub fn web_main(languages: Vec<Box<ProgrammingLanguageInterface>>) {
   rocket::ignite().mount("/", routes![index, js_bundle, interpreter_input]).launch();
 }
