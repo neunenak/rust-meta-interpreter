@@ -1,3 +1,4 @@
+#![feature(link_args)]
 #![feature(advanced_slice_patterns, slice_patterns, box_patterns, box_syntax)]
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
@@ -33,6 +34,9 @@ mod webapp;
 mod llvm_wrap;
 
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
+
+#[link_args="-ltinfo"]
+extern { }
 
 fn main() {
   let languages: Vec<Box<ProgrammingLanguageInterface>> =
