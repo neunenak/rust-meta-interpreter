@@ -38,6 +38,8 @@ include!(concat!(env!("OUT_DIR"), "/static.rs"));
 #[link_args="-ltinfo"]
 extern { }
 
+type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface>>;
+
 fn main() {
   let languages: Vec<Box<ProgrammingLanguageInterface>> =
     vec![
@@ -45,6 +47,16 @@ fn main() {
       Box::new(maaru_lang::Maaru::new()),
       Box::new(robo_lang::Robo::new()),
     ];
+  let languages2: Vec<Box<ProgrammingLanguageInterface>> =
+    vec![
+      Box::new(schala_lang::Schala::new()),
+      Box::new(maaru_lang::Maaru::new()),
+      Box::new(robo_lang::Robo::new()),
+    ];
+
+  let func = Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(schala_lang::Schala::new()); x });
+
+  webapp::web_main(languages2, func);
   schala_main(languages);
 }
 
@@ -68,7 +80,7 @@ fn schala_main(languages: Vec<Box<ProgrammingLanguageInterface>>) {
   }
 
   if option_matches.opt_present("webapp") {
-    webapp::web_main(languages);
+    //webapp::web_main(languages);
     exit(0);
   }
 

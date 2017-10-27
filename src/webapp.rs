@@ -5,7 +5,7 @@ use rocket_contrib::Json;
 use schala_lang;
 use language::{ProgrammingLanguageInterface, EvalOptions};
 use WEBFILES;
-
+use ::PLIGenerator;
 
 #[get("/")]
 fn index() -> Content<String> {
@@ -38,6 +38,6 @@ fn interpreter_input(input: Json<Input>) -> Json<Output> {
   Json(Output { text: code_output.to_string() })
 }
 
-pub fn web_main(languages: Vec<Box<ProgrammingLanguageInterface>>) {
+pub fn web_main(language_generators: Vec<Box<ProgrammingLanguageInterface>>, func: PLIGenerator) {
   rocket::ignite().mount("/", routes![index, js_bundle, interpreter_input]).launch();
 }
