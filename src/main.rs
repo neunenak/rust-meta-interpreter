@@ -41,23 +41,17 @@ extern { }
 type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
 fn main() {
-  let languages: Vec<Box<ProgrammingLanguageInterface>> =
-    vec![
-      Box::new(schala_lang::Schala::new()),
-      Box::new(maaru_lang::Maaru::new()),
-      Box::new(robo_lang::Robo::new()),
-    ];
-
   let generators: Vec<PLIGenerator> = vec![
     Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(schala_lang::Schala::new()); x }),
     Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(maaru_lang::Maaru::new()); x }),
     Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(robo_lang::Robo::new()); x }),
   ];
 
-  schala_main(languages, generators);
+  schala_main(generators);
 }
 
-fn schala_main(languages: Vec<Box<ProgrammingLanguageInterface>>, generators: Vec<PLIGenerator>) {
+fn schala_main(generators: Vec<PLIGenerator>) {
+  let languages: Vec<Box<ProgrammingLanguageInterface>> = generators.iter().map(|x| x()).collect();
 
   let option_matches = program_options().parse(std::env::args()).unwrap_or_else(|e| {
     println!("{:?}", e);
