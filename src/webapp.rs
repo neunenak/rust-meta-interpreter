@@ -1,4 +1,5 @@
 use rocket;
+use rocket::State;
 use rocket::response::Content;
 use rocket::http::ContentType;
 use rocket_contrib::Json;
@@ -6,6 +7,7 @@ use schala_lang;
 use language::{ProgrammingLanguageInterface, EvalOptions};
 use WEBFILES;
 use ::PLIGenerator;
+use std::sync::Mutex;
 
 #[get("/")]
 fn index() -> Content<String> {
@@ -39,5 +41,7 @@ fn interpreter_input(input: Json<Input>) -> Json<Output> {
 }
 
 pub fn web_main(language_generators: Vec<Box<ProgrammingLanguageInterface>>, func: PLIGenerator) {
-  rocket::ignite().mount("/", routes![index, js_bundle, interpreter_input]).launch();
+  let wrapped_func = Mutex::new(func);
+  //let wrapped_func = Box::new(|| { 5 });
+  rocket::ignite().manage(wrapped_func).mount("/", routes![index, js_bundle, interpreter_input]).launch();
 }
