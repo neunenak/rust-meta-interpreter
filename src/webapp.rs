@@ -3,7 +3,6 @@ use rocket::State;
 use rocket::response::Content;
 use rocket::http::ContentType;
 use rocket_contrib::Json;
-use schala_lang;
 use language::{ProgrammingLanguageInterface, EvalOptions};
 use WEBFILES;
 use ::PLIGenerator;
@@ -34,14 +33,12 @@ struct Output {
 }
 
 #[post("/input", format = "application/json", data = "<input>")]
-fn interpreter_input(input: Json<Input>) -> Json<Output> {
-  let mut schala = schala_lang::Schala::new();
+fn interpreter_input(input: Json<Input>, schala_gen: State<Mutex<PLIGenerator>>) -> Json<Output> {
+  let mut schala: Box<ProgrammingLanguageInterface> = schala_gen.lock().unwrap()();
   let code_output = schala.evaluate_in_repl(&input.source, &EvalOptions::default());
   Json(Output { text: code_output.to_string() })
 }
 
 pub fn web_main(language_generators: Vec<Box<ProgrammingLanguageInterface>>, func: PLIGenerator) {
-  let wrapped_func = Mutex::new(func);
-  //let wrapped_func = Box::new(|| { 5 });
-  rocket::ignite().manage(wrapped_func).mount("/", routes![index, js_bundle, interpreter_input]).launch();
+  rocket::ignite().manage(Mutex::new(func)).mount("/", routes![index, js_bundle, interpreter_input]).launch();
 }
