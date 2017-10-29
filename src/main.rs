@@ -38,7 +38,7 @@ include!(concat!(env!("OUT_DIR"), "/static.rs"));
 #[link_args="-ltinfo"]
 extern { }
 
-type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send>;
+type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
 fn main() {
   let languages: Vec<Box<ProgrammingLanguageInterface>> =

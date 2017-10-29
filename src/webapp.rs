@@ -6,7 +6,6 @@ use rocket_contrib::Json;
 use language::{ProgrammingLanguageInterface, EvalOptions};
 use WEBFILES;
 use ::PLIGenerator;
-use std::sync::Mutex;
 
 #[get("/")]
 fn index() -> Content<String> {
@@ -33,12 +32,12 @@ struct Output {
 }
 
 #[post("/input", format = "application/json", data = "<input>")]
-fn interpreter_input(input: Json<Input>, schala_gen: State<Mutex<PLIGenerator>>) -> Json<Output> {
-  let mut schala: Box<ProgrammingLanguageInterface> = schala_gen.lock().unwrap()();
+fn interpreter_input(input: Json<Input>, schala_gen: State<PLIGenerator>) -> Json<Output> {
+  let mut schala: Box<ProgrammingLanguageInterface> = schala_gen();
   let code_output = schala.evaluate_in_repl(&input.source, &EvalOptions::default());
   Json(Output { text: code_output.to_string() })
 }
 
 pub fn web_main(language_generators: Vec<Box<ProgrammingLanguageInterface>>, func: PLIGenerator) {
-  rocket::ignite().manage(Mutex::new(func)).mount("/", routes![index, js_bundle, interpreter_input]).launch();
+  rocket::ignite().manage(func).mount("/", routes![index, js_bundle, interpreter_input]).launch();
 }
