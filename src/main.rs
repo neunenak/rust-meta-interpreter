@@ -47,20 +47,17 @@ fn main() {
       Box::new(maaru_lang::Maaru::new()),
       Box::new(robo_lang::Robo::new()),
     ];
-  let languages2: Vec<Box<ProgrammingLanguageInterface>> =
-    vec![
-      Box::new(schala_lang::Schala::new()),
-      Box::new(maaru_lang::Maaru::new()),
-      Box::new(robo_lang::Robo::new()),
-    ];
 
-  let func = Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(schala_lang::Schala::new()); x });
+  let generators: Vec<PLIGenerator> = vec![
+    Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(schala_lang::Schala::new()); x }),
+    Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(maaru_lang::Maaru::new()); x }),
+    Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(robo_lang::Robo::new()); x }),
+  ];
 
-  webapp::web_main(languages2, func);
-  schala_main(languages);
+  schala_main(languages, generators);
 }
 
-fn schala_main(languages: Vec<Box<ProgrammingLanguageInterface>>) {
+fn schala_main(languages: Vec<Box<ProgrammingLanguageInterface>>, generators: Vec<PLIGenerator>) {
 
   let option_matches = program_options().parse(std::env::args()).unwrap_or_else(|e| {
     println!("{:?}", e);
@@ -80,7 +77,7 @@ fn schala_main(languages: Vec<Box<ProgrammingLanguageInterface>>) {
   }
 
   if option_matches.opt_present("webapp") {
-    //webapp::web_main(languages);
+    webapp::web_main(languages, generators);
     exit(0);
   }
 

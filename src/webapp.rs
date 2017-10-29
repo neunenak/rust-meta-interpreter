@@ -32,12 +32,12 @@ struct Output {
 }
 
 #[post("/input", format = "application/json", data = "<input>")]
-fn interpreter_input(input: Json<Input>, schala_gen: State<PLIGenerator>) -> Json<Output> {
-  let mut schala: Box<ProgrammingLanguageInterface> = schala_gen();
+fn interpreter_input(input: Json<Input>, schala_gen: State<Vec<PLIGenerator>>) -> Json<Output> {
+  let mut schala: Box<ProgrammingLanguageInterface> = (schala_gen.get(0).unwrap())();
   let code_output = schala.evaluate_in_repl(&input.source, &EvalOptions::default());
   Json(Output { text: code_output.to_string() })
 }
 
-pub fn web_main(language_generators: Vec<Box<ProgrammingLanguageInterface>>, func: PLIGenerator) {
+pub fn web_main(language_generators: Vec<Box<ProgrammingLanguageInterface>>, func: Vec<PLIGenerator>) {
   rocket::ignite().manage(func).mount("/", routes![index, js_bundle, interpreter_input]).launch();
 }
