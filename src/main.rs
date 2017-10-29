@@ -77,7 +77,7 @@ fn schala_main(languages: Vec<Box<ProgrammingLanguageInterface>>, generators: Ve
   }
 
   if option_matches.opt_present("webapp") {
-    webapp::web_main(languages, generators);
+    webapp::web_main(generators);
     exit(0);
   }
 
