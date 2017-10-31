@@ -29,6 +29,7 @@ mod robo_lang;
 
 extern crate schala_lib;
 use schala_lib::{PLIGenerator, schala_main};
+use schala_lib::language::ProgrammingLanguageInterface;
 
 #[link_args="-ltinfo"]
 extern { }
@@ -39,8 +40,6 @@ fn main() {
     Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(maaru_lang::Maaru::new()); x }),
     Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(robo_lang::Robo::new()); x }),
   ];
-
   schala_main(generators);
 }
-
 

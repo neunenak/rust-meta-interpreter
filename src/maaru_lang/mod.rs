@@ -3,7 +3,7 @@ pub mod parser;
 pub mod eval;
 pub mod compilation;
 
-use language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TraceArtifact, LLVMCodeString};
+use schala_lib::language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TraceArtifact, LLVMCodeString};
 
 pub use self::eval::Evaluator as MaaruEvaluator;
 

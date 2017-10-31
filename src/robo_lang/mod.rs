@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TokenError};
+use schala_lib::language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TokenError};
 
 pub struct Robo {
 }

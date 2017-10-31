@@ -23,16 +23,16 @@ use std::io::{Read, Write};
 use std::process::exit;
 use std::default::Default;
 
-mod language;
+pub mod language;
 use language::{ProgrammingLanguageInterface, EvalOptions, LLVMCodeString};
 mod webapp;
-mod llvm_wrap;
+pub mod llvm_wrap;
 
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
-type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
+pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
-fn schala_main(generators: Vec<PLIGenerator>) {
+pub fn schala_main(generators: Vec<PLIGenerator>) {
   let languages: Vec<Box<ProgrammingLanguageInterface>> = generators.iter().map(|x| x()).collect();
 
   let option_matches = program_options().parse(std::env::args()).unwrap_or_else(|e| {
