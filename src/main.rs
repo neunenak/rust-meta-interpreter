@@ -9,19 +9,11 @@ extern crate itertools;
 extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
-#[macro_use]
-extern crate serde_derive;
 extern crate serde_json;
 extern crate rocket;
 extern crate rocket_contrib;
 extern crate includedir;
 extern crate phf;
-
-use std::path::Path;
-use std::fs::File;
-use std::io::{Read, Write};
-use std::process::exit;
-use std::default::Default;
 
 mod schala_lang;
 mod maaru_lang;
