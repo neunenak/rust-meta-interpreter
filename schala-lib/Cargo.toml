@@ -1,10 +1,9 @@
 [package]
-name = "schala"
+name = "schala-lib"
 version = "0.1.0"
 authors = ["greg <greg.shuflin@protonmail.com>"]
 
 [dependencies]
-
 llvm-sys = "*"
 take_mut = "0.1.3"
 itertools = "0.5.8"
@@ -22,9 +21,5 @@ rocket_contrib = "*"
 phf = "0.7.12"
 includedir = "0.2.0"
 
-schala-lib = { path = "schala-lib" }
-
 [build-dependencies]
 includedir_codegen = "0.2.0"
-
-[workspace]
