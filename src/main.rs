@@ -20,9 +20,9 @@ extern { }
 
 fn main() {
   let generators: Vec<PLIGenerator> = vec![
-    Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(schala_lang::Schala::new()); x }),
-    Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(maaru_lang::Maaru::new()); x }),
-    Box::new(|| { let x: Box<ProgrammingLanguageInterface> = Box::new(robo_lang::Robo::new()); x }),
+    Box::new(|| { Box::new(schala_lang::Schala::new())}),
+    Box::new(|| { Box::new(maaru_lang::Maaru::new())}),
+    Box::new(|| { Box::new(robo_lang::Robo::new())}),
   ];
   schala_main(generators);
 }
