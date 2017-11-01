@@ -1,19 +1,11 @@
 #![feature(link_args)]
 #![feature(advanced_slice_patterns, slice_patterns, box_patterns, box_syntax)]
 #![feature(plugin)]
-#![plugin(rocket_codegen)]
-extern crate getopts;
-extern crate linefeed;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
-extern crate serde_json;
-extern crate rocket;
-extern crate rocket_contrib;
-extern crate includedir;
-extern crate phf;
 
 mod schala_lang;
 mod maaru_lang;
