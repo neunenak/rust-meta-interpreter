@@ -5,6 +5,17 @@ pub mod compilation;
 
 use schala_lib::language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TraceArtifact, LLVMCodeString};
 
+#[derive(Debug)]
+pub struct TokenError {
+    pub msg: String,
+}
+
+impl TokenError {
+    pub fn new(msg: &str) -> TokenError {
+        TokenError { msg: msg.to_string() }
+    }
+}
+
 pub use self::eval::Evaluator as MaaruEvaluator;
 
 pub struct Maaru<'a> {

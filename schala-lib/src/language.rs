@@ -2,17 +2,6 @@ extern crate colored;
 
 use self::colored::*;
 
-#[derive(Debug)]
-pub struct TokenError {
-    pub msg: String,
-}
-
-impl TokenError {
-    pub fn new(msg: &str) -> TokenError {
-        TokenError { msg: msg.to_string() }
-    }
-}
-
 pub struct LLVMCodeString(pub String);
 
 #[derive(Debug, Default, Serialize, Deserialize)]

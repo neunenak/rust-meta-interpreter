@@ -5,7 +5,7 @@ use std::str::Chars;
 use self::itertools::Itertools;
 use std::rc::Rc;
 
-use schala_lib::language::TokenError;
+use maaru_lang::TokenError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {

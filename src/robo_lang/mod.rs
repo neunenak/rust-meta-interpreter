@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use schala_lib::language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TokenError};
+use schala_lib::language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput};
 
 pub struct Robo {
 }
@@ -9,6 +9,17 @@ impl Robo {
   pub fn new() -> Robo {
     Robo { }
   }
+}
+
+#[derive(Debug)]
+pub struct TokenError {
+    pub msg: String,
+}
+
+impl TokenError {
+    pub fn new(msg: &str) -> TokenError {
+        TokenError { msg: msg.to_string() }
+    }
 }
 
 #[allow(dead_code)]
