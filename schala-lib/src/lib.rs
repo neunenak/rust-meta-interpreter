@@ -23,13 +23,13 @@ use std::io::{Read, Write};
 use std::process::exit;
 use std::default::Default;
 
-pub mod language;
-use language::{ProgrammingLanguageInterface, EvalOptions, LLVMCodeString};
+mod language;
 mod webapp;
 pub mod llvm_wrap;
 
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
+pub use language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TraceArtifact, LLVMCodeString};
 pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
 pub fn schala_main(generators: Vec<PLIGenerator>) {

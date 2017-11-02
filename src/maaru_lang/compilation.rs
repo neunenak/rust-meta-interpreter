@@ -6,7 +6,7 @@ use self::llvm_sys::prelude::*;
 use self::llvm_sys::{LLVMIntPredicate};
 
 use maaru_lang::parser::{AST, Statement, Function, Prototype, Expression, BinOp};
-use schala_lib::language::LLVMCodeString;
+use schala_lib::LLVMCodeString;
 
 use schala_lib::llvm_wrap as LLVMWrap;
 

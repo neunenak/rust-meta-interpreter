@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use schala_lib::language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
+use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
 
 mod parsing;
 mod type_check;
