@@ -18,7 +18,19 @@ impl ProgrammingLanguageInterface for Rukka {
 
   fn evaluate_in_repl(&mut self, input: &str, _eval_options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
-    output.add_output(format!("Everything is ()"));
+    output.add_output(eval(input));
     output
   }
+}
+
+fn eval(input: &str) -> String {
+  let a = List { next: None };
+  let b = List { next: Some(&a) };
+
+  format!("Everything is () {:?}", b)
+}
+
+#[derive(Debug)]
+struct List<'a> {
+  next: Option<&'a List<'a>>,
 }
