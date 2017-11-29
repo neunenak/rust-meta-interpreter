@@ -1,5 +1,7 @@
 use itertools::Itertools;
 use schala_lib::{ProgrammingLanguageInterface, EvalOptions, ReplOutput};
+use std::iter::Peekable;
+use std::str::Chars;
 
 pub struct Rukka { }
 
@@ -18,7 +20,10 @@ impl ProgrammingLanguageInterface for Rukka {
 
   fn evaluate_in_repl(&mut self, input: &str, _eval_options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
-    output.add_output(parse(input).and_then(|x| eval(x)).unwrap());
+    match parse(input).and_then(|x| eval(x)) {
+      Ok(s) => output.add_output(s),
+      Err(e) => output.add_output(format!("Error: {}", e))
+    };
     output
   }
 }
@@ -27,41 +32,16 @@ fn eval(ast: Sexp) -> Result<String, String> {
   Ok(format!("Everything is ()"))
 }
 
-enum Token {
-  LParen,
-  RParen,
-  Symbol(String)
-}
-
-fn tokenize(input: &str) -> Vec<Token> {
-  let mut iter = input.chars().peekable();
-  let mut tokens = Vec::new();
-  loop {
-    match iter.next() {
-      None => break,
-      Some('(') => tokens.push(LParen),
-      Some(')') => tokens.push(RParen),
-      Some(c) if c.is_whitespace() => continue,
-      Some(c) => {
-        let mut sym = String::new();
-        loop {
-          match iter.peek() {
-            None | Some('(') | Some(')') => break,
-            Some(c) if c.is_whitespace() => break,
-            Some(c) => sym.push_char(c),
-          }
-          iter.next();
-        }
-        tokens.push(Symbol(sym));
-      }
-    }
-  }
-  tokens
-}
-
 fn parse(input: &str) -> Result<Sexp, String> {
-  let _tokens = tokenize(input);
-  Ok(Sexp::Atom(AtomT::Number(1)))
+  let mut iter: Peekable<Chars> = input.chars().peekable();
+  read_sexp(iter)
+}
+
+fn read_sexp(mut input: Peekable<Chars>) -> Result<Sexp, String> {
+  if input.next() != Some('(') {
+    return Err(format!("Expected '('"));
+  }
+  Ok(Sexp::Atom(AtomT::Number(4)))
 }
 
 #[derive(Debug)]
