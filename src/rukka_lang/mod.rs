@@ -29,19 +29,49 @@ impl ProgrammingLanguageInterface for Rukka {
 }
 
 fn eval(ast: Sexp) -> Result<String, String> {
-  Ok(format!("Everything is ()"))
+  Ok(format!("{:?}", ast))
 }
 
 fn parse(input: &str) -> Result<Sexp, String> {
   let mut iter: Peekable<Chars> = input.chars().peekable();
-  read_sexp(iter)
+  let output = read_sexp(&mut iter);
+  match iter.next() {
+    None => output,
+    Some(c) => Err(format!("Expected end of input, got {}", c)),
+  }
 }
 
-fn read_sexp(mut input: Peekable<Chars>) -> Result<Sexp, String> {
+fn read_sexp(input: &mut Peekable<Chars>) -> Result<Sexp, String> {
   if input.next() != Some('(') {
     return Err(format!("Expected '('"));
   }
-  Ok(Sexp::Atom(AtomT::Number(4)))
+  let mut v = Vec::new();
+  loop {
+    let c = input.peek().map(|x| *x);
+    match c {
+      Some(')') | None => break,
+      Some('(') => v.push(read_sexp(input)?),
+      Some(c) if c.is_whitespace() => { input.next(); continue; },
+      Some(c) => v.push(read_sym(input)?)
+    }
+  }
+  if input.next() != Some(')') {
+    return Err(format!("Expected ')'"));
+  }
+  Ok(Sexp::List(v))
+}
+
+fn read_sym(input: &mut Peekable<Chars>) -> Result<Sexp, String> {
+  let mut sym = String::new();
+  loop {
+    sym.push(input.next().unwrap());
+    match input.peek().map(|x| *x) {
+      Some('(') | Some(')') | None => break,
+      Some(c) if c.is_whitespace() => break,
+      _ => continue,
+    }
+  }
+  Ok(Sexp::Atom(AtomT::Symbol(sym)))
 }
 
 #[derive(Debug)]
@@ -53,7 +83,7 @@ enum Sexp {
 #[derive(Debug)]
 enum AtomT {
   Symbol(String),
-  Number(u64),
+  //Number(u64),
 }
 
 #[derive(Debug)]
