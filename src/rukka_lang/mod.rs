@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use schala_lib::{ProgrammingLanguageInterface, EvalOptions, ReplOutput};
 use std::iter::Peekable;
+use std::vec::IntoIter;
 use std::str::Chars;
 
 pub struct Rukka { }
@@ -20,10 +21,22 @@ impl ProgrammingLanguageInterface for Rukka {
 
   fn evaluate_in_repl(&mut self, input: &str, _eval_options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
-    match parse(input).and_then(|x| eval(x)) {
-      Ok(s) => output.add_output(s),
-      Err(e) => output.add_output(format!("Error: {}", e))
+    let sexps = match read(input) {
+      Err(err) => {
+        output.add_output(format!("Error: {}", err));
+        return output;
+      },
+      Ok(sexps) => sexps
     };
+
+    let mut text = String::new();
+    for (i, sexp) in sexps.into_iter().enumerate() {
+      match eval(sexp) {
+        Ok(result) => text.push_str(&format!("{}: {}", i, result)),
+        Err(err) => text.push_str(&format!("{} Error: {}", i, err)),
+      }
+    }
+    output.add_output(text);
     output
   }
 }
@@ -32,13 +45,17 @@ fn eval(ast: Sexp) -> Result<String, String> {
   Ok(format!("{:?}", ast))
 }
 
-fn parse(input: &str) -> Result<Sexp, String> {
-  let mut iter: Peekable<Chars> = input.chars().peekable();
-  let output = read_sexp(&mut iter);
-  match iter.next() {
-    None => output,
-    Some(c) => Err(format!("Expected end of input, got {}", c)),
+fn read(input: &str) -> Result<Vec<Sexp>, String> {
+  let mut chars: Peekable<Chars> = input.chars().peekable();
+  let mut tokens = tokenize(&mut chars).into_iter().peekable();
+  let mut sexps = Vec::new();
+  loop {
+    sexps.push(parse(&mut tokens)?);
+    if let None = tokens.peek() {
+      break;
+    }
   }
+  Ok(sexps)
 }
 
 #[derive(Debug)]
@@ -49,51 +66,55 @@ enum Token {
 }
 
 fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
+  use self::Token::*;
   let mut tokens = Vec::new();
   loop {
-    match input.peek().map(|x| *x) {
+    match input.next() {
       None => break,
       Some('(') => tokens.push(LParen),
       Some(')') => tokens.push(RParen),
-      Some(c) if c.is_whitespace() => { tokens.next(); continue },
+      Some(c) if c.is_whitespace() => continue,
       Some(c) => {
-
+        let mut sym = String::new();
+        sym.push(c);
+        loop {
+          match input.peek().map(|x| *x) {
+            Some('(') | Some(')') | None => break,
+            Some(c) if c.is_whitespace() => break,
+            Some(c) => {
+              sym.push(c);
+              input.next();
+            }
+          }
+        }
+        tokens.push(Symbol(sym));
       }
     }
   }
+  tokens
 }
 
-fn read_sexp(input: &mut Peekable<Chars>) -> Result<Sexp, String> {
-  if input.next() != Some('(') {
-    return Err(format!("Expected '('"));
+fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
+  use self::Token::*;
+  match tokens.next() {
+    Some(Symbol(s)) => Ok(Sexp::Atom(AtomT::Symbol(s))),
+    Some(LParen) => parse_sexp(tokens),
+    Some(RParen) => Err(format!("Unexpected ')'")),
+    None => Err(format!("Unexpected end of input")),
   }
-  let mut v = Vec::new();
-  loop {
-    let c = input.peek().map(|x| *x);
-    match c {
-      Some(')') | None => break,
-      Some('(') => v.push(read_sexp(input)?),
-      Some(c) if c.is_whitespace() => { input.next(); continue; },
-      Some(c) => v.push(read_sym(input)?)
-    }
-  }
-  if input.next() != Some(')') {
-    return Err(format!("Expected ')'"));
-  }
-  Ok(Sexp::List(v))
 }
 
-fn read_sym(input: &mut Peekable<Chars>) -> Result<Sexp, String> {
-  let mut sym = String::new();
+fn parse_sexp(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
+  use self::Token::*;
+  let mut vec = Vec::new();
   loop {
-    sym.push(input.next().unwrap());
-    match input.peek().map(|x| *x) {
-      Some('(') | Some(')') | None => break,
-      Some(c) if c.is_whitespace() => break,
-      _ => continue,
+    match tokens.peek() {
+      None => return Err(format!("Unexpected end of input")),
+      Some(&RParen) => { tokens.next(); break},
+      _ => vec.push(parse(tokens)?),
     }
   }
-  Ok(Sexp::Atom(AtomT::Symbol(sym)))
+  Ok(Sexp::List(vec))
 }
 
 #[derive(Debug)]
@@ -109,8 +130,8 @@ enum AtomT {
 }
 
 #[derive(Debug)]
-struct List<'a> {
-  next: Option<&'a List<'a>>,
+struct PointerList<'a> {
+  next: Option<&'a PointerList<'a>>,
   data: usize
 }
 
