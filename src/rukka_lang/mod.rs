@@ -29,14 +29,13 @@ impl ProgrammingLanguageInterface for Rukka {
       Ok(sexps) => sexps
     };
 
-    let mut text = String::new();
-    for (i, sexp) in sexps.into_iter().enumerate() {
+    let output_str: String = sexps.into_iter().enumerate().map(|(i, sexp)| {
       match eval(sexp) {
-        Ok(result) => text.push_str(&format!("{}: {}", i, result)),
-        Err(err) => text.push_str(&format!("{} Error: {}", i, err)),
+        Ok(result) => format!("{}: {}", i, result),
+        Err(err) => format!("{} Error: {}", i, err),
       }
-    }
-    output.add_output(text);
+    }).intersperse(format!("\n")).collect();
+    output.add_output(output_str);
     output
   }
 }
@@ -74,19 +73,14 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
       Some('(') => tokens.push(LParen),
       Some(')') => tokens.push(RParen),
       Some(c) if c.is_whitespace() => continue,
-      Some(c) => {
-        let mut sym = String::new();
-        sym.push(c);
-        loop {
-          match input.peek().map(|x| *x) {
-            Some('(') | Some(')') | None => break,
-            Some(c) if c.is_whitespace() => break,
-            Some(c) => {
-              sym.push(c);
-              input.next();
-            }
+      Some(_) => {
+        let sym: String = input.peeking_take_while(|next| {
+          match *next {
+            '(' | ')' => false,
+            c if c.is_whitespace() => false,
+            _ => true
           }
-        }
+        }).collect();
         tokens.push(Symbol(sym));
       }
     }
