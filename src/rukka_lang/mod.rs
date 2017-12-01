@@ -58,7 +58,7 @@ fn read(input: &str) -> Result<Vec<Sexp>, String> {
 enum Token {
   LParen,
   RParen,
-  Symbol(String)
+  Word(String)
 }
 
 #[derive(Debug)]
@@ -90,7 +90,7 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
             _ => true
           }
         }).collect();
-        tokens.push(Symbol(format!("{}{}", c, sym)));
+        tokens.push(Word(format!("{}{}", c, sym)));
       }
     }
   }
@@ -100,7 +100,7 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
 fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
   use self::Token::*;
   match tokens.next() {
-    Some(Symbol(s)) => Ok(Sexp::Atom(AtomT::Symbol(s))),
+    Some(Word(s)) => Ok(Sexp::Atom(AtomT::Symbol(s))),
     Some(LParen) => parse_sexp(tokens),
     Some(RParen) => Err(format!("Unexpected ')'")),
     None => Err(format!("Unexpected end of input")),
