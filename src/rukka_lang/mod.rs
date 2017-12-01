@@ -41,6 +41,28 @@ fn parse(input: &str) -> Result<Sexp, String> {
   }
 }
 
+#[derive(Debug)]
+enum Token {
+  LParen,
+  RParen,
+  Symbol(String)
+}
+
+fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
+  let mut tokens = Vec::new();
+  loop {
+    match input.peek().map(|x| *x) {
+      None => break,
+      Some('(') => tokens.push(LParen),
+      Some(')') => tokens.push(RParen),
+      Some(c) if c.is_whitespace() => { tokens.next(); continue },
+      Some(c) => {
+
+      }
+    }
+  }
+}
+
 fn read_sexp(input: &mut Peekable<Chars>) -> Result<Sexp, String> {
   if input.next() != Some('(') {
     return Err(format!("Expected '('"));
