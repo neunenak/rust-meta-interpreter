@@ -48,11 +48,8 @@ fn read(input: &str) -> Result<Vec<Sexp>, String> {
   let mut chars: Peekable<Chars> = input.chars().peekable();
   let mut tokens = tokenize(&mut chars).into_iter().peekable();
   let mut sexps = Vec::new();
-  loop {
+  while let Some(_) = tokens.peek() {
     sexps.push(parse(&mut tokens)?);
-    if let None = tokens.peek() {
-      break;
-    }
   }
   Ok(sexps)
 }
@@ -62,6 +59,18 @@ enum Token {
   LParen,
   RParen,
   Symbol(String)
+}
+
+#[derive(Debug)]
+enum Sexp {
+  Atom(AtomT),
+  List(Vec<Sexp>),
+}
+
+#[derive(Debug)]
+enum AtomT {
+  Symbol(String),
+  //Number(u64),
 }
 
 fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
@@ -109,18 +118,6 @@ fn parse_sexp(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
     }
   }
   Ok(Sexp::List(vec))
-}
-
-#[derive(Debug)]
-enum Sexp {
-  Atom(AtomT),
-  List(Vec<Sexp>),
-}
-
-#[derive(Debug)]
-enum AtomT {
-  Symbol(String),
-  //Number(u64),
 }
 
 #[derive(Debug)]
