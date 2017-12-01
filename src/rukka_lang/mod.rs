@@ -82,7 +82,7 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
       Some('(') => tokens.push(LParen),
       Some(')') => tokens.push(RParen),
       Some(c) if c.is_whitespace() => continue,
-      Some(_) => {
+      Some(c) => {
         let sym: String = input.peeking_take_while(|next| {
           match *next {
             '(' | ')' => false,
@@ -90,7 +90,7 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
             _ => true
           }
         }).collect();
-        tokens.push(Symbol(sym));
+        tokens.push(Symbol(format!("{}{}", c, sym)));
       }
     }
   }
