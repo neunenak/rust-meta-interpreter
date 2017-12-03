@@ -58,6 +58,7 @@ fn read(input: &str) -> Result<Vec<Sexp>, String> {
 enum Token {
   LParen,
   RParen,
+  Quote,
   Word(String)
 }
 
@@ -81,6 +82,7 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
       None => break,
       Some('(') => tokens.push(LParen),
       Some(')') => tokens.push(RParen),
+      Some('\'') => tokens.push(Quote),
       Some(c) if c.is_whitespace() => continue,
       Some(c) => {
         let sym: String = input.peeking_take_while(|next| {
@@ -103,6 +105,10 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
     Some(Word(s)) => Ok(Sexp::Atom(AtomT::Symbol(s))),
     Some(LParen) => parse_sexp(tokens),
     Some(RParen) => Err(format!("Unexpected ')'")),
+    Some(Quote) => {
+        let quoted = parse(tokens)?;
+        Ok(Sexp::List(vec![Sexp::Atom(AtomT::Symbol(format!("quote"))), quoted]))
+    },
     None => Err(format!("Unexpected end of input")),
   }
 }
