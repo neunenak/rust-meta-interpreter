@@ -4,6 +4,8 @@ TODO:
 -haskell-ish langauge should be called Robo
 -typeful scripting language should be called schala
 rename accordingly!
+-idea for Schala - scoped types - be able to define a quick enum type scoped to a function ro something, that only
+is meant to be used as a quick bespoke interface between two other things
 
 # Schala - a programming language meta-interpreter
 

@@ -31,7 +31,7 @@ impl ProgrammingLanguageInterface for Rukka {
 
     let output_str: String = sexps.into_iter().enumerate().map(|(i, sexp)| {
       match eval(sexp) {
-        Ok(result) => format!("{}: {}", i, result),
+        Ok(result) => format!("{}: {}", i, result.print()),
         Err(err) => format!("{} Error: {}", i, err),
       }
     }).intersperse(format!("\n")).collect();
@@ -40,8 +40,15 @@ impl ProgrammingLanguageInterface for Rukka {
   }
 }
 
-fn eval(ast: Sexp) -> Result<String, String> {
-  Ok(format!("{:?}", ast))
+fn eval(expr: Sexp) -> Result<Sexp, String> {
+  use self::Sexp::*; use self::AtomT::*;
+  Ok(match expr {
+    Atom(atom) => match atom {
+      Symbol(s) => Atom(Symbol(s)),
+      LangString(s) => Atom(LangString(s)),
+    },
+    List(items) => unimplemented!(),
+  })
 }
 
 fn read(input: &str) -> Result<Vec<Sexp>, String> {
@@ -59,7 +66,8 @@ enum Token {
   LParen,
   RParen,
   Quote,
-  Word(String)
+  Word(String),
+  StringLiteral(String),
 }
 
 #[derive(Debug)]
@@ -68,9 +76,23 @@ enum Sexp {
   List(Vec<Sexp>),
 }
 
+impl Sexp {
+  fn print(&self) -> String {
+    use self::Sexp::*; use self::AtomT::*;
+    match self {
+      &Atom(ref atom) => match atom {
+        &Symbol(ref s) => format!("{}", s),
+        &LangString(ref s) => format!("\"{}\"", s),
+      },
+      _ => format!("<unprintable>")
+    }
+  }
+}
+
 #[derive(Debug)]
 enum AtomT {
   Symbol(String),
+  LangString(String),
   //Number(u64),
 }
 
@@ -84,6 +106,23 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
       Some(')') => tokens.push(RParen),
       Some('\'') => tokens.push(Quote),
       Some(c) if c.is_whitespace() => continue,
+      Some('"') => {
+        let string: String = input.scan(false, |seen_escape, cur_char| {
+          let ret = if cur_char == '"' && !*seen_escape {
+            None
+          } else {
+            Some(cur_char)
+          };
+
+          if cur_char == '\\' {
+            *seen_escape = true;
+          } else {
+            *seen_escape = false;
+          }
+          ret
+        }).collect();
+        tokens.push(StringLiteral(string));
+      }
       Some(c) => {
         let sym: String = input.peeking_take_while(|next| {
           match *next {
@@ -103,6 +142,7 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
   use self::Token::*;
   match tokens.next() {
     Some(Word(s)) => Ok(Sexp::Atom(AtomT::Symbol(s))),
+    Some(StringLiteral(s)) => Ok(Sexp::Atom(AtomT::LangString(s))),
     Some(LParen) => parse_sexp(tokens),
     Some(RParen) => Err(format!("Unexpected ')'")),
     Some(Quote) => {
@@ -124,11 +164,5 @@ fn parse_sexp(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
     }
   }
   Ok(Sexp::List(vec))
-}
-
-#[derive(Debug)]
-struct PointerList<'a> {
-  next: Option<&'a PointerList<'a>>,
-  data: usize
 }
 
