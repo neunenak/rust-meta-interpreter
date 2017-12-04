@@ -55,7 +55,7 @@ impl EvaluatorState {
       expr @ NumberAtom(_) => expr,
       List(items) => {
         if items.len() == 0 {
-          return Err(format!("Empty list"))
+          return Ok(List(items))
         }
         let ref first = items[0];
         match first {
