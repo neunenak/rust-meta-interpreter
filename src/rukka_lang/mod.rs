@@ -53,10 +53,10 @@ impl EvaluatorState {
       SymbolAtom(sym) => unimplemented!(),
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
-      Cons(ref car, ref cdr) => {
-        match **car {
+      Cons(car, cdr) => {
+        match *car {
           SymbolAtom(ref sym) => match &sym[..] {
-            "quote" => unimplemented!(),
+            "quote" => *cdr,
             "eq?" => unimplemented!(),
             "cons" => unimplemented!(),
             "car" => unimplemented!(),
@@ -111,7 +111,7 @@ impl Sexp {
       &SymbolAtom(ref sym) => format!("{}", sym),
       &StringAtom(ref s) => format!("\"{}\"", s),
       &NumberAtom(ref n) => format!("{}", n),
-      &Cons(ref car, ref cdr) => format!("({} . {}", car.print(), cdr.print()),
+      &Cons(ref car, ref cdr) => format!("({} . {})", car.print(), cdr.print()),
       &Nil => format!("()"),
     }
   }
