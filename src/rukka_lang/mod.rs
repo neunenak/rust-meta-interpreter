@@ -107,20 +107,18 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
       Some('\'') => tokens.push(Quote),
       Some(c) if c.is_whitespace() => continue,
       Some('"') => {
-        let string: String = input.scan(false, |seen_escape, cur_char| {
-          let ret = if cur_char == '"' && !*seen_escape {
-            None
-          } else {
-            Some(cur_char)
-          };
+        let string: String = input.scan(false, |escape, cur_char| {
+          let seen_escape = *escape;
+          *escape = cur_char == '\\' && !seen_escape;
 
-          if cur_char == '\\' {
-            *seen_escape = true;
+          if cur_char == '"' && !seen_escape {
+            None
+          } else if cur_char == '\\' && !seen_escape {
+            Some(None)
           } else {
-            *seen_escape = false;
+            Some(Some(cur_char))
           }
-          ret
-        }).collect();
+        }).filter_map(|x| x).collect();
         tokens.push(StringLiteral(string));
       }
       Some(c) => {
