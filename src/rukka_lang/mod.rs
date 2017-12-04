@@ -61,7 +61,15 @@ impl EvaluatorState {
         match first {
           &SymbolAtom(ref sym) => match &sym[..] {
             "quote" => unimplemented!(),
-            _ => unimplemented!(),
+            "eq?" => unimplemented!(),
+            "cons" => unimplemented!(),
+            "car" => unimplemented!(),
+            "cdr" => unimplemented!(),
+            "atom?" => unimplemented!(),
+            "define" => unimplemented!(),
+            "lambda" => unimplemented!(),
+            "cond" => unimplemented!(),
+            x => unimplemented!(),
           },
           _ => unimplemented!()
         }
