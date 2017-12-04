@@ -128,13 +128,10 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
         let string: String = input.scan(false, |escape, cur_char| {
           let seen_escape = *escape;
           *escape = cur_char == '\\' && !seen_escape;
-
-          if cur_char == '"' && !seen_escape {
-            None
-          } else if cur_char == '\\' && !seen_escape {
-            Some(None)
-          } else {
-            Some(Some(cur_char))
+          match (cur_char, seen_escape) {
+            ('"', false) => None,
+            ('\\', false) => Some(None),
+            (c, _) => Some(Some(c))
           }
         }).filter_map(|x| x).collect();
         tokens.push(StringLiteral(string));
