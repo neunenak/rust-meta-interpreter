@@ -53,13 +53,9 @@ impl EvaluatorState {
       SymbolAtom(sym) => unimplemented!(),
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
-      List(items) => {
-        if items.len() == 0 {
-          return Ok(List(items))
-        }
-        let ref first = items[0];
-        match first {
-          &SymbolAtom(ref sym) => match &sym[..] {
+      Cons(ref car, ref cdr) => {
+        match **car {
+          SymbolAtom(ref sym) => match &sym[..] {
             "quote" => unimplemented!(),
             "eq?" => unimplemented!(),
             "cons" => unimplemented!(),
@@ -73,7 +69,8 @@ impl EvaluatorState {
           },
           _ => unimplemented!()
         }
-      }
+      },
+      Nil => Nil,
     })
   }
 }
@@ -103,7 +100,8 @@ enum Sexp {
   SymbolAtom(String),
   StringAtom(String),
   NumberAtom(u64),
-  List(Vec<Sexp>),
+  Cons(Box<Sexp>, Box<Sexp>),
+  Nil
 }
 
 impl Sexp {
@@ -113,15 +111,8 @@ impl Sexp {
       &SymbolAtom(ref sym) => format!("{}", sym),
       &StringAtom(ref s) => format!("\"{}\"", s),
       &NumberAtom(ref n) => format!("{}", n),
-      &List(ref sexprs) => {
-        let mut output = String::new();
-        write!(&mut output, "(").unwrap();
-        for sexpr in sexprs.iter() {
-          write!(&mut output, "{}", sexpr.print()).unwrap();
-        }
-        write!(&mut output, ")").unwrap();
-        output
-      }
+      &Cons(ref car, ref cdr) => format!("({} . {}", car.print(), cdr.print()),
+      &Nil => format!("()"),
     }
   }
 }
@@ -178,7 +169,7 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
     Some(RParen) => Err(format!("Unexpected ')'")),
     Some(Quote) => {
       let quoted = parse(tokens)?;
-      Ok(List(vec![SymbolAtom(format!("quote")), quoted]))
+      Ok(Cons(Box::new(SymbolAtom(format!("quote"))), Box::new(quoted)))
     },
     Some(NumLiteral(n)) => Ok(NumberAtom(n)),
     None => Err(format!("Unexpected end of input")),
@@ -188,14 +179,16 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
 fn parse_sexp(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
   use self::Token::*;
   use self::Sexp::*;
-  let mut vec = Vec::new();
+  let mut cell = Nil;
   loop {
     match tokens.peek() {
       None => return Err(format!("Unexpected end of input")),
       Some(&RParen) => { tokens.next(); break},
-      _ => vec.push(parse(tokens)?),
+      _ => {
+        cell = Cons(Box::new(parse(tokens)?), Box::new(cell));
+      }
     }
   }
-  Ok(List(vec))
+  Ok(cell)
 }
 
