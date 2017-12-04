@@ -44,7 +44,6 @@ impl ProgrammingLanguageInterface for Rukka {
   }
 }
 
-
 impl EvaluatorState {
   fn new() -> EvaluatorState { EvaluatorState { } }
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
@@ -53,7 +52,19 @@ impl EvaluatorState {
       SymbolAtom(sym) => unimplemented!(),
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
-      List(items) => unimplemented!(),
+      List(items) => {
+        if items.len() == 0 {
+          return Err(format!("Empty list"))
+        }
+        let ref first = items[0];
+        match first {
+          &SymbolAtom(ref sym) => match &sym[..] {
+            "quote" => unimplemented!(),
+            _ => unimplemented!(),
+          },
+          _ => unimplemented!()
+        }
+      }
     })
   }
 }
@@ -152,8 +163,8 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
     Some(LParen) => parse_sexp(tokens),
     Some(RParen) => Err(format!("Unexpected ')'")),
     Some(Quote) => {
-        let quoted = parse(tokens)?;
-        Ok(List(vec![SymbolAtom(format!("quote")), quoted]))
+      let quoted = parse(tokens)?;
+      Ok(List(vec![SymbolAtom(format!("quote")), quoted]))
     },
     Some(NumLiteral(n)) => Ok(NumberAtom(n)),
     None => Err(format!("Unexpected end of input")),
@@ -162,6 +173,7 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
 
 fn parse_sexp(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
   use self::Token::*;
+  use self::Sexp::*;
   let mut vec = Vec::new();
   loop {
     match tokens.peek() {
@@ -170,6 +182,6 @@ fn parse_sexp(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
       _ => vec.push(parse(tokens)?),
     }
   }
-  Ok(Sexp::List(vec))
+  Ok(List(vec))
 }
 
