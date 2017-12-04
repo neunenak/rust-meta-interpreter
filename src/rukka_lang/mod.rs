@@ -46,6 +46,7 @@ fn eval(expr: Sexp) -> Result<Sexp, String> {
     Atom(atom) => match atom {
       Symbol(s) => Atom(Symbol(s)),
       LangString(s) => Atom(LangString(s)),
+      Number(s) => Atom(Number(s)),
     },
     List(items) => unimplemented!(),
   })
@@ -68,6 +69,7 @@ enum Token {
   Quote,
   Word(String),
   StringLiteral(String),
+  NumLiteral(u64),
 }
 
 #[derive(Debug)]
@@ -83,6 +85,7 @@ impl Sexp {
       &Atom(ref atom) => match atom {
         &Symbol(ref s) => format!("{}", s),
         &LangString(ref s) => format!("\"{}\"", s),
+        &Number(ref n) => format!("{}", n),
       },
       _ => format!("<unprintable>")
     }
@@ -93,7 +96,7 @@ impl Sexp {
 enum AtomT {
   Symbol(String),
   LangString(String),
-  //Number(u64),
+  Number(u64),
 }
 
 fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
@@ -106,6 +109,11 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
       Some(')') => tokens.push(RParen),
       Some('\'') => tokens.push(Quote),
       Some(c) if c.is_whitespace() => continue,
+      Some(c) if c.is_numeric() => {
+        let tok: String = input.peeking_take_while(|next| next.is_numeric()).collect();
+        let n: u64 = format!("{}{}", c, tok).parse().unwrap();
+        tokens.push(NumLiteral(n));
+      },
       Some('"') => {
         let string: String = input.scan(false, |escape, cur_char| {
           let seen_escape = *escape;
@@ -147,6 +155,7 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
         let quoted = parse(tokens)?;
         Ok(Sexp::List(vec![Sexp::Atom(AtomT::Symbol(format!("quote"))), quoted]))
     },
+    Some(NumLiteral(n)) => Ok(Sexp::Atom(AtomT::Number(n))),
     None => Err(format!("Unexpected end of input")),
   }
 }
