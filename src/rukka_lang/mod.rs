@@ -49,16 +49,25 @@ impl EvaluatorState {
   fn new() -> EvaluatorState { EvaluatorState { } }
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
+    println!("Eval'd sexp: {:?}", expr);
     Ok(match expr {
       SymbolAtom(sym) => unimplemented!(),
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
-      Cons(car, cdr) => {
-        match *car {
+      Cons(box car, box cdr) => {
+        match car {
           SymbolAtom(ref sym) => match &sym[..] {
-            "quote" => *cdr,
+            "quote" => cdr,
             "eq?" => unimplemented!(),
-            "cons" => unimplemented!(),
+            "cons" => match cdr {
+              Cons(box cadr, box Cons(box caddr, box Nil)) => {
+                println!("NEWL {:?}|| NEWR {:?}", cadr, caddr);
+                let newl = self.eval(cadr)?;
+                let newr = self.eval(caddr)?;
+                Cons(Box::new(newl), Box::new(newr))
+              },
+              _ => return Err(format!("Bad arguments for cons")),
+            },
             "car" => unimplemented!(),
             "cdr" => unimplemented!(),
             "atom?" => unimplemented!(),
@@ -67,7 +76,7 @@ impl EvaluatorState {
             "cond" => unimplemented!(),
             x => unimplemented!(),
           },
-          _ => unimplemented!()
+          other => {println!("OTHER? {:?}", other); unimplemented!() }
         }
       },
       Nil => Nil,
@@ -185,7 +194,7 @@ fn parse_sexp(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
       None => return Err(format!("Unexpected end of input")),
       Some(&RParen) => { tokens.next(); break},
       _ => {
-        cell = Cons(Box::new(parse(tokens)?), Box::new(cell));
+        cell = Cons(Box::new(cell), Box::new(parse(tokens)?));
       }
     }
   }
