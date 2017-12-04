@@ -3,6 +3,7 @@ use schala_lib::{ProgrammingLanguageInterface, EvalOptions, ReplOutput};
 use std::iter::Peekable;
 use std::vec::IntoIter;
 use std::str::Chars;
+use std::fmt::Write;
 
 pub struct EvaluatorState { }
 
@@ -104,7 +105,15 @@ impl Sexp {
       &SymbolAtom(ref sym) => format!("{}", sym),
       &StringAtom(ref s) => format!("\"{}\"", s),
       &NumberAtom(ref n) => format!("{}", n),
-      &List(ref sexprs) => format!("<unprintable>"),
+      &List(ref sexprs) => {
+        let mut output = String::new();
+        write!(&mut output, "(");
+        for sexpr in sexprs.iter() {
+          write!(&mut output, "{}", sexpr.print());
+        }
+        write!(&mut output, ")");
+        output
+      }
     }
   }
 }
