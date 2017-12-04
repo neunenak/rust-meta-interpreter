@@ -48,13 +48,11 @@ impl ProgrammingLanguageInterface for Rukka {
 impl EvaluatorState {
   fn new() -> EvaluatorState { EvaluatorState { } }
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
-    use self::Sexp::*; use self::AtomT::*;
+    use self::Sexp::*;
     Ok(match expr {
-      Atom(atom) => match atom {
-        Symbol(s) => Atom(Symbol(s)),
-        LangString(s) => Atom(LangString(s)),
-        Number(s) => Atom(Number(s)),
-      },
+      SymbolAtom(sym) => unimplemented!(),
+      expr @ StringAtom(_) => expr,
+      expr @ NumberAtom(_) => expr,
       List(items) => unimplemented!(),
     })
   }
@@ -82,29 +80,22 @@ enum Token {
 
 #[derive(Debug)]
 enum Sexp {
-  Atom(AtomT),
+  SymbolAtom(String),
+  StringAtom(String),
+  NumberAtom(u64),
   List(Vec<Sexp>),
 }
 
 impl Sexp {
   fn print(&self) -> String {
-    use self::Sexp::*; use self::AtomT::*;
+    use self::Sexp::*;
     match self {
-      &Atom(ref atom) => match atom {
-        &Symbol(ref s) => format!("{}", s),
-        &LangString(ref s) => format!("\"{}\"", s),
-        &Number(ref n) => format!("{}", n),
-      },
-      _ => format!("<unprintable>")
+      &SymbolAtom(ref sym) => format!("{}", sym),
+      &StringAtom(ref s) => format!("\"{}\"", s),
+      &NumberAtom(ref n) => format!("{}", n),
+      &List(ref sexprs) => format!("<unprintable>"),
     }
   }
-}
-
-#[derive(Debug)]
-enum AtomT {
-  Symbol(String),
-  LangString(String),
-  Number(u64),
 }
 
 fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
@@ -154,16 +145,17 @@ fn tokenize(input: &mut Peekable<Chars>) -> Vec<Token> {
 
 fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
   use self::Token::*;
+  use self::Sexp::*;
   match tokens.next() {
-    Some(Word(s)) => Ok(Sexp::Atom(AtomT::Symbol(s))),
-    Some(StringLiteral(s)) => Ok(Sexp::Atom(AtomT::LangString(s))),
+    Some(Word(s)) => Ok(SymbolAtom(s)),
+    Some(StringLiteral(s)) => Ok(StringAtom(s)),
     Some(LParen) => parse_sexp(tokens),
     Some(RParen) => Err(format!("Unexpected ')'")),
     Some(Quote) => {
         let quoted = parse(tokens)?;
-        Ok(Sexp::List(vec![Sexp::Atom(AtomT::Symbol(format!("quote"))), quoted]))
+        Ok(List(vec![SymbolAtom(format!("quote")), quoted]))
     },
-    Some(NumLiteral(n)) => Ok(Sexp::Atom(AtomT::Number(n))),
+    Some(NumLiteral(n)) => Ok(NumberAtom(n)),
     None => Err(format!("Unexpected end of input")),
   }
 }
