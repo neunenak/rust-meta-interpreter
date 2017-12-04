@@ -4,10 +4,14 @@ use std::iter::Peekable;
 use std::vec::IntoIter;
 use std::str::Chars;
 
-pub struct Rukka { }
+pub struct EvaluatorState { }
+
+pub struct Rukka { 
+  state: EvaluatorState
+}
 
 impl Rukka {
-  pub fn new() -> Rukka { Rukka { } }
+  pub fn new() -> Rukka { Rukka { state: EvaluatorState::new() } }
 }
 
 impl ProgrammingLanguageInterface for Rukka {
@@ -30,7 +34,7 @@ impl ProgrammingLanguageInterface for Rukka {
     };
 
     let output_str: String = sexps.into_iter().enumerate().map(|(i, sexp)| {
-      match eval(sexp) {
+      match self.state.eval(sexp) {
         Ok(result) => format!("{}: {}", i, result.print()),
         Err(err) => format!("{} Error: {}", i, err),
       }
@@ -40,16 +44,20 @@ impl ProgrammingLanguageInterface for Rukka {
   }
 }
 
-fn eval(expr: Sexp) -> Result<Sexp, String> {
-  use self::Sexp::*; use self::AtomT::*;
-  Ok(match expr {
-    Atom(atom) => match atom {
-      Symbol(s) => Atom(Symbol(s)),
-      LangString(s) => Atom(LangString(s)),
-      Number(s) => Atom(Number(s)),
-    },
-    List(items) => unimplemented!(),
-  })
+
+impl EvaluatorState {
+  fn new() -> EvaluatorState { EvaluatorState { } }
+  fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
+    use self::Sexp::*; use self::AtomT::*;
+    Ok(match expr {
+      Atom(atom) => match atom {
+        Symbol(s) => Atom(Symbol(s)),
+        LangString(s) => Atom(LangString(s)),
+        Number(s) => Atom(Number(s)),
+      },
+      List(items) => unimplemented!(),
+    })
+  }
 }
 
 fn read(input: &str) -> Result<Vec<Sexp>, String> {
