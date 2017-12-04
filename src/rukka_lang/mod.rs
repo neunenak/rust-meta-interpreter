@@ -107,11 +107,11 @@ impl Sexp {
       &NumberAtom(ref n) => format!("{}", n),
       &List(ref sexprs) => {
         let mut output = String::new();
-        write!(&mut output, "(");
+        write!(&mut output, "(").unwrap();
         for sexpr in sexprs.iter() {
-          write!(&mut output, "{}", sexpr.print());
+          write!(&mut output, "{}", sexpr.print()).unwrap();
         }
-        write!(&mut output, ")");
+        write!(&mut output, ")").unwrap();
         output
       }
     }
