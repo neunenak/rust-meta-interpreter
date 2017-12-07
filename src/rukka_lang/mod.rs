@@ -7,7 +7,7 @@ use std::fmt::Write;
 
 pub struct EvaluatorState { }
 
-pub struct Rukka { 
+pub struct Rukka {
   state: EvaluatorState
 }
 
@@ -74,7 +74,7 @@ impl EvaluatorState {
             "define" => unimplemented!(),
             "lambda" => unimplemented!(),
             "cond" => unimplemented!(),
-            x => unimplemented!(),
+            _ => unimplemented!(),
           },
           other => {println!("OTHER? {:?}", other); unimplemented!() }
         }
@@ -189,12 +189,27 @@ fn parse_sexp(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
   use self::Token::*;
   use self::Sexp::*;
   let mut cell = Nil;
-  loop {
-    match tokens.peek() {
-      None => return Err(format!("Unexpected end of input")),
-      Some(&RParen) => { tokens.next(); break},
-      _ => {
-        cell = Cons(Box::new(cell), Box::new(parse(tokens)?));
+  {
+    let mut cell_ptr = &mut cell;
+    loop {
+      match tokens.peek() {
+        None => return Err(format!("Unexpected end of input")),
+        Some(&RParen) => {
+          tokens.next();
+          break;
+        },
+        _ => {
+          let current = parse(tokens)?;
+          let new_cdr = Cons(Box::new(current), Box::new(Nil));
+          match cell_ptr {
+            &mut Cons(_, ref mut cdr) => **cdr = new_cdr,
+            &mut Nil => *cell_ptr  = new_cdr,
+            _ => unreachable!()
+          };
+
+          //let new_ptr: &Sexp = match cell_ptr { &mut Cons(_, ref cdr) => cdr, _ => unreachable!() } as &Sexp;
+          //cell_ptr = new_ptr;
+        }
       }
     }
   }
