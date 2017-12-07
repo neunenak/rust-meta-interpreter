@@ -207,8 +207,9 @@ fn parse_sexp(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
             _ => unreachable!()
           };
 
-          //let new_ptr: &Sexp = match cell_ptr { &mut Cons(_, ref cdr) => cdr, _ => unreachable!() } as &Sexp;
-          //cell_ptr = new_ptr;
+          let old_ptr = cell_ptr;
+          let new_ptr: &mut Sexp = match old_ptr { &mut Cons(_, ref mut cdr) => cdr, _ => unreachable!() } as &mut Sexp;
+          cell_ptr = new_ptr;
         }
       }
     }
