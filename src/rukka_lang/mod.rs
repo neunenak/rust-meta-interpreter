@@ -3,8 +3,11 @@ use schala_lib::{ProgrammingLanguageInterface, EvalOptions, ReplOutput};
 use std::iter::Peekable;
 use std::vec::IntoIter;
 use std::str::Chars;
+use std::collections::HashMap;
 
-pub struct EvaluatorState { }
+pub struct EvaluatorState {
+  vars: HashMap<String, Sexp>
+}
 
 pub struct Rukka {
   state: EvaluatorState
@@ -45,7 +48,11 @@ impl ProgrammingLanguageInterface for Rukka {
 }
 
 impl EvaluatorState {
-  fn new() -> EvaluatorState { EvaluatorState { } }
+  fn new() -> EvaluatorState {
+    EvaluatorState {
+      vars: HashMap::new(),
+    }
+  }
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
     Ok(match expr {
@@ -87,7 +94,14 @@ impl EvaluatorState {
               Cons(_, _) => False,
               _ => True,
             },
-            "define" => unimplemented!(),
+            "define" => match operands {
+              Cons(box SymbolAtom(sym), box Cons(box expr, box Nil)) => {
+                let evaluated = self.eval(expr)?;
+                self.vars.insert(sym, evaluated);
+                Nil
+              },
+              _ => return Err(format!("Bad assignment")),
+            }
             "lambda" => unimplemented!(),
             "cond" => unimplemented!(),
             _ => unimplemented!(),
