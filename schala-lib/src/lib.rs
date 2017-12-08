@@ -123,8 +123,7 @@ struct Repl {
 
 impl Repl {
   fn new(languages: Vec<Box<ProgrammingLanguageInterface>>, initial_index: usize) -> Repl {
-    let mut reader: linefeed::Reader<_> = linefeed::Reader::new("Metainterpreter").unwrap();
-    reader.set_prompt(">> ");
+    let reader: linefeed::Reader<_> = linefeed::Reader::new("Metainterpreter").unwrap();
     let i = if initial_index < languages.len() { initial_index } else { 0 };
 
     Repl {
@@ -165,8 +164,12 @@ impl Repl {
   fn run(&mut self) {
     use linefeed::ReadResult::*;
     println!("MetaInterpreter v 0.05");
-    println!("Using language: {}", self.languages[self.current_language_index].get_language_name());
+
     loop {
+      let language_name = self.languages[self.current_language_index].get_language_name();
+      let prompt_str = format!("{} >> ", language_name);
+      self.reader.set_prompt(&prompt_str);
+
       match self.reader.read_line() {
         Err(e) => {
           println!("Terminal read error: {}", e);
