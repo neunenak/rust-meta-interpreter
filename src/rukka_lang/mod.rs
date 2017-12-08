@@ -53,6 +53,8 @@ impl EvaluatorState {
       SymbolAtom(sym) => unimplemented!(),
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
+      True => True,
+      False => False,
       Cons(box operator, box operands) => {
         match operator {
           SymbolAtom(ref sym) => match &sym[..] {
@@ -116,6 +118,8 @@ enum Sexp {
   SymbolAtom(String),
   StringAtom(String),
   NumberAtom(u64),
+  True,
+  False,
   Cons(Box<Sexp>, Box<Sexp>),
   Nil
 }
@@ -124,6 +128,8 @@ impl Sexp {
   fn print(&self) -> String {
     use self::Sexp::*;
     match self {
+      &True => format!("#t"),
+      &False => format!("#f"),
       &SymbolAtom(ref sym) => format!("{}", sym),
       &StringAtom(ref s) => format!("\"{}\"", s),
       &NumberAtom(ref n) => format!("{}", n),
@@ -179,6 +185,8 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
   use self::Token::*;
   use self::Sexp::*;
   match tokens.next() {
+    Some(Word(ref s)) if s == "#f" => Ok(False),
+    Some(Word(ref s)) if s == "#t" => Ok(True),
     Some(Word(s)) => Ok(SymbolAtom(s)),
     Some(StringLiteral(s)) => Ok(StringAtom(s)),
     Some(LParen) => parse_sexp(tokens),
