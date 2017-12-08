@@ -3,7 +3,6 @@ use schala_lib::{ProgrammingLanguageInterface, EvalOptions, ReplOutput};
 use std::iter::Peekable;
 use std::vec::IntoIter;
 use std::str::Chars;
-use std::fmt::Write;
 
 pub struct EvaluatorState { }
 
