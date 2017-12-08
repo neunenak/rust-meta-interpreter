@@ -49,28 +49,35 @@ impl EvaluatorState {
   fn new() -> EvaluatorState { EvaluatorState { } }
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
-    println!("Eval'd sexp: {:?}", expr);
     Ok(match expr {
       SymbolAtom(sym) => unimplemented!(),
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
-      Cons(box car, box cdr) => {
-        match car {
+      Cons(box operator, box operands) => {
+        match operator {
           SymbolAtom(ref sym) => match &sym[..] {
-            "quote" => cdr,
+            "quote" => operands,
             "eq?" => unimplemented!(),
-            "cons" => match cdr {
+            "cons" => match operands {
               Cons(box cadr, box Cons(box caddr, box Nil)) => {
-                println!("NEWL {:?}|| NEWR {:?}", cadr, caddr);
                 let newl = self.eval(cadr)?;
                 let newr = self.eval(caddr)?;
                 Cons(Box::new(newl), Box::new(newr))
               },
               _ => return Err(format!("Bad arguments for cons")),
             },
-            "car" => unimplemented!(),
-            "cdr" => unimplemented!(),
-            "atom?" => unimplemented!(),
+            "car" => match operands {
+              Cons(box car, _) => car,
+              _ => return Err(format!("called car with a non-pair argument")),
+            },
+            "cdr" => match operands {
+              Cons(_, box cdr) => cdr,
+              _ => return Err(format!("called cdr with a non-pair argument")),
+            },
+            "atom?" => match operands {
+              Cons(_, _) => SymbolAtom(format!("#f")),
+              _ => SymbolAtom(format!("#t")),
+            },
             "define" => unimplemented!(),
             "lambda" => unimplemented!(),
             "cond" => unimplemented!(),
