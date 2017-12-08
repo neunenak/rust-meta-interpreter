@@ -59,7 +59,15 @@ impl EvaluatorState {
         match operator {
           SymbolAtom(ref sym) => match &sym[..] {
             "quote" => operands,
-            "eq?" => unimplemented!(),
+            "eq?" => match operands {
+              Cons(box lhs, box Cons(box rhs, _)) => {
+                match lhs == rhs {
+                  true => True,
+                  false => False,
+                }
+              },
+              _ => True,
+            },
             "cons" => match operands {
               Cons(box cadr, box Cons(box caddr, box Nil)) => {
                 let newl = self.eval(cadr)?;
@@ -77,8 +85,8 @@ impl EvaluatorState {
               _ => return Err(format!("called cdr with a non-pair argument")),
             },
             "atom?" => match operands {
-              Cons(_, _) => SymbolAtom(format!("#f")),
-              _ => SymbolAtom(format!("#t")),
+              Cons(_, _) => False,
+              _ => True,
             },
             "define" => unimplemented!(),
             "lambda" => unimplemented!(),
@@ -113,7 +121,8 @@ enum Token {
   NumLiteral(u64),
 }
 
-#[derive(Debug)]
+//TODO make this notion of Eq more sophisticated
+#[derive(Debug, PartialEq)]
 enum Sexp {
   SymbolAtom(String),
   StringAtom(String),
