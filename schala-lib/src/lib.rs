@@ -229,10 +229,10 @@ impl Repl {
       "help" => {
         println!("Commands:");
         println!("exit | quit");
-        println!("lang [show|next|previous]");
+        println!("lang(uage) [go|show|next|previous]");
         println!("set [show|hide] [tokens|parse|symbols|eval|llvm]");
       }
-      "lang" => {
+      "lang" | "language" => {
         match commands.get(1) {
           Some(&"show") => {
             for (i, lang) in self.languages.iter().enumerate() {
@@ -240,6 +240,22 @@ impl Repl {
                 println!("* {}", lang.get_language_name());
               } else {
                 println!("{}", lang.get_language_name());
+              }
+            }
+          },
+          Some(&"go") => {
+            match commands.get(2) {
+              None => println!("Must specify a language name"),
+              Some(&desired_name) => {
+                for (i, _) in self.languages.iter().enumerate() {
+                  let lang_name = self.languages[i].get_language_name();
+                  if lang_name.to_lowercase() == desired_name.to_lowercase() {
+                    self.current_language_index = i;
+                    println!("Switching to {}", self.languages[self.current_language_index].get_language_name());
+                    return true;
+                  }
+                }
+                println!("Language {} not found", desired_name);
               }
             }
           },
