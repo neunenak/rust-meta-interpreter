@@ -56,7 +56,15 @@ impl EvaluatorState {
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
     Ok(match expr {
-      SymbolAtom(sym) => unimplemented!(),
+      SymbolAtom(ref sym) => {
+        match self.vars.get(sym) {
+          Some(ref sexp) => {
+            let q: &Sexp = sexp; //WTF? if I delete this line, the copy doesn't work??
+            q.clone() //TODO make this not involve a clone
+          },
+          None => return Err(format!("Variable {} not bound", sym)),
+        }
+      },
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
       True => True,
@@ -135,7 +143,7 @@ enum Token {
 }
 
 //TODO make this notion of Eq more sophisticated
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum Sexp {
   SymbolAtom(String),
   StringAtom(String),
