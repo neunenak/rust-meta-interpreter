@@ -111,7 +111,17 @@ impl EvaluatorState {
               _ => return Err(format!("Bad assignment")),
             }
             "lambda" => unimplemented!(),
-            "cond" => unimplemented!(),
+            "if" => match operands {
+              Cons(box test, box body) => {
+                let truth_value = test.truthy();
+                match (truth_value, body) {
+                  (true, Cons(box consequent, _)) => consequent,
+                  (false, Cons(_, box Cons(box alternative, _))) => alternative,
+                  _ => return Err(format!("Bad if expression"))
+                }
+              },
+              _ => return Err(format!("Bad if expression"))
+            },
             _ => unimplemented!(),
           },
           other => {println!("OTHER? {:?}", other); unimplemented!() }
@@ -165,6 +175,14 @@ impl Sexp {
       &NumberAtom(ref n) => format!("{}", n),
       &Cons(ref car, ref cdr) => format!("({} . {})", car.print(), cdr.print()),
       &Nil => format!("()"),
+    }
+  }
+
+  fn truthy(&self) -> bool {
+    use self::Sexp::*;
+    match self {
+      &False => false,
+      _ => true
     }
   }
 }
