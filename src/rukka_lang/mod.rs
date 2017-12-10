@@ -22,6 +22,7 @@ impl EvaluatorState {
     self.vars.get(var)
   }
   fn push_env(&mut self) {
+
   }
   fn pop_env(&mut self) {
 
@@ -124,7 +125,12 @@ impl EvaluatorState {
               },
               _ => return Err(format!("Bad assignment")),
             }
-            "lambda" => unimplemented!(),
+            "lambda" => match operands {
+              Cons(box paramlist, box Cons(box formalexp, box Nil)) => {
+                unimplemented!() //needs to return an abstract object
+              },
+              _ => return Err(format!("Bad lambda expression")),
+            },
             "if" => match operands {
               Cons(box test, box body) => {
                 let truth_value = test.truthy();
