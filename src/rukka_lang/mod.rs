@@ -9,6 +9,25 @@ pub struct EvaluatorState {
   vars: HashMap<String, Sexp>
 }
 
+impl EvaluatorState {
+  fn new() -> EvaluatorState {
+    EvaluatorState {
+      vars: HashMap::new(),
+    }
+  }
+  fn set_var(&mut self, var: String, value: Sexp) {
+    self.vars.insert(var, value);
+  }
+  fn get_var(&self, var: &str) -> Option<&Sexp> {
+    self.vars.get(var)
+  }
+  fn push_env(&mut self) {
+  }
+  fn pop_env(&mut self) {
+
+  }
+}
+
 pub struct Rukka {
   state: EvaluatorState
 }
@@ -48,16 +67,11 @@ impl ProgrammingLanguageInterface for Rukka {
 }
 
 impl EvaluatorState {
-  fn new() -> EvaluatorState {
-    EvaluatorState {
-      vars: HashMap::new(),
-    }
-  }
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
     Ok(match expr {
       SymbolAtom(ref sym) => {
-        match self.vars.get(sym) {
+        match self.get_var(sym) {
           Some(ref sexp) => {
             let q: &Sexp = sexp; //WTF? if I delete this line, the copy doesn't work??
             q.clone() //TODO make this not involve a clone
@@ -105,7 +119,7 @@ impl EvaluatorState {
             "define" => match operands {
               Cons(box SymbolAtom(sym), box Cons(box expr, box Nil)) => {
                 let evaluated = self.eval(expr)?;
-                self.vars.insert(sym, evaluated);
+                self.set_var(sym, evaluated);
                 Nil
               },
               _ => return Err(format!("Bad assignment")),
