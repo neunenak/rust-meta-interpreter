@@ -60,7 +60,7 @@ pub fn schala_main(generators: Vec<PLIGenerator>) {
   let language_names: Vec<String> = languages.iter().map(|lang| {lang.get_language_name()}).collect();
   let initial_index: usize =
     option_matches.opt_str("lang")
-    .and_then(|lang| { language_names.iter().position(|x| { *x == lang }) })
+    .and_then(|lang| { language_names.iter().position(|x| { x.to_lowercase() == lang.to_lowercase() }) })
     .unwrap_or(0);
 
   let mut options = EvalOptions::default();
