@@ -70,6 +70,7 @@ impl ProgrammingLanguageInterface for Rukka {
 impl EvaluatorState {
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
+    println!("Evaling {:?}", expr);
     Ok(match expr {
       SymbolAtom(ref sym) => match self.get_var(sym) {
         Some(ref sexp) => {
@@ -78,6 +79,7 @@ impl EvaluatorState {
         },
         None => return Err(format!("Variable {} not bound", sym)),
       },
+      expr @ FnLiteral { .. } => expr,
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
       True => True,
@@ -97,7 +99,7 @@ impl EvaluatorState {
   fn eval_special_form(&mut self, form: &str, operands: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
     Ok(match form {
-      "quote" => operands,
+      "quote" => operands, //TODO Broken
       "eq?" => match operands {
         Cons(box lhs, box Cons(box rhs, _)) => {
           match lhs == rhs {
@@ -190,7 +192,11 @@ enum Sexp {
   True,
   False,
   Cons(Box<Sexp>, Box<Sexp>),
-  Nil
+  Nil,
+  FnLiteral {
+    formal_params: Vec<String>,
+    body: Box<Sexp>
+  }
 }
 
 impl Sexp {
@@ -204,6 +210,7 @@ impl Sexp {
       &NumberAtom(ref n) => format!("{}", n),
       &Cons(ref car, ref cdr) => format!("({} . {})", car.print(), cdr.print()),
       &Nil => format!("()"),
+      &FnLiteral { ref formal_params, .. } => format!("<lambda {:?}>", formal_params),
     }
   }
 
