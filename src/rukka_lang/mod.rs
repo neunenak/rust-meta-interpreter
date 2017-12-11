@@ -154,7 +154,7 @@ impl EvaluatorState {
         },
         _ => return Err(format!("Bad if expression"))
       },
-      _ => unimplemented!(),
+      s => return Err(format!("Non-existent special form {}; this should never happen", s)),
     })
   }
 
