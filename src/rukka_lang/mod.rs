@@ -71,14 +71,12 @@ impl EvaluatorState {
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
     Ok(match expr {
-      SymbolAtom(ref sym) => {
-        match self.get_var(sym) {
-          Some(ref sexp) => {
-            let q: &Sexp = sexp; //WTF? if I delete this line, the copy doesn't work??
-            q.clone() //TODO make this not involve a clone
-          },
-          None => return Err(format!("Variable {} not bound", sym)),
-        }
+      SymbolAtom(ref sym) => match self.get_var(sym) {
+        Some(ref sexp) => {
+          let q: &Sexp = sexp; //WTF? if I delete this line, the copy doesn't work??
+          q.clone() //TODO make this not involve a clone
+        },
+        None => return Err(format!("Variable {} not bound", sym)),
       },
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
@@ -86,69 +84,84 @@ impl EvaluatorState {
       False => False,
       Cons(box operator, box operands) => {
         match operator {
-          SymbolAtom(ref sym) => match &sym[..] {
-            "quote" => operands,
-            "eq?" => match operands {
-              Cons(box lhs, box Cons(box rhs, _)) => {
-                match lhs == rhs {
-                  true => True,
-                  false => False,
-                }
-              },
-              _ => True,
-            },
-            "cons" => match operands {
-              Cons(box cadr, box Cons(box caddr, box Nil)) => {
-                let newl = self.eval(cadr)?;
-                let newr = self.eval(caddr)?;
-                Cons(Box::new(newl), Box::new(newr))
-              },
-              _ => return Err(format!("Bad arguments for cons")),
-            },
-            "car" => match operands {
-              Cons(box car, _) => car,
-              _ => return Err(format!("called car with a non-pair argument")),
-            },
-            "cdr" => match operands {
-              Cons(_, box cdr) => cdr,
-              _ => return Err(format!("called cdr with a non-pair argument")),
-            },
-            "atom?" => match operands {
-              Cons(_, _) => False,
-              _ => True,
-            },
-            "define" => match operands {
-              Cons(box SymbolAtom(sym), box Cons(box expr, box Nil)) => {
-                let evaluated = self.eval(expr)?;
-                self.set_var(sym, evaluated);
-                Nil
-              },
-              _ => return Err(format!("Bad assignment")),
+          SymbolAtom(sym) => match &sym[..] {
+            "quote" | "eq?" | "cons" | "car" | "cdr" | "atom?" |
+              "define" | "lambda" | "if" | "cond" => self.eval_special_form(&sym[..], operands)?,
+            _ => {
+              let evaled = self.eval(SymbolAtom(sym))?;
+              self.apply(evaled, operands)?
             }
-            "lambda" => match operands {
-              Cons(box paramlist, box Cons(box formalexp, box Nil)) => {
-                unimplemented!() //needs to return an abstract object
-              },
-              _ => return Err(format!("Bad lambda expression")),
-            },
-            "if" => match operands {
-              Cons(box test, box body) => {
-                let truth_value = test.truthy();
-                match (truth_value, body) {
-                  (true, Cons(box consequent, _)) => consequent,
-                  (false, Cons(_, box Cons(box alternative, _))) => alternative,
-                  _ => return Err(format!("Bad if expression"))
-                }
-              },
-              _ => return Err(format!("Bad if expression"))
-            },
-            _ => unimplemented!(),
           },
-          other => {println!("OTHER? {:?}", other); unimplemented!() }
+          _ => unimplemented!()
         }
       },
       Nil => Nil,
     })
+  }
+  fn eval_special_form(&mut self, form: &str, operands: Sexp) -> Result<Sexp, String> {
+    use self::Sexp::*;
+    Ok(match form {
+      "quote" => operands,
+      "eq?" => match operands {
+        Cons(box lhs, box Cons(box rhs, _)) => {
+          match lhs == rhs {
+            true => True,
+            false => False,
+          }
+        },
+        _ => True,
+      },
+      "cons" => match operands {
+        Cons(box cadr, box Cons(box caddr, box Nil)) => {
+          let newl = self.eval(cadr)?;
+          let newr = self.eval(caddr)?;
+          Cons(Box::new(newl), Box::new(newr))
+        },
+        _ => return Err(format!("Bad arguments for cons")),
+      },
+      "car" => match operands {
+        Cons(box car, _) => car,
+        _ => return Err(format!("called car with a non-pair argument")),
+      },
+      "cdr" => match operands {
+        Cons(_, box cdr) => cdr,
+        _ => return Err(format!("called cdr with a non-pair argument")),
+      },
+      "atom?" => match operands {
+        Cons(_, _) => False,
+        _ => True,
+      },
+      "define" => match operands {
+        Cons(box SymbolAtom(sym), box Cons(box expr, box Nil)) => {
+          let evaluated = self.eval(expr)?;
+          self.set_var(sym, evaluated);
+          Nil
+        },
+        _ => return Err(format!("Bad assignment")),
+      }
+      "lambda" => match operands {
+        Cons(box paramlist, box Cons(box formalexp, box Nil)) => {
+          unimplemented!() //needs to return an abstract object
+        },
+        _ => return Err(format!("Bad lambda expression")),
+      },
+      "if" => match operands {
+        Cons(box test, box body) => {
+          let truth_value = test.truthy();
+          match (truth_value, body) {
+            (true, Cons(box consequent, _)) => consequent,
+            (false, Cons(_, box Cons(box alternative, _))) => alternative,
+            _ => return Err(format!("Bad if expression"))
+          }
+        },
+        _ => return Err(format!("Bad if expression"))
+      },
+      _ => unimplemented!(),
+    })
+  }
+
+  fn apply(&mut self, function: Sexp, operands: Sexp) -> Result<Sexp, String> {
+    Err(format!("Not implemented"))
   }
 }
 
