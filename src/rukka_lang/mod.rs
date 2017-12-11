@@ -82,17 +82,13 @@ impl EvaluatorState {
       expr @ NumberAtom(_) => expr,
       True => True,
       False => False,
-      Cons(box operator, box operands) => {
-        match operator {
-          SymbolAtom(sym) => match &sym[..] {
-            "quote" | "eq?" | "cons" | "car" | "cdr" | "atom?" |
-              "define" | "lambda" | "if" | "cond" => self.eval_special_form(&sym[..], operands)?,
-            _ => {
-              let evaled = self.eval(SymbolAtom(sym))?;
-              self.apply(evaled, operands)?
-            }
-          },
-          _ => unimplemented!()
+      Cons(box operator, box operands) => match operator {
+        SymbolAtom(ref sym) if match &sym[..] {
+          "quote" | "eq?" | "cons" | "car" | "cdr" | "atom?" | "define" | "lambda" | "if" | "cond" => true, _ => false
+          } => self.eval_special_form(sym, operands)?,
+        _ => {
+          let evaled = self.eval(operator)?;
+          self.apply(evaled, operands)?
         }
       },
       Nil => Nil,
