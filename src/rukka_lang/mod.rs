@@ -138,8 +138,16 @@ impl EvaluatorState {
         _ => return Err(format!("Bad assignment")),
       }
       "lambda" => match operands {
-        Cons(box paramlist, box Cons(box formalexp, box Nil)) => {
-          unimplemented!() //needs to return an abstract object
+        Cons(box mut paramlist, box Cons(box formalexp, box Nil)) => {
+          let mut formal_params = vec![];
+          {
+            let mut ptr = &mut paramlist;
+
+          }
+          FnLiteral {
+            formal_params,
+            body: Box::new(formalexp)
+          }
         },
         _ => return Err(format!("Bad lambda expression")),
       },
