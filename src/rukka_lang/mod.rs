@@ -21,12 +21,6 @@ impl EvaluatorState {
   fn get_var(&self, var: &str) -> Option<&Sexp> {
     self.vars.get(var)
   }
-  fn push_env(&mut self) {
-
-  }
-  fn pop_env(&mut self) {
-
-  }
 }
 
 pub struct Rukka {
@@ -166,7 +160,7 @@ impl EvaluatorState {
     })
   }
 
-  fn apply(&mut self, function: Sexp, operands: Sexp) -> Result<Sexp, String> {
+  fn apply(&mut self, _function: Sexp, _operands: Sexp) -> Result<Sexp, String> {
     Err(format!("Not implemented"))
   }
 }
