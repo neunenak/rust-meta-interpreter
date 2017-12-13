@@ -1,26 +1,21 @@
 
-TODO:
--null-only language should be called Maaru
--haskell-ish langauge should be called Robo
--typeful scripting language should be called schala
-rename accordingly!
--idea for Schala - scoped types - be able to define a quick enum type scoped to a function ro something, that only
-is meant to be used as a quick bespoke interface between two other things
--idea for Schala: both currying *and* default arguments!
-        ex. fn a(b: Int, c:Int, d:Int = 1) -> Int
-            a(1,2) : Int
-            a(1,2,d=2): Int
-            a(_,1,3) : Int -> Int
-            a(1,2, c=_): Int -> Int
-            a(_,_,_) : Int -> Int -> Int -> Int
-
 # Schala - a programming language meta-interpreter
 
-Schala is a Rust-language framework written to make it easy to
+Schala is a Rust framework written to make it easy to
 create and experiment with toy programming languages. It provides
-a common REPL, and a trait `ProgrammingLanguage` with methods
+a common REPL, and a trait `ProgrammingLanguage` with provisions 
 for tokenizing text, parsing tokens, evaluating an abstract syntax tree,
 and other tasks that are common to all programming languages.
+
+Schala is implemented as a Rust library `schala_lib`, which provides a
+`schala_main` function. This function serves as the main loop of the REPL, if run
+interactively, or otherwise reads and interprets programming language source
+files. It expects as input a vector of `PLIGenerator`, which is a type representing
+a closure that returns a boxed trait object that implements the `ProgrammingLanguage` trait,
+and stores any persistent state relevant to that programming language. The ability
+to share state between different programming languages is in the works.
+
+## About
 
 Schala started out life as an experiment in writing a Javascript-like
 programming language that would never encounter any kind of runtime value
@@ -37,6 +32,8 @@ SNES RPG *Chrono Trigger*. I like classic JRPGs and enjoyed the thought of
 creating a language name confusingly close to Scala. The naming scheme for
 languages implemented with the Schala meta-interpreter is Chrono Trigger
 characters.
+
+Schala is incomplete alpha software and is not ready for public release.
 
 ## Languages implemented using the meta-interpreter
 
