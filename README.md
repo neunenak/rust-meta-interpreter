@@ -52,6 +52,8 @@ system.
 * *Robo* is an experiment in creating a lazy, functional, strongly-typed language
 much like Haskell
 
+* *Rukka* is a straightforward LISP implementation
+
 ## Reference works
 
 Here's a partial list of resources I've made use of in the process
