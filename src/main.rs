@@ -1,4 +1,3 @@
-#![feature(link_args)]
 #![feature(advanced_slice_patterns, slice_patterns, box_patterns, box_syntax)]
 #![feature(plugin)]
 extern crate itertools;
@@ -15,7 +14,6 @@ mod rukka_lang;
 extern crate schala_lib;
 use schala_lib::{PLIGenerator, schala_main};
 
-#[link_args="-ltinfo"]
 extern { }
 
 fn main() {
