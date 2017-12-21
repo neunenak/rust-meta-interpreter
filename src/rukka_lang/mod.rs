@@ -182,8 +182,17 @@ impl EvaluatorState {
     })
   }
 
-  fn apply(&mut self, _function: Sexp, _operands: Sexp) -> Result<Sexp, String> {
-    Err(format!("Not implemented"))
+  fn apply(&mut self, function: Sexp, _operands: Sexp) -> Result<Sexp, String> {
+    use self::Sexp::*;
+    match function {
+      FnLiteral { formal_params, body } => {
+        Err(format!("unimplementd"))
+      },
+      Builtin(sym) => {
+        Err(format!("unimplementd"))
+      },
+      _ => return Err(format!("Bad type to apply")),
+    }
   }
 }
 
