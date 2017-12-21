@@ -6,20 +6,35 @@ use std::str::Chars;
 use std::collections::HashMap;
 
 pub struct EvaluatorState {
-  vars: HashMap<String, Sexp>
+  binding_stack: Vec<HashMap<String, Sexp>>
 }
 
 impl EvaluatorState {
   fn new() -> EvaluatorState {
+    use self::Sexp::*;
+    let mut default_map = HashMap::new();
+    default_map.insert(format!("+"), Builtin("+".to_string()));
+    default_map.insert(format!("-"), Builtin("-".to_string()));
+    default_map.insert(format!("*"), Builtin("*".to_string()));
+    default_map.insert(format!("/"), Builtin("/".to_string()));
+    default_map.insert(format!("%"), Builtin("%".to_string()));
+
     EvaluatorState {
-      vars: HashMap::new(),
+      binding_stack: vec![default_map],
     }
   }
   fn set_var(&mut self, var: String, value: Sexp) {
-    self.vars.insert(var, value);
+    let binding = self.binding_stack.last_mut().unwrap();
+    binding.insert(var, value);
   }
   fn get_var(&self, var: &str) -> Option<&Sexp> {
-    self.vars.get(var)
+    for bindings in self.binding_stack.iter().rev() {
+      match bindings.get(var) {
+        Some(x)  => return Some(x),
+        None => (),
+      }
+    }
+    None
   }
 }
 
