@@ -66,13 +66,20 @@ impl EvaluatorState {
     use self::Sexp::*;
     println!("Evaling {:?}", expr);
     Ok(match expr {
-      SymbolAtom(ref sym) => match self.get_var(sym) {
-        Some(ref sexp) => {
-          let q: &Sexp = sexp; //WTF? if I delete this line, the copy doesn't work??
-          q.clone() //TODO make this not involve a clone
-        },
-        None => return Err(format!("Variable {} not bound", sym)),
+      SymbolAtom(ref sym) => {
+        if is_builtin(sym) {
+          Builtin(sym.clone())
+        } else {
+          match self.get_var(sym) {
+            Some(ref sexp) => {
+              let q: &Sexp = sexp; //WTF? if I delete this line, the copy doesn't work??
+              q.clone() //TODO make this not involve a clone
+            },
+            None => return Err(format!("Variable {} not bound", sym)),
+          }
+        }
       },
+      expr @ Builtin(_) => expr,
       expr @ FnLiteral { .. } => expr,
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
@@ -210,6 +217,14 @@ enum Sexp {
   FnLiteral {
     formal_params: Vec<String>,
     body: Box<Sexp>
+  },
+  Builtin(String)
+}
+
+fn is_builtin(sym: &String) -> bool {
+  match &sym[..] {
+    "+" | "-" | "*" | "/" | "%" => true,
+    _ => false
   }
 }
 
@@ -225,6 +240,7 @@ impl Sexp {
       &Cons(ref car, ref cdr) => format!("({} . {})", car.print(), cdr.print()),
       &Nil => format!("()"),
       &FnLiteral { ref formal_params, .. } => format!("<lambda {:?}>", formal_params),
+      &Builtin(ref sym) => format!("<builtin \"{}\">", sym),
     }
   }
 
