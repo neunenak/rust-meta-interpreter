@@ -100,7 +100,10 @@ impl EvaluatorState {
   fn eval_special_form(&mut self, form: &str, operands: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
     Ok(match form {
-      "quote" => operands, //TODO Broken
+      "quote" => match operands {
+        Cons(box quoted, box Nil) => quoted,
+        _ => return Err(format!("Bad syntax in quote")),
+      },
       "eq?" => match operands {
         Cons(box lhs, box Cons(box rhs, _)) => {
           match lhs == rhs {
@@ -307,7 +310,7 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
     Some(RParen) => Err(format!("Unexpected ')'")),
     Some(Quote) => {
       let quoted = parse(tokens)?;
-      Ok(Cons(Box::new(SymbolAtom(format!("quote"))), Box::new(quoted)))
+      Ok(Cons(Box::new(SymbolAtom(format!("quote"))), Box::new(Cons(Box::new(quoted), Box::new(Nil)))))
     },
     Some(NumLiteral(n)) => Ok(NumberAtom(n)),
     None => Err(format!("Unexpected end of input")),
