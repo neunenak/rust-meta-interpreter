@@ -135,8 +135,20 @@ impl EvaluatorState {
         Cons(box mut paramlist, box Cons(box formalexp, box Nil)) => {
           let mut formal_params = vec![];
           {
-            let mut ptr = &mut paramlist;
-
+            let mut ptr = &paramlist;
+            loop {
+              match ptr {
+                &Cons(ref arg, ref rest) => {
+                  if let SymbolAtom(ref sym) = **arg {
+                    formal_params.push(sym.clone());
+                    ptr = rest;
+                  } else {
+                    return Err(format!("Bad lambda format"));
+                  }
+                },
+                _ => break,
+              }
+            }
           }
           FnLiteral {
             formal_params,
