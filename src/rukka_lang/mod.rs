@@ -11,13 +11,18 @@ pub struct EvaluatorState {
 
 impl EvaluatorState {
   fn new() -> EvaluatorState {
-    use self::Sexp::*;
+    use self::Sexp::Builtin;
+    use self::BuiltinFn::*;
     let mut default_map = HashMap::new();
-    default_map.insert(format!("+"), Builtin("+".to_string()));
-    default_map.insert(format!("-"), Builtin("-".to_string()));
-    default_map.insert(format!("*"), Builtin("*".to_string()));
-    default_map.insert(format!("/"), Builtin("/".to_string()));
-    default_map.insert(format!("%"), Builtin("%".to_string()));
+    default_map.insert(format!("+"), Builtin(Plus));
+    default_map.insert(format!("-"), Builtin(Minus));
+    default_map.insert(format!("*"), Builtin(Mult));
+    default_map.insert(format!("/"), Builtin(Div));
+    default_map.insert(format!("%"), Builtin(Mod));
+    default_map.insert(format!(">"), Builtin(Greater));
+    default_map.insert(format!("<"), Builtin(Less));
+    default_map.insert(format!("<="), Builtin(LessThanOrEqual));
+    default_map.insert(format!(">="), Builtin(GreaterThanOrEqual));
 
     EvaluatorState {
       binding_stack: vec![default_map],
@@ -82,8 +87,8 @@ impl EvaluatorState {
     println!("Evaling {:?}", expr);
     Ok(match expr {
       SymbolAtom(ref sym) => {
-        if is_builtin(sym) {
-          Builtin(sym.clone())
+        if let Some(op) = get_builtin(sym) {
+          Builtin(op)
         } else {
           match self.get_var(sym) {
             Some(ref sexp) => {
@@ -197,17 +202,27 @@ impl EvaluatorState {
     })
   }
 
-  fn apply(&mut self, function: Sexp, _operands: Sexp) -> Result<Sexp, String> {
+  fn apply(&mut self, function: Sexp, operands: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
     match function {
       FnLiteral { formal_params, body } => {
         Err(format!("unimplementd"))
       },
-      Builtin(sym) => {
-        Err(format!("unimplementd"))
-      },
+      Builtin(builtin) => self.apply_builtin(builtin, operands),
       _ => return Err(format!("Bad type to apply")),
     }
+  }
+
+  fn apply_builtin(&mut self, op: BuiltinFn, operands: Sexp) -> Result<Sexp, String> {
+    use self::Sexp::*;
+    use self::BuiltinFn::*;
+    Ok(match op {
+      Plus => match operands {
+        Cons(box NumberAtom(l), box Cons(box NumberAtom(r), box Nil)) => NumberAtom(l + r),
+        _ => return Err(format!("Bad arguments for +")),
+      },
+      _ => return Err(format!("Not implemented")),
+    })
   }
 }
 
@@ -245,14 +260,21 @@ enum Sexp {
     formal_params: Vec<String>,
     body: Box<Sexp>
   },
-  Builtin(String)
+  Builtin(BuiltinFn)
 }
 
-fn is_builtin(sym: &String) -> bool {
-  match &sym[..] {
-    "+" | "-" | "*" | "/" | "%" => true,
-    _ => false
-  }
+#[derive(Debug, PartialEq, Clone)]
+enum BuiltinFn {
+  Plus, Minus, Mult, Div, Mod, Greater, Less, GreaterThanOrEqual, LessThanOrEqual
+}
+
+fn get_builtin(sym: &String) -> Option<BuiltinFn> {
+  use self::BuiltinFn::*;
+  Some(match &sym[..] {
+    "+" => Plus, "-" => Minus, "*" => Mult,  "/" => Div, "%" => Mod,
+    ">" => Greater, "<" => Less, ">=" => GreaterThanOrEqual, "<=" => LessThanOrEqual,
+    _ => return None
+  })
 }
 
 impl Sexp {
@@ -267,7 +289,7 @@ impl Sexp {
       &Cons(ref car, ref cdr) => format!("({} . {})", car.print(), cdr.print()),
       &Nil => format!("()"),
       &FnLiteral { ref formal_params, .. } => format!("<lambda {:?}>", formal_params),
-      &Builtin(ref sym) => format!("<builtin \"{}\">", sym),
+      &Builtin(ref sym) => format!("<builtin \"{:?}\">", sym),
     }
   }
 
