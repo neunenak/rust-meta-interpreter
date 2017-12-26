@@ -217,9 +217,28 @@ impl EvaluatorState {
     use self::Sexp::*;
     use self::BuiltinFn::*;
     Ok(match op {
-      Plus => match operands {
-        Cons(box NumberAtom(l), box Cons(box NumberAtom(r), box Nil)) => NumberAtom(l + r),
-        _ => return Err(format!("Bad arguments for +")),
+      Plus | Mult => {
+        let mut result = match op { Plus => 0, Mult => 1, _ => unreachable!() };
+        let mut operand = &operands;
+        loop {
+          match operand {
+            &Nil => break,
+            &Cons(ref l, ref r) => {
+              if let NumberAtom(ref n) = **l {
+                if let Plus = op {
+                  result += n;
+                } else if let Mult = op {
+                  result *= n;
+                }
+                operand = r as &Sexp;
+              } else {
+                return Err(format!("Bad operand"));
+              }
+            },
+            _ => return Err(format!("Bad operands list"))
+          }
+        }
+        NumberAtom(result)
       },
       _ => return Err(format!("Not implemented")),
     })
