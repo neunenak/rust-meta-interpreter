@@ -23,6 +23,7 @@ impl EvaluatorState {
     default_map.insert(format!("<"), Primitive(Less));
     default_map.insert(format!("<="), Primitive(LessThanOrEqual));
     default_map.insert(format!(">="), Primitive(GreaterThanOrEqual));
+    default_map.insert(format!("display"), Primitive(Display));
 
     EvaluatorState {
       binding_stack: vec![default_map],
@@ -282,7 +283,7 @@ enum Sexp {
 
 #[derive(Debug, PartialEq, Clone)]
 enum PrimitiveFn {
-  Plus, Minus, Mult, Div, Mod, Greater, Less, GreaterThanOrEqual, LessThanOrEqual
+  Plus, Minus, Mult, Div, Mod, Greater, Less, GreaterThanOrEqual, LessThanOrEqual, Display
 }
 
 impl PrimitiveFn {
@@ -291,6 +292,12 @@ impl PrimitiveFn {
     use self::PrimitiveFn::*;
     let op = self.clone();
     Ok(match op {
+      Display => {
+        for arg in evaled_operands {
+          print!("{}\n", arg.print());
+        }
+        Nil
+      },
       Plus | Mult => {
         let mut result = match op { Plus => 0, Mult => 1, _ => unreachable!() };
         for arg in evaled_operands {
