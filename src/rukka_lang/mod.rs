@@ -33,6 +33,7 @@ impl EvaluatorState {
     binding.insert(var, value);
   }
   fn get_var(&self, var: &str) -> Option<&Sexp> {
+    println!("Var: {}", var);
     for bindings in self.binding_stack.iter().rev() {
       match bindings.get(var) {
         Some(x)  => return Some(x),
@@ -40,6 +41,13 @@ impl EvaluatorState {
       }
     }
     None
+  }
+
+  fn push_env(&mut self) {
+    self.binding_stack.push(HashMap::new());
+  }
+  fn pop_env(&mut self) {
+    self.binding_stack.pop();
   }
 }
 
@@ -206,7 +214,22 @@ impl EvaluatorState {
     use self::Sexp::*;
     match function {
       FnLiteral { formal_params, body } => {
-        Err(format!("unimplementd"))
+        self.push_env();
+
+        let mut cur = operands;
+        for param in formal_params {
+          match cur {
+            Cons(box arg, box rest) => {
+              cur = rest;
+              self.set_var(param, arg);
+            },
+            _ => return Err(format!("Bad argument for function application")),
+          }
+        }
+        println!("Body: {:?}", body);
+        let result = self.eval(*body);
+        self.pop_env();
+        result
       },
       Builtin(builtin) => self.apply_builtin(builtin, operands),
       _ => return Err(format!("Bad type to apply")),
@@ -216,31 +239,37 @@ impl EvaluatorState {
   fn apply_builtin(&mut self, op: BuiltinFn, operands: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
     use self::BuiltinFn::*;
+
+    let mut evaled_operands = Vec::new();
+    let mut cur_operand = operands;
+    loop {
+      match cur_operand {
+        Nil => break,
+        Cons(box l, box rest) => {
+          evaled_operands.push(self.eval(l)?);
+          cur_operand = rest;
+        },
+        _ => return Err(format!("Bad operands list"))
+      }
+    }
+
     Ok(match op {
       Plus | Mult => {
         let mut result = match op { Plus => 0, Mult => 1, _ => unreachable!() };
-        let mut operand = &operands;
-        loop {
-          match operand {
-            &Nil => break,
-            &Cons(ref l, ref r) => {
-              if let NumberAtom(ref n) = **l {
-                if let Plus = op {
-                  result += n;
-                } else if let Mult = op {
-                  result *= n;
-                }
-                operand = r as &Sexp;
-              } else {
-                return Err(format!("Bad operand"));
-              }
-            },
-            _ => return Err(format!("Bad operands list"))
+        for arg in evaled_operands {
+          if let NumberAtom(n) = arg {
+            if let Plus = op {
+              result += n;
+            } else if let Mult = op {
+              result *= n;
+            }
+          } else {
+            return Err(format!("Bad operand: {:?}", arg));
           }
         }
         NumberAtom(result)
       },
-      _ => return Err(format!("Not implemented")),
+      op => return Err(format!("Builtin op {:?} not implemented", op)),
     })
   }
 }
