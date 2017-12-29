@@ -11,18 +11,18 @@ pub struct EvaluatorState {
 
 impl EvaluatorState {
   fn new() -> EvaluatorState {
-    use self::Sexp::Builtin;
-    use self::BuiltinFn::*;
+    use self::Sexp::Primitive;
+    use self::PrimitiveFn::*;
     let mut default_map = HashMap::new();
-    default_map.insert(format!("+"), Builtin(Plus));
-    default_map.insert(format!("-"), Builtin(Minus));
-    default_map.insert(format!("*"), Builtin(Mult));
-    default_map.insert(format!("/"), Builtin(Div));
-    default_map.insert(format!("%"), Builtin(Mod));
-    default_map.insert(format!(">"), Builtin(Greater));
-    default_map.insert(format!("<"), Builtin(Less));
-    default_map.insert(format!("<="), Builtin(LessThanOrEqual));
-    default_map.insert(format!(">="), Builtin(GreaterThanOrEqual));
+    default_map.insert(format!("+"), Primitive(Plus));
+    default_map.insert(format!("-"), Primitive(Minus));
+    default_map.insert(format!("*"), Primitive(Mult));
+    default_map.insert(format!("/"), Primitive(Div));
+    default_map.insert(format!("%"), Primitive(Mod));
+    default_map.insert(format!(">"), Primitive(Greater));
+    default_map.insert(format!("<"), Primitive(Less));
+    default_map.insert(format!("<="), Primitive(LessThanOrEqual));
+    default_map.insert(format!(">="), Primitive(GreaterThanOrEqual));
 
     EvaluatorState {
       binding_stack: vec![default_map],
@@ -94,7 +94,7 @@ impl EvaluatorState {
     Ok(match expr {
       SymbolAtom(ref sym) => {
         if let Some(op) = get_builtin(sym) {
-          Builtin(op)
+          Primitive(op)
         } else {
           match self.get_var(sym) {
             Some(ref sexp) => {
@@ -105,7 +105,7 @@ impl EvaluatorState {
           }
         }
       },
-      expr @ Builtin(_) => expr,
+      expr @ Primitive(_) => expr,
       expr @ FnLiteral { .. } => expr,
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
@@ -228,14 +228,14 @@ impl EvaluatorState {
         self.pop_env();
         result
       },
-      Builtin(builtin) => self.apply_builtin(builtin, operands),
+      Primitive(builtin) => self.apply_primitive(builtin, operands),
       _ => return Err(format!("Bad type to apply")),
     }
   }
 
-  fn apply_builtin(&mut self, op: BuiltinFn, operands: Sexp) -> Result<Sexp, String> {
+  fn apply_primitive(&mut self, op: PrimitiveFn, operands: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
-    use self::BuiltinFn::*;
+    use self::PrimitiveFn::*;
 
     let mut evaled_operands = Vec::new();
     let mut cur_operand = operands;
@@ -266,7 +266,7 @@ impl EvaluatorState {
         }
         NumberAtom(result)
       },
-      op => return Err(format!("Builtin op {:?} not implemented", op)),
+      op => return Err(format!("Primitive op {:?} not implemented", op)),
     })
   }
 }
@@ -305,16 +305,16 @@ enum Sexp {
     formal_params: Vec<String>,
     body: Box<Sexp>
   },
-  Builtin(BuiltinFn)
+  Primitive(PrimitiveFn)
 }
 
 #[derive(Debug, PartialEq, Clone)]
-enum BuiltinFn {
+enum PrimitiveFn {
   Plus, Minus, Mult, Div, Mod, Greater, Less, GreaterThanOrEqual, LessThanOrEqual
 }
 
-fn get_builtin(sym: &String) -> Option<BuiltinFn> {
-  use self::BuiltinFn::*;
+fn get_builtin(sym: &String) -> Option<PrimitiveFn> {
+  use self::PrimitiveFn::*;
   Some(match &sym[..] {
     "+" => Plus, "-" => Minus, "*" => Mult,  "/" => Div, "%" => Mod,
     ">" => Greater, "<" => Less, ">=" => GreaterThanOrEqual, "<=" => LessThanOrEqual,
@@ -334,7 +334,7 @@ impl Sexp {
       &Cons(ref car, ref cdr) => format!("({} . {})", car.print(), cdr.print()),
       &Nil => format!("()"),
       &FnLiteral { ref formal_params, .. } => format!("<lambda {:?}>", formal_params),
-      &Builtin(ref sym) => format!("<builtin \"{:?}\">", sym),
+      &Primitive(ref sym) => format!("<builtin \"{:?}\">", sym),
     }
   }
 
