@@ -222,46 +222,24 @@ impl EvaluatorState {
         self.pop_env();
         result
       },
-      Primitive(builtin) => self.apply_primitive(builtin, operands),
-      _ => return Err(format!("Bad type to apply")),
-    }
-  }
-
-  fn apply_primitive(&mut self, op: PrimitiveFn, operands: Sexp) -> Result<Sexp, String> {
-    use self::Sexp::*;
-    use self::PrimitiveFn::*;
-
-    let mut evaled_operands = Vec::new();
-    let mut cur_operand = operands;
-    loop {
-      match cur_operand {
-        Nil => break,
-        Cons(box l, box rest) => {
-          evaled_operands.push(self.eval(l)?);
-          cur_operand = rest;
-        },
-        _ => return Err(format!("Bad operands list"))
-      }
-    }
-
-    Ok(match op {
-      Plus | Mult => {
-        let mut result = match op { Plus => 0, Mult => 1, _ => unreachable!() };
-        for arg in evaled_operands {
-          if let NumberAtom(n) = arg {
-            if let Plus = op {
-              result += n;
-            } else if let Mult = op {
-              result *= n;
-            }
-          } else {
-            return Err(format!("Bad operand: {:?}", arg));
+      Primitive(prim) => {
+        let mut evaled_operands = Vec::new();
+        let mut cur_operand = operands;
+        loop {
+          match cur_operand {
+            Nil => break,
+            Cons(box l, box rest) => {
+              evaled_operands.push(self.eval(l)?);
+              cur_operand = rest;
+            },
+            _ => return Err(format!("Bad operands list"))
           }
         }
-        NumberAtom(result)
-      },
-      op => return Err(format!("Primitive op {:?} not implemented", op)),
-    })
+
+        prim.apply(evaled_operands)
+      }
+      _ => return Err(format!("Bad type to apply")),
+    }
   }
 }
 
@@ -305,6 +283,33 @@ enum Sexp {
 #[derive(Debug, PartialEq, Clone)]
 enum PrimitiveFn {
   Plus, Minus, Mult, Div, Mod, Greater, Less, GreaterThanOrEqual, LessThanOrEqual
+}
+
+impl PrimitiveFn {
+  fn apply(&self, evaled_operands: Vec<Sexp>) -> Result<Sexp, String> {
+    use self::Sexp::*;
+    use self::PrimitiveFn::*;
+    let op = self.clone();
+    Ok(match op {
+      Plus | Mult => {
+        let mut result = match op { Plus => 0, Mult => 1, _ => unreachable!() };
+        for arg in evaled_operands {
+          if let NumberAtom(n) = arg {
+            if let Plus = op {
+              result += n;
+            } else if let Mult = op {
+              result *= n;
+            }
+          } else {
+            return Err(format!("Bad operand: {:?}", arg));
+          }
+        }
+        NumberAtom(result)
+      },
+      op => return Err(format!("Primitive op {:?} not implemented", op)),
+    })
+
+  }
 }
 
 impl Sexp {
