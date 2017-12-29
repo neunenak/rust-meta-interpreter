@@ -334,7 +334,7 @@ impl Sexp {
       &Cons(ref car, ref cdr) => format!("({} . {})", car.print(), cdr.print()),
       &Nil => format!("()"),
       &FnLiteral { ref formal_params, .. } => format!("<lambda {:?}>", formal_params),
-      &Primitive(ref sym) => format!("<builtin \"{:?}\">", sym),
+      &Primitive(ref sym) => format!("<primitive \"{:?}\">", sym),
     }
   }
 
