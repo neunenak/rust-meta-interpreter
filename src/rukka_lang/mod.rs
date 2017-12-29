@@ -92,18 +92,12 @@ impl EvaluatorState {
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
     Ok(match expr {
-      SymbolAtom(ref sym) => {
-        if let Some(op) = get_builtin(sym) {
-          Primitive(op)
-        } else {
-          match self.get_var(sym) {
-            Some(ref sexp) => {
-              let q: &Sexp = sexp; //WTF? if I delete this line, the copy doesn't work??
-              q.clone() //TODO make this not involve a clone
-            },
-            None => return Err(format!("Variable {} not bound", sym)),
-          }
-        }
+      SymbolAtom(ref sym) => match self.get_var(sym) {
+        Some(ref sexp) => {
+          let q: &Sexp = sexp; //WTF? if I delete this line, the copy doesn't work??
+          q.clone() //TODO make this not involve a clone
+        },
+        None => return Err(format!("Variable {} not bound", sym)),
       },
       expr @ Primitive(_) => expr,
       expr @ FnLiteral { .. } => expr,
@@ -311,15 +305,6 @@ enum Sexp {
 #[derive(Debug, PartialEq, Clone)]
 enum PrimitiveFn {
   Plus, Minus, Mult, Div, Mod, Greater, Less, GreaterThanOrEqual, LessThanOrEqual
-}
-
-fn get_builtin(sym: &String) -> Option<PrimitiveFn> {
-  use self::PrimitiveFn::*;
-  Some(match &sym[..] {
-    "+" => Plus, "-" => Minus, "*" => Mult,  "/" => Div, "%" => Mod,
-    ">" => Greater, "<" => Less, ">=" => GreaterThanOrEqual, "<=" => LessThanOrEqual,
-    _ => return None
-  })
 }
 
 impl Sexp {
