@@ -33,7 +33,6 @@ impl EvaluatorState {
     binding.insert(var, value);
   }
   fn get_var(&self, var: &str) -> Option<&Sexp> {
-    println!("Var: {}", var);
     for bindings in self.binding_stack.iter().rev() {
       match bindings.get(var) {
         Some(x)  => return Some(x),
@@ -92,7 +91,6 @@ impl ProgrammingLanguageInterface for Rukka {
 impl EvaluatorState {
   fn eval(&mut self, expr: Sexp) -> Result<Sexp, String> {
     use self::Sexp::*;
-    println!("Evaling {:?}", expr);
     Ok(match expr {
       SymbolAtom(ref sym) => {
         if let Some(op) = get_builtin(sym) {
@@ -226,7 +224,6 @@ impl EvaluatorState {
             _ => return Err(format!("Bad argument for function application")),
           }
         }
-        println!("Body: {:?}", body);
         let result = self.eval(*body);
         self.pop_env();
         result
