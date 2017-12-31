@@ -104,8 +104,7 @@ impl EvaluatorState {
       expr @ FnLiteral { .. } => expr,
       expr @ StringAtom(_) => expr,
       expr @ NumberAtom(_) => expr,
-      True => True,
-      False => False,
+      expr @ BoolAtom(_) => expr,
       Cons(box operator, box operands) => match operator {
         SymbolAtom(ref sym) if match &sym[..] {
           "quote" | "eq?" | "cons" | "car" | "cdr" | "atom?" | "define" | "lambda" | "if" | "cond" => true, _ => false
@@ -125,14 +124,9 @@ impl EvaluatorState {
         Cons(box quoted, box Nil) => quoted,
         _ => return Err(format!("Bad syntax in quote")),
       },
-      "eq?" => match operands {
-        Cons(box lhs, box Cons(box rhs, _)) => {
-          match lhs == rhs {
-            true => True,
-            false => False,
-          }
-        },
-        _ => True,
+      "eq?" => match operands {//TODO make correct
+        Cons(box lhs, box Cons(box rhs, _)) => BoolAtom(lhs == rhs),
+        _ => BoolAtom(true),
       },
       "cons" => match operands {
         Cons(box cadr, box Cons(box caddr, box Nil)) => {
@@ -151,8 +145,8 @@ impl EvaluatorState {
         _ => return Err(format!("called cdr with a non-pair argument")),
       },
       "atom?" => match operands {
-        Cons(_, _) => False,
-        _ => True,
+        Cons(_, _) => BoolAtom(false),
+        _ => BoolAtom(true),
       },
       "define" => match operands {
         Cons(box SymbolAtom(sym), box Cons(box expr, box Nil)) => {
@@ -270,8 +264,7 @@ enum Sexp {
   SymbolAtom(String),
   StringAtom(String),
   NumberAtom(u64),
-  True,
-  False,
+  BoolAtom(bool),
   Cons(Box<Sexp>, Box<Sexp>),
   Nil,
   FnLiteral {
@@ -323,8 +316,8 @@ impl Sexp {
   fn print(&self) -> String {
     use self::Sexp::*;
     match self {
-      &True => format!("#t"),
-      &False => format!("#f"),
+      &BoolAtom(true) => format!("#t"),
+      &BoolAtom(false) => format!("#f"),
       &SymbolAtom(ref sym) => format!("{}", sym),
       &StringAtom(ref s) => format!("\"{}\"", s),
       &NumberAtom(ref n) => format!("{}", n),
@@ -338,7 +331,7 @@ impl Sexp {
   fn truthy(&self) -> bool {
     use self::Sexp::*;
     match self {
-      &False => false,
+      &BoolAtom(false) => false,
       _ => true
     }
   }
@@ -390,8 +383,8 @@ fn parse(tokens: &mut Peekable<IntoIter<Token>>) -> Result<Sexp, String> {
   use self::Token::*;
   use self::Sexp::*;
   match tokens.next() {
-    Some(Word(ref s)) if s == "#f" => Ok(False),
-    Some(Word(ref s)) if s == "#t" => Ok(True),
+    Some(Word(ref s)) if s == "#f" => Ok(BoolAtom(false)),
+    Some(Word(ref s)) if s == "#t" => Ok(BoolAtom(true)),
     Some(Word(s)) => Ok(SymbolAtom(s)),
     Some(StringLiteral(s)) => Ok(StringAtom(s)),
     Some(LParen) => parse_sexp(tokens),
