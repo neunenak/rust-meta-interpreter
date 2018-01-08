@@ -18,7 +18,7 @@ pub enum TokenType {
   Comma, Period, Colon, Underscore,
 
   Operator(Rc<String>),
-  DigitGroup(Rc<String>), HexNumberSigil, BinNumberSigil,
+  DigitGroup(Rc<String>), HexLiteral(Rc<String>), BinNumberSigil,
   StrLiteral(Rc<String>),
   Identifier(Rc<String>),
   Keyword(Kw),
@@ -132,7 +132,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 fn handle_digit(c: char, input: &mut CharIter) -> TokenType {
   if c == '0' && input.peek().map_or(false, |&(_, c)| { c == 'x' }) {
     input.next();
-    HexNumberSigil
+    let rest: String = input.peeking_take_while(|&(_, ref c)| c.is_digit(16) || *c == '_').map(|(_, c)| { c }).collect();
+    HexLiteral(Rc::new(rest))
   } else if c == '0' && input.peek().map_or(false, |&(_, c)| { c == 'b' }) {
     input.next();
     BinNumberSigil
@@ -917,7 +918,7 @@ impl Parser {
   parse_method!(literal(&mut self) -> ParseResult<Expression> {
     use self::ExpressionType::*;
     match self.peek() {
-      DigitGroup(_) | HexNumberSigil | BinNumberSigil | Period => self.number_literal(),
+      DigitGroup(_) | HexLiteral(_) | BinNumberSigil | Period => self.number_literal(),
       Keyword(Kw::True) => {
         self.next();
         Ok(Expression(BoolLiteral(true), None))
@@ -936,7 +937,7 @@ impl Parser {
 
   parse_method!(number_literal(&mut self) -> ParseResult<Expression> {
     match self.peek() {
-      HexNumberSigil | BinNumberSigil => self.int_literal(),
+      HexLiteral(_) | BinNumberSigil => self.int_literal(),
       _ => self.float_literal(),
     }
   });
@@ -949,7 +950,7 @@ impl Parser {
         let n = parse_binary(digits)?;
         Ok(Expression(IntLiteral(n), None))
       },
-      HexNumberSigil => {
+      HexLiteral(text) => {
         ParseError::new("Not implemented")
       },
       _ => return ParseError::new("Expected '0x' or '0b'"),
