@@ -36,7 +36,6 @@ impl ProgrammingLanguageInterface for Schala {
     if options.debug_tokens {
       let token_string = tokens.iter().map(|t| format!("{:?}<{}>", t.token_type, t.offset)).join(", ");
       output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", token_string)));
-
     }
 
     {
@@ -80,16 +79,9 @@ impl ProgrammingLanguageInterface for Schala {
       }
     }
 
-    let evaluation_output = self.state.evaluate(ast);
-    let mut acc = String::new();
-    let mut iter = evaluation_output.iter().peekable();
-    while let Some(s) = iter.next() {
-      acc.push_str(&s);
-      if let Some(_) = iter.peek() {
-        acc.push_str("\n");
-      }
-    }
-    output.add_output(acc);
+    let evaluation_outputs = self.state.evaluate(ast);
+    let text_output: String = evaluation_outputs.into_iter().intersperse(format!("\n")).collect();
+    output.add_output(text_output);
     return output;
   }
 }
