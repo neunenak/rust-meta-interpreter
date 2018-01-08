@@ -1003,6 +1003,19 @@ fn parse_binary(digits: String) -> ParseResult<u64> {
   Ok(result)
 }
 
+fn parse_hex(digits: String) -> ParseResult<u64> {
+  let mut result: u64 = 0;
+  let mut multiplier: u64 = 1;
+  for d in digits.chars().rev() {
+    match d.to_digit(16) {
+      Some(n) => result += n as u64 * multiplier,
+      None => return ParseError::new("Encountered a non-hex digit in a hex literal"),
+    }
+    multiplier *= 16;
+  }
+  Ok(result)
+}
+
 pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, Vec<String>) {
   let mut parser = Parser::new(input);
   let ast = parser.program();
