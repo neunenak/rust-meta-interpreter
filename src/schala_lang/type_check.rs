@@ -84,49 +84,47 @@ impl TypeContext {
     for statement in ast.0.iter() {
       match *statement {
         Statement::ExpressionStatement(_) => (),
-        Statement::Declaration(ref decl) => {
-          match *decl {
-            FuncSig(_) => (),
-            Impl { .. } => (),
-            TypeDecl(ref type_constructor, ref body) => {
-              for variant in body.0.iter() {
-                let (spec, ty) = match variant {
-                  &Variant::UnitStruct(ref data_constructor) => {
-                    let spec = PathSpecifier(data_constructor.clone());
-                    let ty = TConst(UserT(type_constructor.clone()));
-                    (spec, ty)
-                  },
-                  &Variant::TupleStruct(ref data_construcor, ref args) => {
-                    //TODO fix
-                    let arg = args.get(0).unwrap();
-                    let type_arg = self.from_anno(arg);
-                    let spec = PathSpecifier(data_construcor.clone());
-                    let ty = TFunc(Box::new(type_arg), Box::new(TConst(UserT(type_constructor.clone()))));
-                    (spec, ty)
+        Statement::Declaration(ref decl) => match *decl {
+          FuncSig(_) => (),
+          Impl { .. } => (),
+          TypeDecl(ref type_constructor, ref body) => {
+            for variant in body.0.iter() {
+              let (spec, ty) = match variant {
+                &Variant::UnitStruct(ref data_constructor) => {
+                  let spec = PathSpecifier(data_constructor.clone());
+                  let ty = TConst(UserT(type_constructor.clone()));
+                  (spec, ty)
+                },
+                &Variant::TupleStruct(ref data_construcor, ref args) => {
+                  //TODO fix
+                  let arg = args.get(0).unwrap();
+                  let type_arg = self.from_anno(arg);
+                  let spec = PathSpecifier(data_construcor.clone());
+                  let ty = TFunc(Box::new(type_arg), Box::new(TConst(UserT(type_constructor.clone()))));
+                  (spec, ty)
 
-                  },
-                  &Variant::Record(_, _) => unimplemented!(),
-                };
-                let entry = TypeContextEntry { ty, constant: true };
-                self.symbol_table.insert(spec, entry);
-              }
-            },
-            TypeAlias { .. } => (),
-            Binding {ref name, ref constant, ref expr} => {
-              let spec = PathSpecifier(name.clone());
-              let ty = expr.1.as_ref()
-                .map(|ty| self.from_anno(ty))
-                .unwrap_or_else(|| { self.alloc_existential_type() }); // this call to alloc_existential is OK b/c a binding only ever has one type, so if the annotation is absent, it's fine to just make one de novo
-              let entry = TypeContextEntry { ty, constant: *constant };
-              self.symbol_table.insert(spec, entry);
-            },
-            FuncDecl(ref signature, _) => {
-              let spec = PathSpecifier(signature.name.clone());
-              let ty = self.from_signature(signature);
+                },
+                &Variant::Record(_, _) => unimplemented!(),
+              };
               let entry = TypeContextEntry { ty, constant: true };
               self.symbol_table.insert(spec, entry);
-            },
-          }
+            }
+          },
+          TypeAlias { .. } => (),
+          Binding {ref name, ref constant, ref expr} => {
+            let spec = PathSpecifier(name.clone());
+            let ty = expr.1.as_ref()
+              .map(|ty| self.from_anno(ty))
+              .unwrap_or_else(|| { self.alloc_existential_type() }); // this call to alloc_existential is OK b/c a binding only ever has one type, so if the annotation is absent, it's fine to just make one de novo
+            let entry = TypeContextEntry { ty, constant: *constant };
+            self.symbol_table.insert(spec, entry);
+          },
+          FuncDecl(ref signature, _) => {
+            let spec = PathSpecifier(signature.name.clone());
+            let ty = self.from_signature(signature);
+            let entry = TypeContextEntry { ty, constant: true };
+            self.symbol_table.insert(spec, entry);
+          },
         }
       }
     }
