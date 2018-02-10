@@ -13,3 +13,7 @@
             a(1,2, c=_): Int -> Int
             a(_,_,_) : Int -> Int -> Int -> Int
 
+
+
+- AST : maybe replace the Expression type with "Ascription(TypeName, Box<Expression>) nodes??
+- parser: add a "debug" field to the Parser struct for all debug-related things

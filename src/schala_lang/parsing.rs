@@ -346,16 +346,18 @@ pub type ParseResult<T> = Result<T, ParseError>;
 pub struct ParseRecord {
   production_name: String,
   next_token: String,
+  level: u32,
 }
 
 struct Parser {
   tokens: TokenIter,
   parse_record: Vec<ParseRecord>,
+  parse_level: u32
 }
 
 impl Parser {
   fn new(input: Vec<Token>) -> Parser {
-    Parser { tokens: input.into_iter().peekable(), parse_record: vec![] }
+    Parser { tokens: input.into_iter().peekable(), parse_record: vec![], parse_level: 0 }
   }
 
   fn peek(&mut self) -> TokenType {
@@ -503,9 +505,16 @@ macro_rules! parse_method {
       let record = ParseRecord {
         production_name: stringify!($name).to_string(),
         next_token: format!("{:?}", next_token),
+        level: $self.parse_level,
       };
+      $self.parse_level += 1;
       $self.parse_record.push(record);
-      $body
+      let result = { $body };
+
+      if $self.parse_level != 0 {
+        $self.parse_level -= 1;
+      }
+      result
     }
   };
 }
@@ -749,6 +758,7 @@ impl Parser {
     let record = ParseRecord {
       production_name: "precedence_expr".to_string(),
       next_token: format!("{:?}", next_token),
+      level: self.parse_level,
     };
     self.parse_record.push(record);
 
@@ -1022,7 +1032,11 @@ pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, Vec<String>) {
   let ast = parser.program();
 
   let trace = parser.parse_record.into_iter().map(|r| {
-    format!("Production `{}`, token: {:?}", r.production_name, r.next_token)
+    let mut indent = String::new();
+    for i in 0..r.level {
+      indent.push(' ');
+    }
+    format!("{}Production `{}`, token: {:?}", indent, r.production_name, r.next_token)
   }).collect();
   (ast, trace)
 }
