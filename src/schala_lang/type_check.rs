@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-//SKOLEMIZATION - how you prevent an unassigned existential type variable from leaking!
 
 use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName};
 
@@ -18,9 +17,97 @@ use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, E
   fn bare_type_check(exprssion, expected_type) -> Ty { ... }
  */
 
-// from https://www.youtube.com/watch?v=il3gD7XMdmA
-// typeInfer :: Expr a -> Matching (Type a)
-// unify :: Type a -> Type b -> Matching (Type c)
+/* H-M ALGO NOTES
+from https://www.youtube.com/watch?v=il3gD7XMdmA
+(also check out http://dev.stephendiehl.com/fun/006_hindley_milner.html)
+
+typeInfer :: Expr a -> Matching (Type a)
+unify :: Type a -> Type b -> Matching (Type c)
+
+(Matching a) is a monad in which unification is done
+
+ex:
+
+typeInfer (If e1 e2 e3) = do
+    t1 <- typeInfer e1
+    t2 <- typeInfer e2
+    t3 <- typeInfer e3
+    _ <- unify t1 BoolType
+    unify t2 t3 -- b/c t2 and t3 have to be the same type
+
+typeInfer (Const (ConstInt _)) = IntType -- same for other literals
+
+--function application
+typeInfer (Apply f x) = do
+    tf <- typeInfer f
+    tx <- typeInfer x
+    case tf of
+        FunctionType t1 t2 -> do
+            _ <- unify t1 tx
+            return t2
+        _ -> fail "Not a function"
+
+--type annotation
+typeInfer (Typed x t) = do
+    tx <- typeInfer x
+    unify tx t
+
+--variable and let expressions - need to pass around a map of variable names to types here
+typeInfer :: [ (Var, Type Var) ] -> Expr Var -> Matching (Type Var)
+
+typeInfer ctx (Var x) = case (lookup x ctx) of
+    Just t -> return t
+    Nothing -> fail "Unknown variable"
+
+--let x = e1 in e2
+typeInfer ctx (Let x e1 e2) = do
+    t1 <- typeInfer ctx e1
+    typeInfer ((x, t1) :: ctx) e2
+
+--lambdas are complicated (this represents ʎx.e)
+typeInfer ctx (Lambda x e) = do
+    t1 <- allocExistentialVariable
+    t2 <- typeInfer ((x, t1) :: ctx) e
+    return $ FunctionType t1 t2 -- ie. t1 -> t2
+
+
+--to solve the problem of map :: (a -> b) -> [a] -> [b]
+when we use a variable whose type has universal tvars, convert those universal
+tvars to existential ones
+    -and each  distinct universal tvar needs to map to the same existential type
+
+-so we change typeinfer:
+typeInfer ctx (Var x) = do
+    case (lookup x ctx) of
+        Nothing -> ...
+        Just t -> do
+            let uvars = nub (toList t) -- nub removes duplicates, so this gets unique universally quantified variables
+            evars <- mapM (const allocExistentialVariable) uvars
+            let varMap = zip uvars evars
+            let vixVar varMap v = fromJust $ lookup v varMap
+            return (fmap (fixVar varMap) t)
+
+--how do we define unify??
+
+-recall, type signature is:
+unify :: Type a -> Type b -> Matching (Type c)
+unify BoolType BoolType = BoolType --easy, same for all constants
+unify (FunctionType t1 t2) (FunctionType t3 t4) = do
+    t5 <- unify t1 t3
+    t6 <- unify t2 t4
+    return $ FunctionType t5 t6
+unify (TVar a) (TVar b) = if a == b then TVar a else fail
+--existential types can be assigned another type at most once
+--some complicated stuff about hanlding existential types
+--everything else is a type error
+unify a b = fail
+
+
+SKOLEMIZATION - how you prevent an unassigned existential type variable from leaking!
+-before a type gets to global scope, replace all unassigned existential vars w/  new unique universal
+type variables
+
+*/
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
