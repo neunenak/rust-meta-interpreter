@@ -760,6 +760,7 @@ impl Parser {
       next_token: format!("{:?}", next_token),
       level: self.parse_level,
     };
+    self.parse_level += 1;
     self.parse_record.push(record);
 
     let mut lhs = self.prefix_expr()?;
@@ -782,6 +783,7 @@ impl Parser {
       let operation = Operation(op_str);
       lhs = Expression(ExpressionType::BinExp(operation, Box::new(lhs), Box::new(rhs)), None);
     }
+    self.parse_level -= 1;
     Ok(lhs)
   }
 
