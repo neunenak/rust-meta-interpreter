@@ -183,7 +183,7 @@ fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
   }
 
   match KEYWORDS.get(buf.as_str()) {
-    Some(kw) => TokenType::Keyword(kw.clone()),
+    Some(kw) => TokenType::Keyword(*kw),
     None => TokenType::Identifier(Rc::new(buf)),
   }
 }
