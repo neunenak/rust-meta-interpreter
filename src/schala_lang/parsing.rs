@@ -396,15 +396,15 @@ pub enum Statement {
 }
 
 type ParamName = Rc<String>;
-type TraitName = Rc<String>;
+type TraitName = Rc<String>; //should be a singleton I think??
 type FormalParam = (ParamName, Option<TypeName>);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Declaration {
   FuncSig(Signature),
   FuncDecl(Signature, Vec<Statement>),
-  TypeDecl(Rc<String>, TypeBody),
-  TypeAlias(Rc<String>, Rc<String>),
+  TypeDecl(Rc<String>, TypeBody), //should have TypeSingletonName in it
+  TypeAlias(Rc<String>, Rc<String>), //should have TypeSingletonName in it, or maybe just String, not sure
   Binding {
     name: Rc<String>,
     constant: bool,
@@ -440,10 +440,13 @@ pub struct Expression(pub ExpressionType, pub Option<TypeName>);
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypeName {
   Tuple(Vec<TypeName>),
-  Singleton {
-    name: Rc<String>,
-    params: Vec<TypeName>,
-  }
+  Singleton(TypeSingletonName)
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct TypeSingletonName {
+  pub name: Rc<String>,
+  pub params: Vec<TypeName>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -710,7 +713,7 @@ impl Parser {
     let result = match (first, second) {
       (first, Some(second)) => {
         match first {
-          TypeName::Singleton { ref name, ref params } if params.len() == 0 =>
+          TypeName::Singleton(TypeSingletonName { ref name, ref params }) if params.len() == 0 =>
             Declaration::Impl { type_name: second, trait_name: Some(name.clone()), block },
           _ => return ParseError::new(&format!("Invalid name for a trait")),
         }
@@ -746,13 +749,13 @@ impl Parser {
     use self::TypeName::*;
     Ok(match self.peek() {
       LParen => Tuple(delimited!(self, LParen, '(', type_name, Comma, RParen, ')')),
-      _ => Singleton {
+      _ => Singleton(TypeSingletonName {
         name: self.identifier()?,
         params: match self.peek() {
           LAngleBracket => delimited!(self, LAngleBracket, '<', type_name, Comma, RAngleBracket, '>'),
           _ => vec![],
         }
-      }
+      })
     })
   });
 

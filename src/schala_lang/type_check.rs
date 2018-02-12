@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 
-use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName};
+use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName, TypeSingletonName};
 
 // from Niko's talk
 /* fn type_check(expression, expected_ty) -> Ty {
@@ -234,7 +234,7 @@ impl TypeContext {
     use self::TypeConst::*;
 
     match anno {
-      &TypeName::Singleton { ref name, .. } => {
+      &TypeName::Singleton(TypeSingletonName { ref name, .. }) => {
         match name.as_ref().as_ref() {
           "Int" => TConst(Integer),
           "Float" => TConst(Float),
