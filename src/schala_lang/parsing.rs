@@ -84,10 +84,6 @@ impl Token {
   }
 }
 
-fn is_digit(c: &char) -> bool {
-  c.is_digit(10)
-}
-
 const OPERATOR_CHARS: [char; 19] = ['!', '$', '%', '&', '*', '+', '-', '.', '/', ':', '<', '>', '=', '?', '@', '^', '|', '~', '`'];
 fn is_operator(c: &char) -> bool {
   OPERATOR_CHARS.iter().any(|x| x == c)
@@ -119,7 +115,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
       '{' => LCurlyBrace, '}' => RCurlyBrace,
       '[' => LSquareBracket, ']' => RSquareBracket,
       '"' => handle_quote(&mut input),
-      c if is_digit(&c) => handle_digit(c, &mut input),
+      c if c.is_digit(10) => handle_digit(c, &mut input),
       c if c.is_alphabetic() || c == '_' => handle_alphabetic(c, &mut input), //TODO I'll probably have to rewrite this if I care about types being uppercase, also type parameterization
       c if is_operator(&c) => handle_operator(c, &mut input),
       unknown => Error(format!("Unexpected character: {}", unknown)),
@@ -139,7 +135,7 @@ fn handle_digit(c: char, input: &mut CharIter) -> TokenType {
     BinNumberSigil
   } else {
     let mut buf = c.to_string();
-    buf.extend(input.peeking_take_while(|&(_, ref c)| is_digit(c)).map(|(_, c)| { c }));
+    buf.extend(input.peeking_take_while(|&(_, ref c)| c.is_digit(10)).map(|(_, c)| { c }));
     DigitGroup(Rc::new(buf))
   }
 }
