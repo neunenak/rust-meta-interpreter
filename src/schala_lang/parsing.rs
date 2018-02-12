@@ -963,7 +963,9 @@ impl Parser {
         Ok(Expression(IntLiteral(n), None))
       },
       HexLiteral(text) => {
-        ParseError::new("Not implemented")
+        let digits: String = text.chars().filter(|c| c.is_digit(16)).collect();
+        let n = parse_hex(digits)?;
+        Ok(Expression(IntLiteral(n), None))
       },
       _ => return ParseError::new("Expected '0x' or '0b'"),
     }
@@ -1090,7 +1092,15 @@ mod parse_tests {
   fn parsing_number_literals_and_binexps() {
     parse_test!(".2", AST(vec![exprstatement!(FloatLiteral(0.2))]));
     parse_test!("8.1", AST(vec![exprstatement!(FloatLiteral(8.1))]));
+
     parse_test!("0b010", AST(vec![exprstatement!(IntLiteral(2))]));
+    parse_test!("0b0_1_0_", AST(vec![exprstatement!(IntLiteral(2))]));
+
+    parse_test!("0xff", AST(vec![exprstatement!(IntLiteral(255))]));
+    parse_test!("0xf_f_", AST(vec![exprstatement!(IntLiteral(255))]));
+
+    parse_test!("0xf_f_+1", AST(vec![exprstatement!(binexp!("+", IntLiteral(255), IntLiteral(1)))]));
+
     parse_test!("3; 4; 4.3", AST(
       vec![exprstatement!(IntLiteral(3)), exprstatement!(IntLiteral(4)),
         exprstatement!(FloatLiteral(4.3))]));
