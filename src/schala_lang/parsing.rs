@@ -284,12 +284,10 @@ type_names := ε | type_name (, type_name)*
 type_params := '<' type_name (, type_name)* '>'
 
 expression := precedence_expr type_anno+
-
 precedence_expr := prefix_expr
 prefix_expr := prefix_op primary
 prefix_op := '+' | '-' | '!' | '~'
 primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_expr
-
 paren_expr := LParen paren_inner RParen
 paren_inner := (expression ',')*
 identifier_expr := named_struct | call_expr | index_expr | IDENTIFIER
@@ -348,12 +346,22 @@ pub struct ParseRecord {
 struct Parser {
   tokens: TokenIter,
   parse_record: Vec<ParseRecord>,
-  parse_level: u32
+  parse_level: u32,
+  restrictions: ParserRestrictions,
+}
+
+struct ParserRestrictions {
+  no_struct_literal: bool
 }
 
 impl Parser {
   fn new(input: Vec<Token>) -> Parser {
-    Parser { tokens: input.into_iter().peekable(), parse_record: vec![], parse_level: 0 }
+    Parser {
+      tokens: input.into_iter().peekable(),
+      parse_record: vec![],
+      parse_level: 0,
+      restrictions: ParserRestrictions { no_struct_literal: false }
+    }
   }
 
   fn peek(&mut self) -> TokenType {
@@ -812,19 +820,25 @@ impl Parser {
 
   parse_method!(paren_expr(&mut self) -> ParseResult<Expression> {
     use self::ExpressionType::*;
-    let mut inner = delimited!(self, LParen, '(', expression, Comma, RParen, ')');
-    match inner.len() {
-      0 => Ok(Expression(TupleLiteral(vec![]), None)),
-      1 => Ok(inner.pop().unwrap()),
-      _ => Ok(Expression(TupleLiteral(inner), None)),
-    }
+    let old_struct_value = self.restrictions.no_struct_literal;
+    self.restrictions.no_struct_literal = false;
+    let output = (|| {
+      let mut inner = delimited!(self, LParen, '(', expression, Comma, RParen, ')');
+      match inner.len() {
+        0 => Ok(Expression(TupleLiteral(vec![]), None)),
+        1 => Ok(inner.pop().unwrap()),
+        _ => Ok(Expression(TupleLiteral(inner), None)),
+      }
+    })();
+    self.restrictions.no_struct_literal = old_struct_value;
+    output
   });
 
   parse_method!(identifier_expr(&mut self) -> ParseResult<Expression> {
     use self::ExpressionType::*;
     let identifier = self.identifier()?;
     Ok(match self.peek() {
-      LCurlyBrace => {
+      LCurlyBrace if !self.restrictions.no_struct_literal => {
         let fields = self.record_block()?;
         Expression(Value(identifier, fields), None)
       },
@@ -866,7 +880,12 @@ impl Parser {
 
   parse_method!(if_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, Keyword(Kw::If), "'if'");
-    let condition = self.expression()?;
+    let condition = (|| {
+      self.restrictions.no_struct_literal = true;
+      let x = self.expression();
+      self.restrictions.no_struct_literal = false;
+      x
+    })()?;
     let then_clause = self.block()?;
     let else_clause = self.else_clause()?;
     Ok(Expression(ExpressionType::IfExpression(Box::new(condition), then_clause, else_clause), None))
@@ -1243,6 +1262,18 @@ mod parse_tests {
            exprstatement!(Value(rc!(b), vec![]))],
       Some(vec![exprstatement!(Value(rc!(c), vec![]))])))])
     );
+
+    parse_test!("if a { b } else { c }", AST(vec![exprstatement!(
+          IfExpression(Box::new(ex!(val!("a"))),
+            vec![exprstatement!(val!("b"))],
+            Some(vec![exprstatement!(val!("c"))])))]));
+
+    parse_test!("if (A {a: 1}) { b } else { c }", AST(vec![exprstatement!(
+          IfExpression(Box::new(ex!(Value(rc!(A), vec![(rc!(a), ex!(IntLiteral(1)))]))),
+            vec![exprstatement!(val!("b"))],
+            Some(vec![exprstatement!(val!("c"))])))]));
+
+    parse_error!("if A {a: 1} { b } else { c }");
   }
 
   #[test]
