@@ -1236,17 +1236,23 @@ mod parse_tests {
   fn parsing_types() {
     parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(tys!("Yolo"), TypeBody(vec![UnitStruct(rc!(Yolo))])))]));
     parse_test!("type alias Sex = Drugs", AST(vec![Declaration(TypeAlias(rc!(Sex), rc!(Drugs)))]));
-    parse_test!("type Sanchez = Miguel | Alejandro(Int, Option<a>) | Esparenza { a: Int, b: String }",
+    parse_test!("type Sanchez = Miguel | Alejandro(Int, Option<a>) | Esperanza { a: Int, b: String }",
       AST(vec![Declaration(TypeDecl(tys!("Sanchez"), TypeBody(vec![
         UnitStruct(rc!(Miguel)),
         TupleStruct(rc!(Alejandro), vec![
           Singleton(TypeSingletonName { name: rc!(Int), params: vec![] }),
           Singleton(TypeSingletonName { name: rc!(Option), params: vec![Singleton(TypeSingletonName { name: rc!(a), params: vec![] })] }),
         ]),
-        Record(rc!(Esparenza), vec![
+        Record(rc!(Esperanza), vec![
           (rc!(a), Singleton(TypeSingletonName { name: rc!(Int), params: vec![] })),
           (rc!(b), Singleton(TypeSingletonName { name: rc!(String), params: vec![] })),
         ])])))]));
+
+    parse_test!("type Jorge<a> = Diego | Kike(a)", AST(vec![
+      Declaration(TypeDecl(
+        TypeSingletonName { name: rc!(Jorge), params: vec![Singleton(TypeSingletonName { name: rc!(a), params: vec![] })] },
+        TypeBody(vec![UnitStruct(rc!(Diego)), TupleStruct(rc!(Kike), vec![Singleton(TypeSingletonName { name: rc!(a), params: vec![] })])]))
+    )]));
   }
 
   #[test]
