@@ -188,6 +188,7 @@ impl Repl {
         _ => (),
       }
     }
+    self.save_options();
     println!("Exiting...");
   }
 
