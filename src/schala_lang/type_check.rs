@@ -179,7 +179,7 @@ impl TypeContext {
               let (spec, ty) = match variant {
                 &Variant::UnitStruct(ref data_constructor) => {
                   let spec = PathSpecifier(data_constructor.clone());
-                  let ty = TConst(UserT(type_constructor.clone()));
+                  let ty = TConst(UserT(type_constructor.name.clone()));
                   (spec, ty)
                 },
                 &Variant::TupleStruct(ref data_construcor, ref args) => {
@@ -187,9 +187,8 @@ impl TypeContext {
                   let arg = args.get(0).unwrap();
                   let type_arg = self.from_anno(arg);
                   let spec = PathSpecifier(data_construcor.clone());
-                  let ty = TFunc(Box::new(type_arg), Box::new(TConst(UserT(type_constructor.clone()))));
+                  let ty = TFunc(Box::new(type_arg), Box::new(TConst(UserT(type_constructor.name.clone()))));
                   (spec, ty)
-
                 },
                 &Variant::Record(_, _) => unimplemented!(),
               };

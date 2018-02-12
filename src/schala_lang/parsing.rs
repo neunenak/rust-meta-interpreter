@@ -254,7 +254,7 @@ statement := expression | declaration
 declaration := type_declaration | func_declaration | binding_declaration | impl_declaration
 
 type_declaration := 'type' type_declaration_body
-type_declaration_body := 'alias' type_alias | IDENTIFIER '=' type_body
+type_declaration_body := 'alias' type_alias | type_singleton_name '=' type_body
 type_alias := IDENTIFIER '=' type_name
 type_body := variant_specifier ('|' variant_specifier)*
 
@@ -279,8 +279,9 @@ decl_block := '{' (func_declaration)* '}'
 trait_name := IDENTIFIER
 
 type_anno := (':' type_name)+
-type_name := IDENTIFIER (type_params)* | '(' type_names ')'
+type_name := type_singleton_name | '(' type_names ')'
 type_names := ε | type_name (, type_name)*
+type_singleton_name = IDENTIFIER (type_params)*
 type_params := '<' type_name (, type_name)* '>'
 
 expression := precedence_expr type_anno+
@@ -403,7 +404,7 @@ type FormalParam = (ParamName, Option<TypeName>);
 pub enum Declaration {
   FuncSig(Signature),
   FuncDecl(Signature, Vec<Statement>),
-  TypeDecl(Rc<String>, TypeBody), //should have TypeSingletonName in it
+  TypeDecl(TypeSingletonName, TypeBody), //should have TypeSingletonName in it
   TypeAlias(Rc<String>, Rc<String>), //should have TypeSingletonName in it, or maybe just String, not sure
   Binding {
     name: Rc<String>,
@@ -598,7 +599,7 @@ impl Parser {
     if let Keyword(Alias) = self.peek() {
       self.type_alias()
     } else {
-      let name = self.identifier()?;
+      let name = self.type_singleton_name()?;
       expect!(self, Operator(ref c) if **c == "=", "'='");
       let body = self.type_body()?;
       Ok(Declaration::TypeDecl(name, body))
@@ -749,13 +750,17 @@ impl Parser {
     use self::TypeName::*;
     Ok(match self.peek() {
       LParen => Tuple(delimited!(self, LParen, '(', type_name, Comma, RParen, ')')),
-      _ => Singleton(TypeSingletonName {
-        name: self.identifier()?,
-        params: match self.peek() {
-          LAngleBracket => delimited!(self, LAngleBracket, '<', type_name, Comma, RAngleBracket, '>'),
-          _ => vec![],
-        }
-      })
+      _ => Singleton(self.type_singleton_name()?),
+    })
+  });
+
+  parse_method!(type_singleton_name(&mut self) -> ParseResult<TypeSingletonName> {
+    Ok(TypeSingletonName {
+      name: self.identifier()?,
+      params: match self.peek() {
+        LAngleBracket => delimited!(self, LAngleBracket, '<', type_name, Comma, RAngleBracket, '>'),
+        _ => vec![],
+      }
     })
   });
 
@@ -1071,6 +1076,7 @@ mod parse_tests {
   use super::Declaration::*;
   use super::Signature;
   use super::TypeName::*;
+  use super::TypeSingletonName;
   use super::ExpressionType::*;
   use super::Variant::*;
 
@@ -1103,7 +1109,10 @@ mod parse_tests {
     ($expr_type:expr) => { Expression($expr_type, None) }
   }
   macro_rules! ty {
-    ($name:expr) => { Singleton { name: Rc::new($name.to_string()), params: vec![] } };
+    ($name:expr) => { Singleton(tys!($name)) }
+  }
+  macro_rules! tys {
+    ($name:expr) => { TypeSingletonName { name: Rc::new($name.to_string()), params: vec![] } };
   }
 
   #[test]
@@ -1225,18 +1234,18 @@ mod parse_tests {
 
   #[test]
   fn parsing_types() {
-    parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(rc!(Yolo), TypeBody(vec![UnitStruct(rc!(Yolo))])))]));
+    parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(tys!("Yolo"), TypeBody(vec![UnitStruct(rc!(Yolo))])))]));
     parse_test!("type alias Sex = Drugs", AST(vec![Declaration(TypeAlias(rc!(Sex), rc!(Drugs)))]));
-    parse_test!("type Sanchez = Miguel | Alejandro(Int, Option<a>) | Esparanza { a: Int, b: String }",
-      AST(vec![Declaration(TypeDecl(rc!(Sanchez), TypeBody(vec![
+    parse_test!("type Sanchez = Miguel | Alejandro(Int, Option<a>) | Esparenza { a: Int, b: String }",
+      AST(vec![Declaration(TypeDecl(tys!("Sanchez"), TypeBody(vec![
         UnitStruct(rc!(Miguel)),
         TupleStruct(rc!(Alejandro), vec![
-          Singleton { name: rc!(Int), params: vec![] },
-          Singleton { name: rc!(Option), params: vec![Singleton { name: rc!(a), params: vec![] }] },
+          Singleton(TypeSingletonName { name: rc!(Int), params: vec![] }),
+          Singleton(TypeSingletonName { name: rc!(Option), params: vec![Singleton(TypeSingletonName { name: rc!(a), params: vec![] })] }),
         ]),
-        Record(rc!(Esparanza), vec![
-          (rc!(a), Singleton { name: rc!(Int), params: vec![] }),
-          (rc!(b), Singleton { name: rc!(String), params: vec![] }),
+        Record(rc!(Esparenza), vec![
+          (rc!(a), Singleton(TypeSingletonName { name: rc!(Int), params: vec![] })),
+          (rc!(b), Singleton(TypeSingletonName { name: rc!(String), params: vec![] })),
         ])])))]));
   }
 
@@ -1300,7 +1309,7 @@ mod parse_tests {
         ] })]));
     parse_test!("impl Option<WTFMate> { fn oi() }", AST(vec![
       Declaration(Impl {
-        type_name: Singleton { name: rc!(Option), params: vec![ty!("WTFMate")]},
+        type_name: Singleton(TypeSingletonName { name: rc!(Option), params: vec![ty!("WTFMate")]}),
         trait_name: None,
         block: vec![
           FuncSig(Signature { name: rc!(oi), params: vec![], type_anno: None }),
@@ -1319,19 +1328,19 @@ mod parse_tests {
     ]));
 
     parse_test!("a : Option<Int>", AST(vec![
-      exprstatement!(val!("a"), Singleton { name: rc!(Option), params: vec![ty!("Int")] })
+      exprstatement!(val!("a"), Singleton(TypeSingletonName { name: rc!(Option), params: vec![ty!("Int")] }))
     ]));
 
     parse_test!("a : KoreanBBQSpecifier<Kimchi, Option<Bulgogi> >", AST(vec![
-      exprstatement!(val!("a"), Singleton { name: rc!(KoreanBBQSpecifier), params: vec![
-        ty!("Kimchi"), Singleton { name: rc!(Option), params: vec![ty!("Bulgogi")] }
-      ] })
+      exprstatement!(val!("a"), Singleton(TypeSingletonName { name: rc!(KoreanBBQSpecifier), params: vec![
+        ty!("Kimchi"), Singleton(TypeSingletonName { name: rc!(Option), params: vec![ty!("Bulgogi")] })
+      ] }))
     ]));
 
     parse_test!("a : (Int, Yolo<a>)", AST(vec![
       exprstatement!(val!("a"), Tuple(
-        vec![ty!("Int"), Singleton {
+        vec![ty!("Int"), Singleton(TypeSingletonName {
           name: rc!(Yolo), params: vec![ty!("a")]
-        }]))]));
+        })]))]));
   }
 }
