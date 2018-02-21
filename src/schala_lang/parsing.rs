@@ -1036,7 +1036,10 @@ fn parse_binary(digits: String) -> ParseResult<u64> {
       '0' => (),
       _ => return ParseError::new("Encountered a character not '1' or '0 while parsing a binary literal"),
     }
-    multiplier *= 2;
+    multiplier = match multiplier.checked_mul(2) {
+      Some(m) => m,
+      None => return ParseError::new("This binary expression will overflow")
+    }
   }
   Ok(result)
 }
@@ -1049,7 +1052,10 @@ fn parse_hex(digits: String) -> ParseResult<u64> {
       Some(n) => result += n as u64 * multiplier,
       None => return ParseError::new("Encountered a non-hex digit in a hex literal"),
     }
-    multiplier *= 16;
+    multiplier = match multiplier.checked_mul(16) {
+      Some(m) => m,
+      None => return ParseError::new("This hex expression will overflow")
+    }
   }
   Ok(result)
 }
