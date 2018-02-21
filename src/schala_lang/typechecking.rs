@@ -7,13 +7,19 @@ pub struct TypeContext { }
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
   Unit,
+  Const(TConst),
+  Void
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum TConst {
   Int,
   Float,
   StringT,
   Bool,
-  Custom(Rc<String>),
-  Void
+  Custom(String),
 }
+
 
 type TypeResult<T> = Result<T, String>;
 
@@ -45,21 +51,33 @@ impl TypeContext {
   fn type_infer(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
     use self::parsing::Expression;
     use self::parsing::ExpressionType::*;
-    use self::Type::*;
+    use self::Type::*; use self::TConst::*;
     match expr {
-      &Expression(ref e, Some(ref ty)) => Err(format!("Anno not implemented")),
+      &Expression(ref e, Some(ref anno)) => {
+        let anno_ty = self.type_from_anno(anno)?;
+        let expr = Expression(*e, None);
+        let ty = self.type_infer(&expr)?;
+        self.unify(ty, anno_ty)
+      },
       &Expression(ref e, None) => match e {
-        &IntLiteral(_) => Ok(Int),
-        &FloatLiteral(_) => Ok(Float),
-        &StringLiteral(_) => Ok(StringT),
-        &BoolLiteral(_) => Ok(Bool),
+        &IntLiteral(_) => Ok(Const(Int)),
+        &FloatLiteral(_) => Ok(Const(Float)),
+        &StringLiteral(_) => Ok(Const(StringT)),
+        &BoolLiteral(_) => Ok(Const(Bool)),
         _ => Err(format!("Type not yet implemented"))
       }
     }
   }
-  fn unify(&mut self, t1: Type, t2: Type) -> TypeResult<Type> {
-    use self::Type::*;
+  fn type_from_anno(&mut self, anno: &parsing::TypeName) -> TypeResult<Type> {
+    use self::Type::*; use self::TConst::*;
     Ok(Unit)
+  }
+  fn unify(&mut self, t1: Type, t2: Type) -> TypeResult<Type> {
+    use self::Type::*; use self::TConst::*;
+    match (t1, t2) {
+      (Const(ref a), Const(ref b)) if a == b => Ok(Const(a.clone())),
+      (a, b) => Err(format!("Types {:?} and {:?} don't unify", a, b))
+    }
   }
 }
 

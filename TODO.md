@@ -40,3 +40,5 @@ struct CompilerPass {
         name: String,
         run: fn(PrevPass) -> NextPass
 }
+
+-change "Type...." names in parser.rs to "Anno..." for non-collision with names in typechecking.rs
