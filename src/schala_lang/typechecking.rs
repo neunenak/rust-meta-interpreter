@@ -50,22 +50,24 @@ impl TypeContext {
   }
   fn type_infer(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
     use self::parsing::Expression;
-    use self::parsing::ExpressionType::*;
-    use self::Type::*; use self::TConst::*;
     match expr {
       &Expression(ref e, Some(ref anno)) => {
         let anno_ty = self.type_from_anno(anno)?;
-        let expr = Expression(*e, None);
-        let ty = self.type_infer(&expr)?;
+        let ty = self.type_infer_exprtype(&e)?;
         self.unify(ty, anno_ty)
       },
-      &Expression(ref e, None) => match e {
-        &IntLiteral(_) => Ok(Const(Int)),
-        &FloatLiteral(_) => Ok(Const(Float)),
-        &StringLiteral(_) => Ok(Const(StringT)),
-        &BoolLiteral(_) => Ok(Const(Bool)),
-        _ => Err(format!("Type not yet implemented"))
-      }
+      &Expression(ref e, None) => self.type_infer_exprtype(e)
+    }
+  }
+  fn type_infer_exprtype(&mut self, expr: &parsing::ExpressionType) -> TypeResult<Type> {
+    use self::parsing::ExpressionType::*;
+    use self::Type::*; use self::TConst::*;
+    match expr {
+      &IntLiteral(_) => Ok(Const(Int)),
+      &FloatLiteral(_) => Ok(Const(Float)),
+      &StringLiteral(_) => Ok(Const(StringT)),
+      &BoolLiteral(_) => Ok(Const(Bool)),
+      _ => Err(format!("Type not yet implemented"))
     }
   }
   fn type_from_anno(&mut self, anno: &parsing::TypeName) -> TypeResult<Type> {
