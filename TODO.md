@@ -5,6 +5,17 @@
 
 * idea for Schala - scoped types - be able to define a quick enum type scoped to a function ro something, that only is meant to be used as a quick bespoke interface between two other things
 
+* another idea, allow:
+type enum {
+  type enum MySubVariant {
+    SubVariant1, SubVariant2, etc.
+    }
+ Variant1(MySubVariant),
+ Variant2(...),
+ }
+
+
+
 * idea for Schala: both currying *and* default arguments!
         ex. fn a(b: Int, c:Int, d:Int = 1) -> Int
             a(1,2) : Int
