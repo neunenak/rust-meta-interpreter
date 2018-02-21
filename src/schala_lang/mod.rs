@@ -2,10 +2,11 @@ use itertools::Itertools;
 use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
 
 mod parsing;
-mod type_check;
+//mod type_check;
+mod typechecking;
 mod eval;
 
-use self::type_check::{TypeContext};
+use self::typechecking::{TypeContext};
 
 pub struct Schala {
   state: eval::ReplState,
@@ -61,6 +62,18 @@ impl ProgrammingLanguageInterface for Schala {
       }
     };
 
+    match self.type_context.type_check_ast(&ast) {
+      Ok(ty) => {
+        output.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty)));
+      },
+      Err(msg) => {
+        output.add_artifact(TraceArtifact::new("type_check", msg));
+        output.add_output(format!("Type error"));
+        return output;
+      }
+    }
+
+    /*
     self.type_context.add_symbols(&ast);
 
     if options.debug_symbol_table {
@@ -78,6 +91,7 @@ impl ProgrammingLanguageInterface for Schala {
         return output;
       }
     }
+    */
 
     let evaluation_outputs = self.state.evaluate(ast);
     let text_output: String = evaluation_outputs.into_iter().intersperse(format!("\n")).collect();
