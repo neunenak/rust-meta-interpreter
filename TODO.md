@@ -19,3 +19,13 @@
 - parser: add a "debug" field to the Parser struct for all debug-related things
 
 -scala-style html"dfasfsadf${}" string interpolations!
+
+*Compiler passes architecture
+
+-ProgrammingLanguageInterface defines a evaluate_in_repl() and evaluate_no_repl() functions
+-these take in a vec of CompilerPasses
+
+struct CompilerPass {
+        name: String,
+        run: fn(PrevPass) -> NextPass
+}
