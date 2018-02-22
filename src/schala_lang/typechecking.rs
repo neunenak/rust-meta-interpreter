@@ -56,7 +56,7 @@ impl TypeContext {
       },
       _ => return Err(format!("other formats not done"))
     }
-    Ok(Unit)
+    Ok(Void)
   }
   fn type_infer(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
     use self::parsing::Expression;
@@ -81,7 +81,7 @@ impl TypeContext {
     }
   }
   fn type_from_anno(&mut self, anno: &parsing::TypeName) -> TypeResult<Type> {
-    use self::parsing::{TypeName, TypeSingletonName};
+    use self::parsing::TypeSingletonName;
     use self::parsing::TypeName::*;
     use self::Type::*; use self::TConst::*;
     Ok(match anno {
@@ -98,7 +98,7 @@ impl TypeContext {
     })
   }
   fn unify(&mut self, t1: Type, t2: Type) -> TypeResult<Type> {
-    use self::Type::*; use self::TConst::*;
+    use self::Type::*;// use self::TConst::*;
     match (t1, t2) {
       (Const(ref a), Const(ref b)) if a == b => Ok(Const(a.clone())),
       (a, b) => Err(format!("Types {:?} and {:?} don't unify", a, b))
