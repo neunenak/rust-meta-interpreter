@@ -418,6 +418,7 @@ pub enum Declaration {
     block: Vec<Declaration>,
   },
   Trait {
+    name: Rc<String>,
     signatures: Vec<Signature>
   }
 }
@@ -703,7 +704,7 @@ impl Parser {
     expect!(self, Keyword(Trait), "'trait'");
     let name = self.identifier()?;
     let signatures = self.signature_block()?;
-    Ok(Declaration::Trait { signatures })
+    Ok(Declaration::Trait { name, signatures })
   });
 
   parse_method!(signature_block(&mut self) -> ParseResult<Vec<Signature>> {
@@ -1077,7 +1078,7 @@ pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, Vec<String>) {
 
   let trace = parser.parse_record.into_iter().map(|r| {
     let mut indent = String::new();
-    for i in 0..r.level {
+    for _ in 0..r.level {
       indent.push(' ');
     }
     format!("{}Production `{}`, token: {:?}", indent, r.production_name, r.next_token)
@@ -1314,6 +1315,7 @@ mod parse_tests {
   fn parsing_traits() {
     parse_test!("trait Unglueable { fn unglue(a: Glue); fn mar(): Glue }", AST(vec![
       Declaration(Trait {
+        name: rc!(Unglueable),
         signatures: vec![
           Signature { name: rc!(unglue), params: vec![(rc!(a), Some(Singleton(TypeSingletonName { name: rc!(Glue), params: vec![] })))], type_anno: None },
           Signature { name: rc!(mar), params: vec![], type_anno: Some(Singleton(TypeSingletonName { name: rc!(Glue), params: vec![] })) },
