@@ -1,8 +1,11 @@
 use std::rc::Rc;
+use std::collections::HashMap;
 
 use schala_lang::parsing;
 
-pub struct TypeContext { }
+pub struct TypeContext { 
+  bindings: HashMap<Rc<String>, Type>
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
@@ -24,7 +27,7 @@ type TypeResult<T> = Result<T, String>;
 
 impl TypeContext {
   pub fn new() -> TypeContext {
-    TypeContext { }
+    TypeContext { bindings: HashMap::new() }
   }
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<Type> {
     use self::Type::*;
@@ -40,11 +43,19 @@ impl TypeContext {
     use self::parsing::Statement::*;
     match statement {
       &ExpressionStatement(ref expr) => self.type_infer(expr),
-      &Declaration(ref decl) => self.type_check_declaration(decl),
+      &Declaration(ref decl) => self.add_declaration(decl),
     }
   }
-  fn type_check_declaration(&mut self, decl: &parsing::Declaration) -> TypeResult<Type> {
+  fn add_declaration(&mut self, decl: &parsing::Declaration) -> TypeResult<Type> {
+    use self::parsing::Declaration::*;
     use self::Type::*;
+    match decl {
+      &Binding { ref name, ref expr, .. } => {
+        let ty = self.type_infer(expr)?;
+        self.bindings.insert(name.clone(), ty);
+      },
+      _ => return Err(format!("other formats not done"))
+    }
     Ok(Unit)
   }
   fn type_infer(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
@@ -52,13 +63,13 @@ impl TypeContext {
     match expr {
       &Expression(ref e, Some(ref anno)) => {
         let anno_ty = self.type_from_anno(anno)?;
-        let ty = self.type_infer_exprtype(&e)?;
+        let ty = self.infer_exprtype(&e)?;
         self.unify(ty, anno_ty)
       },
-      &Expression(ref e, None) => self.type_infer_exprtype(e)
+      &Expression(ref e, None) => self.infer_exprtype(e)
     }
   }
-  fn type_infer_exprtype(&mut self, expr: &parsing::ExpressionType) -> TypeResult<Type> {
+  fn infer_exprtype(&mut self, expr: &parsing::ExpressionType) -> TypeResult<Type> {
     use self::parsing::ExpressionType::*;
     use self::Type::*; use self::TConst::*;
     match expr {
