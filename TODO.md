@@ -42,3 +42,5 @@ struct CompilerPass {
 }
 
 -change "Type...." names in parser.rs to "Anno..." for non-collision with names in typechecking.rs
+
+* In eval.rs, change `ReplState` to something that assumes no repl

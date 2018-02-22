@@ -137,6 +137,8 @@ impl ReplState {
       Expression(Value(identifier, _), _) => {
         match self.values.get(&identifier) {
           Some(&ValueEntry::Function { ref body }) => {
+            let new_state = ReplState::new();
+            let sub_ast = AST(body.clone());
             println!("LOL ALL FUNCTIONS EVALUATE TO 2!");
             Ok(FullyEvaluatedExpr::UnsignedInt(2))
           },
