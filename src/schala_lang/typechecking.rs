@@ -20,7 +20,6 @@ pub enum TConst {
   Custom(String),
 }
 
-
 type TypeResult<T> = Result<T, String>;
 
 impl TypeContext {
@@ -77,12 +76,12 @@ impl TypeContext {
     Ok(match anno {
       &Tuple(_) => return Err(format!("Tuples not yet implemented")),
       &Singleton(ref name) => match name {
-        &TypeSingletonName { ref name, .. } => match **name {
-          ref n if n == "Int" => Const(Int),
-          ref n if n == "Float" => Const(Float),
-          ref n if n == "Bool" => Const(Bool),
-          ref n if n == "String" => Const(StringT),
-          ref n => Const(Custom((format!("{}", n))))
+        &TypeSingletonName { ref name, .. } => match &name[..] {
+          "Int" => Const(Int),
+          "Float" => Const(Float),
+          "Bool" => Const(Bool),
+          "String" => Const(StringT),
+          n => Const(Custom(n.to_string()))
         }
       }
     })
