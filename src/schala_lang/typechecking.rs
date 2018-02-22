@@ -71,8 +71,21 @@ impl TypeContext {
     }
   }
   fn type_from_anno(&mut self, anno: &parsing::TypeName) -> TypeResult<Type> {
+    use self::parsing::{TypeName, TypeSingletonName};
+    use self::parsing::TypeName::*;
     use self::Type::*; use self::TConst::*;
-    Ok(Unit)
+    Ok(match anno {
+      &Tuple(_) => return Err(format!("Tuples not yet implemented")),
+      &Singleton(ref name) => match name {
+        &TypeSingletonName { ref name, .. } => match **name {
+          ref n if n == "Int" => Const(Int),
+          ref n if n == "Float" => Const(Float),
+          ref n if n == "Bool" => Const(Bool),
+          ref n if n == "String" => Const(StringT),
+          ref n => Const(Custom((format!("{}", n))))
+        }
+      }
+    })
   }
   fn unify(&mut self, t1: Type, t2: Type) -> TypeResult<Type> {
     use self::Type::*; use self::TConst::*;
