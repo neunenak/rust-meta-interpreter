@@ -271,10 +271,11 @@ formal_param := IDENTIFIER type_anno+
 binding_declaration: 'var' IDENTIFIER '=' expression
                       | 'const' IDENTIFIER '=' expression
 
-trait_declaration := 'trait' trait_name decl_block
+trait_declaration := 'trait' trait_name signature_block
 impl_declaration := 'impl' IDENTIFIER decl_block | 'impl' trait_name 'for' IDENTIFIER decl_block
 
 decl_block := '{' (func_declaration)* '}'
+signature_block := '{' (func_signature)* '}'
 
 trait_name := IDENTIFIER
 
@@ -416,6 +417,9 @@ pub enum Declaration {
     trait_name: Option<TraitName>,
     block: Vec<Declaration>,
   },
+  Trait {
+    signatures: Vec<Signature>
+  }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -696,7 +700,14 @@ impl Parser {
   });
 
   parse_method!(trait_declaration(&mut self) -> ParseResult<Declaration> {
-    unimplemented!()
+    expect!(self, Keyword(Trait), "'trait'");
+    let name = self.identifier()?;
+    let signatures = self.signature_block()?;
+    Ok(Declaration::Trait { signatures })
+  });
+
+  parse_method!(signature_block(&mut self) -> ParseResult<Vec<Signature>> {
+    Ok(delimited!(self, LCurlyBrace, '{', signature, Newline | Semicolon, RCurlyBrace, '}', nonstrict))
   });
 
   parse_method!(impl_declaration(&mut self) -> ParseResult<Declaration> {
@@ -1298,6 +1309,17 @@ mod parse_tests {
             Some(vec![exprstatement!(val!("c"))])))]));
 
     parse_error!("if A {a: 1} { b } else { c }");
+  }
+  #[test]
+  fn parsing_traits() {
+    parse_test!("trait Unglueable { fn unglue(a: Glue); fn mar(): Glue }", AST(vec![
+      Declaration(Trait {
+        signatures: vec![
+          Signature { name: rc!(unglue), params: vec![(rc!(a), Some(Singleton(TypeSingletonName { name: rc!(Glue), params: vec![] })))], type_anno: None },
+          Signature { name: rc!(mar), params: vec![], type_anno: Some(Singleton(TypeSingletonName { name: rc!(Glue), params: vec![] })) },
+        ]
+      })
+    ]));
   }
 
   #[test]
