@@ -6,6 +6,8 @@ use schala_lang::tokenizing::*;
 use schala_lang::tokenizing::Kw::*;
 use schala_lang::tokenizing::TokenType::*;
 
+use schala_lang::builtin::{BinOp, PrefixOp};
+
 /* Schala EBNF Grammar */
 /* Terminal productions are in 'single quotes' or UPPERCASE if they are a class
  * or not representable in ASCII
@@ -224,8 +226,8 @@ pub enum ExpressionType {
   FloatLiteral(f64),
   StringLiteral(Rc<String>),
   BoolLiteral(bool),
-  BinExp(Operation, Box<Expression>, Box<Expression>),
-  PrefixExp(Operation, Box<Expression>),
+  BinExp(BinOp, Box<Expression>, Box<Expression>),
+  PrefixExp(PrefixOp, Box<Expression>),
   TupleLiteral(Vec<Expression>),
   Value(Rc<String>, Vec<(Rc<String>, Expression)>),
   Call {
@@ -249,30 +251,6 @@ pub struct MatchArm {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Pattern(Rc<String>);
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Operation(pub Rc<String>);
-
-impl Operation {
-  fn min_precedence() -> i32 {
-    i32::min_value()
-  }
-
-  fn get_precedence(op: &str) -> i32 {
-    match op {
-      "+" | "-" => 10,
-      "*" | "/" | "%" =>  20,
-      _ => 30,
-    }
-  }
-
-  fn is_prefix(op: &str) -> bool {
-    match op {
-      "+" | "-" | "!" | "~" => true,
-      _ => false,
-    }
-  }
-}
 
 macro_rules! parse_method {
   ($name:ident(&mut $self:ident) -> $type:ty $body:block) => {
@@ -504,7 +482,7 @@ impl Parser {
   });
 
   parse_method!(expression(&mut self) -> ParseResult<Expression> {
-    let mut expr_body = self.precedence_expr(Operation::min_precedence())?;
+    let mut expr_body = self.precedence_expr(BinOp::min_precedence())?;
     let type_anno = match self.peek() {
       Colon => Some(self.type_anno()?),
       _ => None
@@ -553,21 +531,21 @@ impl Parser {
     let mut lhs = self.prefix_expr()?;
     loop {
       let new_precedence = match self.peek() {
-        Operator(op) => Operation::get_precedence(&*op),
-        Period => Operation::get_precedence("."),
+        Operator(op) => BinOp::get_precedence(&*op),
+        Period => BinOp::get_precedence("."),
         _ => break,
       };
 
       if precedence >= new_precedence {
         break;
       }
-      let op_str = match self.next() {
+      let sigil = match self.next() {
         Operator(op) => op,
         Period => Rc::new(".".to_string()),
         _ => unreachable!(),
       };
       let rhs = self.precedence_expr(new_precedence)?;
-      let operation = Operation(op_str);
+      let operation = BinOp::from_sigil(sigil);
       lhs = Expression(ExpressionType::BinExp(operation, bx!(lhs), bx!(rhs)), None);
     }
     self.parse_level -= 1;
@@ -576,14 +554,14 @@ impl Parser {
 
   parse_method!(prefix_expr(&mut self) -> ParseResult<Expression> {
     match self.peek() {
-      Operator(ref op) if Operation::is_prefix(&*op) => {
-        let op_str = match self.next() {
+      Operator(ref op) if PrefixOp::is_prefix(&*op) => {
+        let sigil = match self.next() {
           Operator(op) => op,
           _ => unreachable!(),
         };
         let expr = self.primary()?;
         Ok(Expression(
-            ExpressionType::PrefixExp(Operation(op_str), bx!(expr)),
+            ExpressionType::PrefixExp(PrefixOp::from_sigil(sigil), bx!(expr)),
             None))
       },
       _ => self.primary()
@@ -852,7 +830,7 @@ pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, Vec<String>) {
 #[cfg(test)]
 mod parse_tests {
   use ::std::rc::Rc;
-  use super::{AST, Expression, Statement, Operation, TypeBody, Variant, parse, tokenize};
+  use super::{AST, Expression, Statement, PrefixOp, BinOp, TypeBody, Variant, parse, tokenize};
   use super::Statement::*;
   use super::Declaration::*;
   use super::Signature;
@@ -877,7 +855,7 @@ mod parse_tests {
     ($op:expr, $lhs:expr) => { PrefixExp(op!($op), bx!(Expression($lhs, None))) }
   }
   macro_rules! op {
-    ($op:expr) => { Operation(Rc::new($op.to_string())) }
+    ($op:expr) => { BinOp::from_sigil($op.to_string()) }
   }
   macro_rules! val {
     ($var:expr) => { Value(Rc::new($var.to_string()), vec![]) }
