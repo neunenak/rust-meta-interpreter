@@ -9,13 +9,14 @@ pub struct TypeContext {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
-  Unit,
   Const(TConst),
+  Func(Vec<Type>),
   Void
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TConst {
+  Unit,
   Int,
   Float,
   StringT,
@@ -30,8 +31,8 @@ impl TypeContext {
     TypeContext { bindings: HashMap::new() }
   }
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<Type> {
-    use self::Type::*;
-    let mut ret_type = Unit;
+    use self::Type::*; use self::TConst::*;
+    let mut ret_type = Const(Unit);
     for statement in ast.0.iter() {
       ret_type = self.type_check_statement(statement)?;
     }
@@ -42,7 +43,7 @@ impl TypeContext {
 
     use self::parsing::Statement::*;
     match statement {
-      &ExpressionStatement(ref expr) => self.type_infer(expr),
+      &ExpressionStatement(ref expr) => self.infer(expr),
       &Declaration(ref decl) => self.add_declaration(decl),
     }
   }
@@ -51,14 +52,14 @@ impl TypeContext {
     use self::Type::*;
     match decl {
       &Binding { ref name, ref expr, .. } => {
-        let ty = self.type_infer(expr)?;
+        let ty = self.infer(expr)?;
         self.bindings.insert(name.clone(), ty);
       },
       _ => return Err(format!("other formats not done"))
     }
     Ok(Void)
   }
-  fn type_infer(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
+  fn infer(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
     use self::parsing::Expression;
     match expr {
       &Expression(ref e, Some(ref anno)) => {
@@ -77,8 +78,36 @@ impl TypeContext {
       &FloatLiteral(_) => Ok(Const(Float)),
       &StringLiteral(_) => Ok(Const(StringT)),
       &BoolLiteral(_) => Ok(Const(Bool)),
+      &BinExp(ref op, ref lhs, ref rhs) => {
+        let _op_ty = self.infer_optype(op);
+        let _lhs_ty = self.infer(lhs);
+        let _rhs_ty = self.infer(rhs);
+        Ok(Const(Unit))
+      },
+      /*
+  BinExp(Operation, Box<Expression>, Box<Expression>),
+  PrefixExp(Operation, Box<Expression>),
+  TupleLiteral(Vec<Expression>),
+  Value(Rc<String>, Vec<(Rc<String>, Expression)>),
+  Call {
+    f: Box<Expression>,
+    arguments: Vec<Expression>,
+  },
+  Index {
+    indexee: Box<Expression>,
+    indexers: Vec<Expression>,
+  },
+  IfExpression(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
+  MatchExpression(Box<Expression>, Vec<MatchArm>),
+  ForExpression
+      */
       _ => Err(format!("Type not yet implemented"))
     }
+  }
+  fn infer_optype(&mut self, _op: &parsing::Operation) -> TypeResult<Type> {
+    use self::Type::*; use self::TConst::*;
+    //this is a shim; not all ops are binops from int -> int -> int
+    Ok(Func(vec![Const(Int), Const(Int), Const(Int)]))
   }
   fn type_from_anno(&mut self, anno: &parsing::TypeName) -> TypeResult<Type> {
     use self::parsing::TypeSingletonName;
