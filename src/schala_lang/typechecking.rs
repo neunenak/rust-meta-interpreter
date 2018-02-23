@@ -1,6 +1,10 @@
 use std::rc::Rc;
 use std::collections::HashMap;
 
+macro_rules! bx {
+  ($e:expr) => { Box::new($e) }
+}
+
 use schala_lang::parsing;
 
 pub struct TypeContext { 
@@ -10,7 +14,7 @@ pub struct TypeContext {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
   Const(TConst),
-  Func(Vec<Type>),
+  Func(Box<Type>, Box<Type>),
   Void
 }
 
@@ -78,11 +82,17 @@ impl TypeContext {
       &FloatLiteral(_) => Ok(Const(Float)),
       &StringLiteral(_) => Ok(Const(StringT)),
       &BoolLiteral(_) => Ok(Const(Bool)),
-      &BinExp(ref op, ref lhs, ref rhs) => {
-        let _op_ty = self.infer_optype(op);
-        let _lhs_ty = self.infer(lhs);
-        let _rhs_ty = self.infer(rhs);
-        Ok(Const(Unit))
+      &BinExp(ref op, ref lhs, ref rhs) => { /* remember there are both the haskell convention talk and the write you a haskell ways to do this! */
+        match self.infer_optype(op)? {
+          Func(box t1, box Func(box t2, box t3)) => {
+            let lhs_ty = self.infer(lhs)?;
+            let rhs_ty = self.infer(rhs)?;
+            self.unify(t1, lhs_ty)?;
+            self.unify(t2, rhs_ty)?;
+            Ok(t3)
+          },
+          other => return Err(format!("{:?} is not a binary function type", other))
+        }
       },
       /*
   BinExp(Operation, Box<Expression>, Box<Expression>),
@@ -107,7 +117,7 @@ impl TypeContext {
   fn infer_optype(&mut self, _op: &parsing::Operation) -> TypeResult<Type> {
     use self::Type::*; use self::TConst::*;
     //this is a shim; not all ops are binops from int -> int -> int
-    Ok(Func(vec![Const(Int), Const(Int), Const(Int)]))
+    Ok(Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))))
   }
   fn type_from_anno(&mut self, anno: &parsing::TypeName) -> TypeResult<Type> {
     use self::parsing::TypeSingletonName;
