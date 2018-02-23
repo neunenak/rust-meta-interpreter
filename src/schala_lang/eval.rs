@@ -2,7 +2,7 @@ use schala_lang::parsing::{AST, Statement, Declaration, Expression, Variant, Exp
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub struct ReplState {
+pub struct State {
   values: HashMap<Rc<String>, ValueEntry>,
 }
 
@@ -31,9 +31,9 @@ enum FullyEvaluatedExpr {
   Tuple(Vec<FullyEvaluatedExpr>),
 }
 
-impl ReplState {
-  pub fn new() -> ReplState {
-    ReplState { values: HashMap::new() }
+impl State {
+  pub fn new() -> State {
+    State { values: HashMap::new() }
   }
 
   pub fn evaluate(&mut self, ast: AST) -> Vec<String> {
@@ -55,7 +55,7 @@ impl ReplState {
   }
 }
 
-impl ReplState {
+impl State {
   fn eval_statement(&mut self, statement: Statement) -> EvalResult<Option<String>> {
     use self::FullyEvaluatedExpr::*;
     match statement {
@@ -137,7 +137,7 @@ impl ReplState {
       Expression(Value(identifier, _), _) => {
         match self.values.get(&identifier) {
           Some(&ValueEntry::Function { ref body }) => {
-            let new_state = ReplState::new();
+            let new_state = State::new();
             let sub_ast = AST(body.clone());
             println!("LOL ALL FUNCTIONS EVALUATE TO 2!");
             Ok(FullyEvaluatedExpr::UnsignedInt(2))

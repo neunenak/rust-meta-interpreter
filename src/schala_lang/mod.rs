@@ -15,14 +15,14 @@ mod eval;
 use self::typechecking::{TypeContext};
 
 pub struct Schala {
-  state: eval::ReplState,
+  state: eval::State,
   type_context: TypeContext
 }
 
 impl Schala {
   pub fn new() -> Schala {
     Schala {
-      state: eval::ReplState::new(),
+      state: eval::State::new(),
       type_context: TypeContext::new(),
     }
   }
