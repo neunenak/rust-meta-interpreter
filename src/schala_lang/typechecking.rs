@@ -28,6 +28,26 @@ pub enum TConst {
   Custom(String),
 }
 
+impl parsing::TypeName {
+  fn to_type(&self) -> TypeResult<Type> {
+    use self::parsing::TypeSingletonName;
+    use self::parsing::TypeName::*;
+    use self::Type::*; use self::TConst::*;
+    Ok(match self {
+      &Tuple(_) => return Err(format!("Tuples not yet implemented")),
+      &Singleton(ref name) => match name {
+        &TypeSingletonName { ref name, .. } => match &name[..] {
+          "Int" => Const(Int),
+          "Float" => Const(Float),
+          "Bool" => Const(Bool),
+          "String" => Const(StringT),
+          n => Const(Custom(n.to_string()))
+        }
+      }
+    })
+  }
+}
+
 type TypeResult<T> = Result<T, String>;
 
 impl TypeContext {
@@ -67,7 +87,7 @@ impl TypeContext {
     use self::parsing::Expression;
     match expr {
       &Expression(ref e, Some(ref anno)) => {
-        let anno_ty = self.type_from_anno(anno)?;
+        let anno_ty = anno.to_type()?;
         let ty = self.infer_exprtype(&e)?;
         self.unify(ty, anno_ty)
       },
@@ -118,23 +138,6 @@ impl TypeContext {
     use self::Type::*; use self::TConst::*;
     //this is a shim; not all ops are binops from int -> int -> int
     Ok(Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))))
-  }
-  fn type_from_anno(&mut self, anno: &parsing::TypeName) -> TypeResult<Type> {
-    use self::parsing::TypeSingletonName;
-    use self::parsing::TypeName::*;
-    use self::Type::*; use self::TConst::*;
-    Ok(match anno {
-      &Tuple(_) => return Err(format!("Tuples not yet implemented")),
-      &Singleton(ref name) => match name {
-        &TypeSingletonName { ref name, .. } => match &name[..] {
-          "Int" => Const(Int),
-          "Float" => Const(Float),
-          "Bool" => Const(Bool),
-          "String" => Const(StringT),
-          n => Const(Custom(n.to_string()))
-        }
-      }
-    })
   }
   fn unify(&mut self, t1: Type, t2: Type) -> TypeResult<Type> {
     use self::Type::*;// use self::TConst::*;
