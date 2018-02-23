@@ -1,6 +1,11 @@
 use itertools::Itertools;
 use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
 
+macro_rules! bx {
+  ($e:expr) => { Box::new($e) }
+}
+
+
 mod tokenizing;
 mod parsing;
 //mod type_check;

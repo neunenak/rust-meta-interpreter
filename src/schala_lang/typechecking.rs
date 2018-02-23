@@ -1,10 +1,6 @@
 use std::rc::Rc;
 use std::collections::HashMap;
 
-macro_rules! bx {
-  ($e:expr) => { Box::new($e) }
-}
-
 use schala_lang::parsing;
 
 pub struct TypeContext { 
@@ -115,7 +111,6 @@ impl TypeContext {
         }
       },
       /*
-  BinExp(Operation, Box<Expression>, Box<Expression>),
   PrefixExp(Operation, Box<Expression>),
   TupleLiteral(Vec<Expression>),
   Value(Rc<String>, Vec<(Rc<String>, Expression)>),

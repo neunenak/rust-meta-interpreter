@@ -568,7 +568,7 @@ impl Parser {
       };
       let rhs = self.precedence_expr(new_precedence)?;
       let operation = Operation(op_str);
-      lhs = Expression(ExpressionType::BinExp(operation, Box::new(lhs), Box::new(rhs)), None);
+      lhs = Expression(ExpressionType::BinExp(operation, bx!(lhs), bx!(rhs)), None);
     }
     self.parse_level -= 1;
     Ok(lhs)
@@ -583,7 +583,7 @@ impl Parser {
         };
         let expr = self.primary()?;
         Ok(Expression(
-            ExpressionType::PrefixExp(Operation(op_str), Box::new(expr)),
+            ExpressionType::PrefixExp(Operation(op_str), bx!(expr)),
             None))
       },
       _ => self.primary()
@@ -628,13 +628,13 @@ impl Parser {
       LParen => {
         let arguments = self.call_expr()?;
         //TODO make this be more general
-        let f = Box::new(Expression(Value(identifier, vec![]), None));
+        let f = bx!(Expression(Value(identifier, vec![]), None));
         Expression(Call { f, arguments }, None)
       },
       LSquareBracket => {
         let indexers = self.index_expr()?;
         Expression(Index {
-          indexee: Box::new(Expression(Value(identifier, vec![]), None)),
+          indexee: bx!(Expression(Value(identifier, vec![]), None)),
           indexers,
         }, None)
       }
@@ -671,7 +671,7 @@ impl Parser {
     })()?;
     let then_clause = self.block()?;
     let else_clause = self.else_clause()?;
-    Ok(Expression(ExpressionType::IfExpression(Box::new(condition), then_clause, else_clause), None))
+    Ok(Expression(ExpressionType::IfExpression(bx!(condition), then_clause, else_clause), None))
   });
 
   parse_method!(else_clause(&mut self) -> ParseResult<Option<Vec<Statement>>> {
@@ -694,7 +694,7 @@ impl Parser {
     //expect!(self, LCurlyBrace, "Expected '{'");
     let body = self.match_body()?;
     //expect!(self, RCurlyBrace, "Expected '}'");
-    Ok(Expression(ExpressionType::MatchExpression(Box::new(expr), body), None))
+    Ok(Expression(ExpressionType::MatchExpression(bx!(expr), body), None))
   });
 
   parse_method!(match_body(&mut self) -> ParseResult<Vec<MatchArm>> {
@@ -871,10 +871,10 @@ mod parse_tests {
     ($string:expr) => { assert!(parse(tokenize($string)).0.is_err()) }
   }
   macro_rules! binexp {
-    ($op:expr, $lhs:expr, $rhs:expr) => { BinExp(op!($op), Box::new(Expression($lhs, None)), Box::new(Expression($rhs, None))) }
+    ($op:expr, $lhs:expr, $rhs:expr) => { BinExp(op!($op), bx!(Expression($lhs, None)), bx!(Expression($rhs, None))) }
   }
   macro_rules! prefexp {
-    ($op:expr, $lhs:expr) => { PrefixExp(op!($op), Box::new(Expression($lhs, None))) }
+    ($op:expr, $lhs:expr) => { PrefixExp(op!($op), bx!(Expression($lhs, None))) }
   }
   macro_rules! op {
     ($op:expr) => { Operation(Rc::new($op.to_string())) }
@@ -957,7 +957,7 @@ mod parse_tests {
     //parse_test!("a[b]", AST(vec![Expression(
     //parse_test!("a[]", <- TODO THIS NEEDS TO FAIL
     //parse_test!(damn()[a] ,<- TODO needs to succeed
-    parse_test!("a[b,c]", AST(vec![exprstatement!(Index { indexee: Box::new(ex!(val!("a"))), indexers: vec![ex!(val!("b")), ex!(val!("c"))]} )]));     
+    parse_test!("a[b,c]", AST(vec![exprstatement!(Index { indexee: bx!(ex!(val!("a"))), indexers: vec![ex!(val!("b")), ex!(val!("c"))]} )]));     
 
     parse_test!("None", AST(vec![exprstatement!(val!("None"))]));
     parse_test!("Pandas {  a: x + y }", AST(vec![
@@ -984,9 +984,9 @@ mod parse_tests {
   #[test]
   fn parsing_functions() {
     parse_test!("fn oi()",  AST(vec![Declaration(FuncSig(Signature { name: rc!(oi), params: vec![], type_anno: None }))]));
-    parse_test!("oi()", AST(vec![exprstatement!(Call { f: Box::new(ex!(val!("oi"))), arguments: vec![] })]));
+    parse_test!("oi()", AST(vec![exprstatement!(Call { f: bx!(ex!(val!("oi"))), arguments: vec![] })]));
     parse_test!("oi(a, 2 + 2)", AST(vec![exprstatement!(Call
-    { f: Box::new(ex!(val!("oi"))),
+    { f: bx!(ex!(val!("oi"))),
       arguments: vec![ex!(val!("a")), ex!(binexp!("+", IntLiteral(2), IntLiteral(2)))]
     })]));
     parse_error!("a(b,,c)");
@@ -999,7 +999,7 @@ mod parse_tests {
 
     parse_test!("fn a(x) { x() }", AST(vec![Declaration(
       FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
-        vec![exprstatement!(Call { f: Box::new(ex!(val!("x"))), arguments: vec![] })]))]));
+        vec![exprstatement!(Call { f: bx!(ex!(val!("x"))), arguments: vec![] })]))]));
   }
 
   #[test]
@@ -1045,8 +1045,8 @@ mod parse_tests {
   #[test]
   fn parsing_block_expressions() {
     parse_test!("if a() { b(); c() }", AST(vec![exprstatement!(
-        IfExpression(Box::new(ex!(Call { f: Box::new(ex!(val!("a"))), arguments: vec![]})),
-          vec![exprstatement!(Call { f: Box::new(ex!(val!("b"))), arguments: vec![]}), exprstatement!(Call { f: Box::new(ex!(val!("c"))), arguments: vec![] })],
+        IfExpression(bx!(ex!(Call { f: bx!(ex!(val!("a"))), arguments: vec![]})),
+          vec![exprstatement!(Call { f: bx!(ex!(val!("b"))), arguments: vec![]}), exprstatement!(Call { f: bx!(ex!(val!("c"))), arguments: vec![] })],
           None)
         )]));
     parse_test!(r#"
@@ -1056,19 +1056,19 @@ mod parse_tests {
     } else {
       c
     }"#,
-    AST(vec![exprstatement!(IfExpression(Box::new(ex!(BoolLiteral(true))),
+    AST(vec![exprstatement!(IfExpression(bx!(ex!(BoolLiteral(true))),
       vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(IntLiteral(10)) }),
            exprstatement!(Value(rc!(b), vec![]))],
       Some(vec![exprstatement!(Value(rc!(c), vec![]))])))])
     );
 
     parse_test!("if a { b } else { c }", AST(vec![exprstatement!(
-          IfExpression(Box::new(ex!(val!("a"))),
+          IfExpression(bx!(ex!(val!("a"))),
             vec![exprstatement!(val!("b"))],
             Some(vec![exprstatement!(val!("c"))])))]));
 
     parse_test!("if (A {a: 1}) { b } else { c }", AST(vec![exprstatement!(
-          IfExpression(Box::new(ex!(Value(rc!(A), vec![(rc!(a), ex!(IntLiteral(1)))]))),
+          IfExpression(bx!(ex!(Value(rc!(A), vec![(rc!(a), ex!(IntLiteral(1)))]))),
             vec![exprstatement!(val!("b"))],
             Some(vec![exprstatement!(val!("c"))])))]));
 
