@@ -220,6 +220,7 @@ fn handle_operator(c: char, input: &mut CharIter) -> TokenType {
 #[cfg(test)]
 mod schala_tokenizer_tests {
   use super::*;
+  use super::Kw::*;
 
   macro_rules! digit { ($ident:expr) => { DigitGroup(Rc::new($ident.to_string())) } }
   macro_rules! ident { ($ident:expr) => { Identifier(Rc::new($ident.to_string())) } }
