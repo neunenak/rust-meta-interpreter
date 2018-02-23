@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
 
+mod tokenizing;
 mod parsing;
 //mod type_check;
 mod typechecking;
@@ -33,7 +34,7 @@ impl ProgrammingLanguageInterface for Schala {
 
   fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> ReplOutput {
     let mut output = ReplOutput::default();
-    let tokens = parsing::tokenize(input);
+    let tokens = tokenizing::tokenize(input);
     if options.debug_tokens {
       let token_string = tokens.iter().map(|t| format!("{:?}<{}>", t.token_type, t.offset)).join(", ");
       output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", token_string)));
