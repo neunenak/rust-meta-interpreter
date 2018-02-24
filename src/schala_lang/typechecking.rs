@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::collections::HashMap;
 
 use schala_lang::parsing;
+use schala_lang::builtin;
 
 pub struct TypeContext { 
   bindings: HashMap<Rc<String>, Type>
@@ -129,7 +130,7 @@ impl TypeContext {
       _ => Err(format!("Type not yet implemented"))
     }
   }
-  fn infer_optype(&mut self, _op: &parsing::Operation) -> TypeResult<Type> {
+  fn infer_optype(&mut self, _op: &builtin::BinOp) -> TypeResult<Type> {
     use self::Type::*; use self::TConst::*;
     //this is a shim; not all ops are binops from int -> int -> int
     Ok(Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))))

@@ -1,4 +1,5 @@
-use schala_lang::parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType, Operation};
+use schala_lang::parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType};
+use schala_lang::builtin::{BinOp, PrefixOp};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -162,12 +163,12 @@ impl State {
     }
   }
 
-  fn eval_binexp(&mut self, op: Operation, lhs: Box<Expression>, rhs: Box<Expression>) -> EvalResult<FullyEvaluatedExpr> {
+  fn eval_binexp(&mut self, op: BinOp, lhs: Box<Expression>, rhs: Box<Expression>) -> EvalResult<FullyEvaluatedExpr> {
     use self::FullyEvaluatedExpr::*;
     let evaled_lhs = self.eval_expr(*lhs)?;
     let evaled_rhs = self.eval_expr(*rhs)?;
-    let opstr: &str = &op.0;
-    Ok(match (opstr, evaled_lhs, evaled_rhs) {
+    let sigil: &str = op.sigil.as_ref().as_str();
+    Ok(match (sigil, evaled_lhs, evaled_rhs) {
       ("+", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l + r),
       ("++", Str(s1), Str(s2)) => Str(format!("{}{}", s1, s2)),
       ("-", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l - r),
@@ -178,12 +179,13 @@ impl State {
     })
   }
 
-  fn eval_prefix_exp(&mut self, op: Operation, expr: Box<Expression>) -> EvalResult<FullyEvaluatedExpr> {
+  fn eval_prefix_exp(&mut self, op: PrefixOp, expr: Box<Expression>) -> EvalResult<FullyEvaluatedExpr> {
     use self::FullyEvaluatedExpr::*;
     let evaled_expr = self.eval_expr(*expr)?;
-    let opstr: &str = &op.0;
 
-    Ok(match (opstr, evaled_expr) {
+    let sigil: &str = op.sigil.as_ref().as_str();
+
+    Ok(match (sigil, evaled_expr) {
       ("!", Bool(true)) => Bool(false),
       ("!", Bool(false)) => Bool(true),
       ("-", UnsignedInt(n)) => SignedInt(-1*(n as i64)),
