@@ -176,8 +176,9 @@ impl<'a> State<'a> {
     use self::FullyEvaluatedExpr::*;
     let evaled_lhs = self.eval_expr(*lhs)?;
     let evaled_rhs = self.eval_expr(*rhs)?;
-    let sigil: &str = op.sigil.as_ref().as_str();
-    Ok(match (sigil, evaled_lhs, evaled_rhs) {
+    let sigil = op.sigil();
+    //let sigil: &str = op.sigil().as_ref().as_str();
+    Ok(match (sigil.as_str(), evaled_lhs, evaled_rhs) {
       ("+", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l + r),
       ("++", Str(s1), Str(s2)) => Str(format!("{}{}", s1, s2)),
       ("-", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l - r),
@@ -191,10 +192,9 @@ impl<'a> State<'a> {
   fn eval_prefix_exp(&mut self, op: PrefixOp, expr: Box<Expression>) -> EvalResult<FullyEvaluatedExpr> {
     use self::FullyEvaluatedExpr::*;
     let evaled_expr = self.eval_expr(*expr)?;
+    let sigil = op.sigil();
 
-    let sigil: &str = op.sigil.as_ref().as_str();
-
-    Ok(match (sigil, evaled_expr) {
+    Ok(match (sigil.as_str(), evaled_expr) {
       ("!", Bool(true)) => Bool(false),
       ("!", Bool(false)) => Bool(true),
       ("-", UnsignedInt(n)) => SignedInt(-1*(n as i64)),

@@ -2,17 +2,20 @@ use std::rc::Rc;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct BinOp {
-  pub sigil: Rc<String>
+  sigil: Rc<String>
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct PrefixOp {
-  pub sigil: Rc<String>
+  sigil: Rc<String>
 }
 
 impl BinOp {
   pub fn from_sigil(sigil: Rc<String>) -> BinOp {
     BinOp { sigil }
+  }
+  pub fn sigil(&self) -> &Rc<String> {
+    &self.sigil
   }
   pub fn min_precedence() -> i32 {
     i32::min_value()
@@ -30,6 +33,9 @@ impl BinOp {
 impl PrefixOp {
   pub fn from_sigil(sigil: Rc<String>) -> PrefixOp {
     PrefixOp { sigil }
+  }
+  pub fn sigil(&self) -> &Rc<String> {
+    &self.sigil
   }
   pub fn is_prefix(op: &str) -> bool {
     match op {
