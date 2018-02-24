@@ -143,10 +143,14 @@ impl<'a> State<'a> {
       Expression(Value(identifier, _), _) => {
         match self.values.get(&identifier) {
           Some(&ValueEntry::Function { ref body }) => {
-            let new_state = State::new_with_parent(self);
-            let sub_ast = AST(body.clone());
-            println!("LOL ALL FUNCTIONS EVALUATE TO 2!");
-            Ok(FullyEvaluatedExpr::UnsignedInt(2))
+            let mut new_state = State::new_with_parent(self);
+            let sub_ast = body.clone();
+
+            let mut ret: Option<FullyEvaluatedExpr> = None;
+            for statement in sub_ast.into_iter() {
+              ret = new_state.eval_statement(statement)?;
+            }
+            Ok(ret.unwrap_or(FullyEvaluatedExpr::Custom { string_rep: Rc::new("()".to_string()) }))
           },
           _ => Err(format!("Function {} not found", identifier)),
         }
