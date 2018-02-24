@@ -16,7 +16,7 @@ mod eval;
 use self::typechecking::{TypeContext};
 
 pub struct Schala {
-  state: eval::State,
+  state: eval::State<'static>,
   type_context: TypeContext
 }
 

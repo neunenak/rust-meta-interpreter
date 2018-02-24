@@ -3,7 +3,8 @@ use schala_lang::builtin::{BinOp, PrefixOp};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub struct State {
+pub struct State<'a> {
+  parent_frame: Option<&'a State<'a>>,
   values: HashMap<Rc<String>, ValueEntry>,
 }
 
@@ -32,9 +33,29 @@ enum FullyEvaluatedExpr {
   Tuple(Vec<FullyEvaluatedExpr>),
 }
 
-impl State {
-  pub fn new() -> State {
-    State { values: HashMap::new() }
+impl FullyEvaluatedExpr {
+  fn to_string(&self) -> String {
+    use self::FullyEvaluatedExpr::*;
+    match self {
+      &UnsignedInt(ref n) => format!("{}", n),
+      &SignedInt(ref n) => format!("{}", n),
+      &Float(ref f) => format!("{}", f),
+      &Str(ref s) => format!("\"{}\"", s),
+      &Bool(ref b) => format!("{}", b),
+      &Custom { ref string_rep } => format!("{}", string_rep),
+      &Tuple(ref _items) => format!("(tuple to be defined later)"),
+      &FuncLit(ref name) => format!("<function {}>", name),
+    }
+  }
+}
+
+impl<'a> State<'a> {
+  pub fn new() -> State<'a> {
+    State { parent_frame: None, values: HashMap::new() }
+  }
+
+  pub fn new_with_parent(parent: &'a State<'a>) -> State<'a> {
+    State { parent_frame: Some(parent), values: HashMap::new() }
   }
 
   pub fn evaluate(&mut self, ast: AST) -> Vec<String> {
@@ -42,8 +63,8 @@ impl State {
     for statement in ast.0 {
       match self.eval_statement(statement) {
         Ok(output) => {
-          if let Some(s) = output {
-            acc.push(s);
+          if let Some(fully_evaluated) = output {
+            acc.push(fully_evaluated.to_string());
           }
         },
         Err(error) => {
@@ -56,28 +77,12 @@ impl State {
   }
 }
 
-impl State {
-  fn eval_statement(&mut self, statement: Statement) -> EvalResult<Option<String>> {
-    use self::FullyEvaluatedExpr::*;
-    match statement {
-      Statement::ExpressionStatement(expr) => {
-        self.eval_expr(expr).map( |eval| {
-          match eval {
-            UnsignedInt(n) => Some(format!("{}", n)),
-            SignedInt(n) => Some(format!("{}", n)),
-            Float(f) => Some(format!("{}", f)),
-            Str(s) => Some(format!("\"{}\"", s)),
-            Bool(b) => Some(format!("{}", b)),
-            Custom { string_rep } => Some(format!("{}", string_rep)),
-            Tuple(_items) => Some(format!("(tuple to be defined later)")),
-            FuncLit(name) => Some(format!("<function {}>", name)),
-          }
-        })
-      },
-      Statement::Declaration(decl) => {
-        self.eval_decl(decl).map(|_| None)
-      }
-    }
+impl<'a> State<'a> {
+  fn eval_statement(&mut self, statement: Statement) -> EvalResult<Option<FullyEvaluatedExpr>> {
+    Ok(match statement {
+      Statement::ExpressionStatement(expr) => Some(self.eval_expr(expr)?),
+      Statement::Declaration(decl) => { self.eval_decl(decl)?; None }
+    })
   }
 
   fn eval_decl(&mut self, decl: Declaration) -> EvalResult<()> {
@@ -138,7 +143,7 @@ impl State {
       Expression(Value(identifier, _), _) => {
         match self.values.get(&identifier) {
           Some(&ValueEntry::Function { ref body }) => {
-            let new_state = State::new();
+            let new_state = State::new_with_parent(self);
             let sub_ast = AST(body.clone());
             println!("LOL ALL FUNCTIONS EVALUATE TO 2!");
             Ok(FullyEvaluatedExpr::UnsignedInt(2))
