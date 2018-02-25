@@ -2,7 +2,6 @@ use std::rc::Rc;
 use std::collections::HashMap;
 
 use schala_lang::parsing;
-use schala_lang::builtin;
 
 pub struct TypeContext { 
   bindings: HashMap<Rc<String>, Type>
@@ -45,7 +44,7 @@ impl parsing::TypeName {
   }
 }
 
-type TypeResult<T> = Result<T, String>;
+pub type TypeResult<T> = Result<T, String>;
 
 impl TypeContext {
   pub fn new() -> TypeContext {
@@ -100,7 +99,7 @@ impl TypeContext {
       &StringLiteral(_) => Ok(Const(StringT)),
       &BoolLiteral(_) => Ok(Const(Bool)),
       &BinExp(ref op, ref lhs, ref rhs) => { /* remember there are both the haskell convention talk and the write you a haskell ways to do this! */
-        match self.infer_optype(op)? {
+        match op.get_type()? {
           Func(box t1, box Func(box t2, box t3)) => {
             let lhs_ty = self.infer(lhs)?;
             let rhs_ty = self.infer(rhs)?;
@@ -129,11 +128,6 @@ impl TypeContext {
       */
       _ => Err(format!("Type not yet implemented"))
     }
-  }
-  fn infer_optype(&mut self, _op: &builtin::BinOp) -> TypeResult<Type> {
-    use self::Type::*; use self::TConst::*;
-    //this is a shim; not all ops are binops from int -> int -> int
-    Ok(Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))))
   }
   fn unify(&mut self, t1: Type, t2: Type) -> TypeResult<Type> {
     use self::Type::*;// use self::TConst::*;
