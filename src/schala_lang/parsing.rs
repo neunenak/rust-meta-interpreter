@@ -545,7 +545,7 @@ impl Parser {
         _ => unreachable!(),
       };
       let rhs = self.precedence_expr(new_precedence)?;
-      let operation = BinOp::from_sigil(sigil);
+      let operation = BinOp::from_sigil(sigil.as_ref());
       lhs = Expression(ExpressionType::BinExp(operation, bx!(lhs), bx!(rhs)), None);
     }
     self.parse_level -= 1;
@@ -561,7 +561,7 @@ impl Parser {
         };
         let expr = self.primary()?;
         Ok(Expression(
-            ExpressionType::PrefixExp(PrefixOp::from_sigil(sigil), bx!(expr)),
+            ExpressionType::PrefixExp(PrefixOp::from_sigil(sigil.as_str()), bx!(expr)),
             None))
       },
       _ => self.primary()
@@ -849,13 +849,10 @@ mod parse_tests {
     ($string:expr) => { assert!(parse(tokenize($string)).0.is_err()) }
   }
   macro_rules! binexp {
-    ($op:expr, $lhs:expr, $rhs:expr) => { BinExp(op!($op), bx!(Expression($lhs, None)), bx!(Expression($rhs, None))) }
+    ($op:expr, $lhs:expr, $rhs:expr) => { BinExp(BinOp::from_sigil($op), bx!(Expression($lhs, None)), bx!(Expression($rhs, None))) }
   }
   macro_rules! prefexp {
-    ($op:expr, $lhs:expr) => { PrefixExp(op!($op), bx!(Expression($lhs, None))) }
-  }
-  macro_rules! op {
-    ($op:expr) => { BinOp::from_sigil($op.to_string()) }
+    ($op:expr, $lhs:expr) => { PrefixExp(PrefixOp::from_sigil($op), bx!(Expression($lhs, None))) }
   }
   macro_rules! val {
     ($var:expr) => { Value(Rc::new($var.to_string()), vec![]) }

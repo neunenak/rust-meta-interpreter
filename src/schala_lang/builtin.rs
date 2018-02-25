@@ -10,8 +10,8 @@ pub struct BinOp {
 }
 
 impl BinOp {
-  pub fn from_sigil(sigil: Rc<String>) -> BinOp {
-    BinOp { sigil }
+  pub fn from_sigil(sigil: &str) -> BinOp {
+    BinOp { sigil: Rc::new(sigil.to_string()) }
   }
   pub fn sigil(&self) -> &Rc<String> {
     &self.sigil
@@ -35,8 +35,8 @@ pub struct PrefixOp {
 }
 
 impl PrefixOp {
-  pub fn from_sigil(sigil: Rc<String>) -> PrefixOp {
-    PrefixOp { sigil }
+  pub fn from_sigil(sigil: &str) -> PrefixOp {
+    PrefixOp { sigil: Rc::new(sigil.to_string()) }
   }
   pub fn sigil(&self) -> &Rc<String> {
     &self.sigil
