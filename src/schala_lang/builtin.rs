@@ -20,18 +20,12 @@ impl BinOp {
     let s = self.sigil.as_str();
     BINOPS.get(s).map(|x| x.0.clone()).ok_or(format!("Binop {} not found", s))
   }
-}
-
-impl BinOp {
   pub fn min_precedence() -> i32 {
     i32::min_value()
   }
   pub fn get_precedence(op: &str) -> i32 {
-    match op {
-      "+" | "-" => 10,
-      "*" | "/" | "%" =>  20,
-      _ => 30,
-    }
+    let default = 10_000_000;
+    BINOPS.get(op).map(|x| x.2.clone()).unwrap_or(default)
   }
 }
 
@@ -48,13 +42,18 @@ impl PrefixOp {
     &self.sigil
   }
   pub fn is_prefix(op: &str) -> bool {
-    match op {
-      "+" | "-" | "!" | "~" => true,
-      _ => false,
-    }
+    PREFIX_OPS.get(op).is_some()
   }
 }
-
+lazy_static! {
+  static ref PREFIX_OPS: HashMap<&'static str, (Type, ())> = 
+    hashmap! {
+      "+" => (Func(bx!(Const(Int)),  bx!(Const(Int))), ()),
+      "-" => (Func(bx!(Const(Int)),  bx!(Const(Int))), ()),
+      "!" => (Func(bx!(Const(Bool)),  bx!(Const(Bool))), ()),
+      "~" => (Func(bx!(Const(Int)),  bx!(Const(Int))), ()),
+    };
+}
 
 /* the second tuple member is a placeholder for when I want to make evaluation rules tied to the
  * binop definition */
