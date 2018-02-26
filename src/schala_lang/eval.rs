@@ -183,7 +183,12 @@ impl<'a> State<'a> {
       ("++", Str(s1), Str(s2)) => Str(format!("{}{}", s1, s2)),
       ("-", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l - r),
       ("*", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l * r),
-      ("/", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l / r),
+      ("/", UnsignedInt(l), UnsignedInt(r)) => Float((l as f64)/ (r as f64)),
+      ("//", UnsignedInt(l), UnsignedInt(r)) => if r == 0 {
+        return Err(format!("Runtime error: divide by zero"));
+      } else {
+        UnsignedInt(l / r)
+      },
       ("%", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l % r),
       _ => return Err(format!("Runtime error: not yet implemented")),
     })
