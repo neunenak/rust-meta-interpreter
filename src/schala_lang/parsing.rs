@@ -533,6 +533,7 @@ impl Parser {
       let new_precedence = match self.peek() {
         Operator(op) => BinOp::get_precedence(&*op),
         Period => BinOp::get_precedence("."),
+        Pipe => BinOp::get_precedence("|"),
         _ => break,
       };
 
@@ -542,6 +543,7 @@ impl Parser {
       let sigil = match self.next() {
         Operator(op) => op,
         Period => Rc::new(".".to_string()),
+        Pipe => Rc::new("|".to_string()),
         _ => unreachable!(),
       };
       let rhs = self.precedence_expr(new_precedence)?;
