@@ -44,6 +44,10 @@ impl PrefixOp {
   pub fn is_prefix(op: &str) -> bool {
     PREFIX_OPS.get(op).is_some()
   }
+  pub fn get_type(&self) -> TypeResult<Type> {
+    let s = self.sigil.as_str();
+    PREFIX_OPS.get(s).map(|x| x.0.clone()).ok_or(format!("Prefix op {} not found", s))
+  }
 }
 lazy_static! {
   static ref PREFIX_OPS: HashMap<&'static str, (Type, ())> = 
@@ -51,7 +55,6 @@ lazy_static! {
       "+" => (Func(bx!(Const(Int)),  bx!(Const(Int))), ()),
       "-" => (Func(bx!(Const(Int)),  bx!(Const(Int))), ()),
       "!" => (Func(bx!(Const(Bool)),  bx!(Const(Bool))), ()),
-      "~" => (Func(bx!(Const(Int)),  bx!(Const(Int))), ()),
     };
 }
 
@@ -67,5 +70,8 @@ lazy_static! {
       "//" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20),
       "%" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20),
       "++" => (Func(bx!(Const(StringT)), bx!(Func(bx!(Const(StringT)), bx!(Const(StringT))))), (), 30),
+      "^" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20),
+      "&" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20),
+      "|" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20),
     };
 }

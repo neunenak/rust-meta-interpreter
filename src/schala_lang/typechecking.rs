@@ -110,6 +110,14 @@ impl TypeContext {
           other => return Err(format!("{:?} is not a binary function type", other))
         }
       },
+      &PrefixExp(ref op, ref expr) => match op.get_type()? {
+        Func(box t1, box t2) => {
+          let expr_ty = self.infer(expr)?;
+          self.unify(t1, expr_ty)?;
+          Ok(t2)
+        },
+        other => return Err(format!("{:?} is not a prefix op function type", other))
+      },
       /*
   PrefixExp(Operation, Box<Expression>),
   TupleLiteral(Vec<Expression>),

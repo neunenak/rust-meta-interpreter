@@ -190,6 +190,9 @@ impl<'a> State<'a> {
         UnsignedInt(l / r)
       },
       ("%", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l % r),
+      ("^", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l ^ r),
+      ("&", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l & r),
+      ("|", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l | r),
       _ => return Err(format!("Runtime error: not yet implemented")),
     })
   }
@@ -204,6 +207,8 @@ impl<'a> State<'a> {
       ("!", Bool(false)) => Bool(true),
       ("-", UnsignedInt(n)) => SignedInt(-1*(n as i64)),
       ("-", SignedInt(n)) => SignedInt(-1*(n as i64)),
+      ("+", SignedInt(n)) => SignedInt(n),
+      ("+", UnsignedInt(n)) => UnsignedInt(n),
       _ => return Err(format!("Runtime error: not yet implemented")),
     })
   }
