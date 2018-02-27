@@ -75,8 +75,10 @@ impl ProgrammingLanguageInterface for Schala {
       },
       Err(msg) => {
         output.add_artifact(TraceArtifact::new("type_check", msg));
+        /*
         output.add_output(format!("Type error"));
         return output;
+        */
       }
     }
 

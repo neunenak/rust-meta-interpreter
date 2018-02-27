@@ -167,11 +167,9 @@ impl<'a> State<'a> {
     use self::ValueEntry::*;
     match self.values.get(&name) {
       None => return Err(format!("Value {} not found", *name)),
-      Some(lookup) => {
-        match lookup {
-          &Binding { ref val } => Ok(val.clone()),
-          &Function { .. } =>  Ok(FullyEvaluatedExpr::FuncLit(name.clone()))
-        }
+      Some(lookup) => match lookup {
+        &Binding { ref val } => Ok(val.clone()),
+        &Function { .. } =>  Ok(FullyEvaluatedExpr::FuncLit(name.clone()))
       }
     }
   }
