@@ -8,11 +8,13 @@ pub struct State<'a> {
   values: HashMap<Rc<String>, ValueEntry>,
 }
 
+#[derive(Debug)]
 enum ValueEntry {
   Binding {
     val: FullyEvaluatedExpr,
   },
   Function {
+    param_names: Vec<Rc<String>>,
     body: Vec<Statement>,
   }
 }
@@ -92,7 +94,8 @@ impl<'a> State<'a> {
     match decl {
       FuncDecl(signature, statements) => {
         let name = signature.name;
-        self.values.insert(name, ValueEntry::Function { body: statements.clone() });
+        let param_names: Vec<Rc<String>> = signature.params.iter().map(|fp| fp.0.clone()).collect();
+        self.values.insert(name, ValueEntry::Function { body: statements.clone(), param_names });
       },
       TypeDecl(_name, body) => {
         for variant in body.0.iter() {
@@ -136,19 +139,32 @@ impl<'a> State<'a> {
         }
         Ok(Tuple(evals))
       }
-      Call { f, arguments } => self.eval_application(*f, arguments),
+      Call { f, arguments } => {
+        let mut evaled_arguments = Vec::new();
+        for arg in arguments.into_iter() {
+          evaled_arguments.push(self.eval_expr(arg)?);
+        }
+        self.eval_application(*f, evaled_arguments)
+      },
       x => Err(format!("Unimplemented thing {:?}", x)),
     }
   }
 
-  fn eval_application(&mut self, f: Expression, _arguments: Vec<Expression>) -> EvalResult<FullyEvaluatedExpr> {
+  fn eval_application(&mut self, f: Expression, arguments: Vec<FullyEvaluatedExpr>) -> EvalResult<FullyEvaluatedExpr> {
     use self::ExpressionType::*;
     match f {
       Expression(Value(identifier), _) => {
         match self.values.get(&identifier) {
-          Some(&ValueEntry::Function { ref body }) => {
+          Some(&ValueEntry::Function { ref body, ref param_names }) => {
             let mut new_state = State::new_with_parent(self);
             let sub_ast = body.clone();
+
+            if arguments.len() != param_names.len() {
+              return Err(format!("Wrong number of arguments for the function"));
+            }
+            for (param, val) in param_names.iter().zip(arguments.into_iter()) {
+              new_state.values.insert(param.clone(), ValueEntry::Binding { val });
+            }
 
             let mut ret: Option<FullyEvaluatedExpr> = None;
             for statement in sub_ast.into_iter() {
