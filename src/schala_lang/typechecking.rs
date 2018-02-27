@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use schala_lang::parsing;
 
 pub struct TypeContext { 
-  bindings: HashMap<Rc<String>, Type>
+  bindings: HashMap<Rc<String>, Type>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -53,9 +53,28 @@ impl TypeContext {
 }
 
 impl TypeContext {
-  pub fn add_top_level_types(&mut self, ast: &parsing::AST) {
+  pub fn add_top_level_types(&mut self, ast: &parsing::AST) -> TypeResult<()> {
+    use self::parsing::TypeName;
+    use self::parsing::Declaration::*;
+    use self::Type::*; use self::TConst::*;
+    for statement in ast.0.iter() {
+      if let &self::parsing::Statement::Declaration(ref decl) = statement {
+        match decl {
+          &FuncSig(ref signature) | &FuncDecl(ref signature, _) => {
+            //TODO this needs to be a type variable, not Void
+            let mut ty: Type = signature.type_anno.as_ref().map(|name: &TypeName| name.to_type()).unwrap_or(Ok(Void))?;
 
-
+            for &(_, ref type_name) in signature.params.iter() {
+              let arg_type = type_name.as_ref().map(|name| name.to_type()).unwrap_or(Ok(Void))?;
+              ty = Func(bx!(arg_type), bx!(ty));
+            }
+            self.bindings.insert(signature.name.clone(), ty);
+          },
+          _ => ()
+        }
+      }
+    }
+    Ok(())
   }
   pub fn debug_symbol_table(&self) -> String {
     format!("Symbols: {:?}", self.bindings)

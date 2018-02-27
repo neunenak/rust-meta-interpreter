@@ -69,7 +69,14 @@ impl ProgrammingLanguageInterface for Schala {
       }
     };
 
-    self.type_context.add_top_level_types(&ast);
+    match self.type_context.add_top_level_types(&ast) {
+      Ok(()) => (),
+      Err(msg) => {
+        output.add_artifact(TraceArtifact::new("type_check", msg));
+        //return output
+      }
+    };
+
     if options.debug_symbol_table {
       let text = self.type_context.debug_symbol_table();
       output.add_artifact(TraceArtifact::new("symbol_table", text));
