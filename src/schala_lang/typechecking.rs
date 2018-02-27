@@ -107,7 +107,7 @@ impl TypeContext {
             self.unify(t2, rhs_ty)?;
             Ok(t3)
           },
-          other => return Err(format!("{:?} is not a binary function type", other))
+          other => Err(format!("{:?} is not a binary function type", other))
         }
       },
       &PrefixExp(ref op, ref expr) => match op.get_type()? {
@@ -116,12 +116,16 @@ impl TypeContext {
           self.unify(t1, expr_ty)?;
           Ok(t2)
         },
-        other => return Err(format!("{:?} is not a prefix op function type", other))
+        other => Err(format!("{:?} is not a prefix op function type", other))
+      },
+      &Value(ref name) => {
+        match self.bindings.get(name) {
+          Some(ty) => Ok(ty.clone()),
+          None => Err(format!("No binding found for variable: {}", name)),
+        }
       },
       /*
-  PrefixExp(Operation, Box<Expression>),
   TupleLiteral(Vec<Expression>),
-  Value(Rc<String>, Vec<(Rc<String>, Expression)>),
   Call {
     f: Box<Expression>,
     arguments: Vec<Expression>,
