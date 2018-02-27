@@ -229,7 +229,11 @@ pub enum ExpressionType {
   BinExp(BinOp, Box<Expression>, Box<Expression>),
   PrefixExp(PrefixOp, Box<Expression>),
   TupleLiteral(Vec<Expression>),
-  Value(Rc<String>, Vec<(Rc<String>, Expression)>),
+  Value(Rc<String>),
+  NamedStruct {
+    name: Rc<String>,
+    fields: Vec<(Rc<String>, Expression)>,
+  },
   Call {
     f: Box<Expression>,
     arguments: Vec<Expression>,
@@ -603,22 +607,22 @@ impl Parser {
     Ok(match self.peek() {
       LCurlyBrace if !self.restrictions.no_struct_literal => {
         let fields = self.record_block()?;
-        Expression(Value(identifier, fields), None)
+        Expression(NamedStruct { name: identifier, fields }, None)
       },
       LParen => {
         let arguments = self.call_expr()?;
         //TODO make this be more general
-        let f = bx!(Expression(Value(identifier, vec![]), None));
+        let f = bx!(Expression(Value(identifier), None));
         Expression(Call { f, arguments }, None)
       },
       LSquareBracket => {
         let indexers = self.index_expr()?;
         Expression(Index {
-          indexee: bx!(Expression(Value(identifier, vec![]), None)),
+          indexee: bx!(Expression(Value(identifier), None)),
           indexers,
         }, None)
       }
-      _ => Expression(Value(identifier, vec![]), None)
+      _ => Expression(Value(identifier), None)
     })
   });
 
@@ -857,7 +861,7 @@ mod parse_tests {
     ($op:expr, $lhs:expr) => { PrefixExp(PrefixOp::from_sigil($op), bx!(Expression($lhs, None))) }
   }
   macro_rules! val {
-    ($var:expr) => { Value(Rc::new($var.to_string()), vec![]) }
+    ($var:expr) => { Value(Rc::new($var.to_string())) }
   }
   macro_rules! exprstatement {
     ($expr_type:expr) => { Statement::ExpressionStatement(Expression($expr_type, None)) };
@@ -938,7 +942,8 @@ mod parse_tests {
 
     parse_test!("None", AST(vec![exprstatement!(val!("None"))]));
     parse_test!("Pandas {  a: x + y }", AST(vec![
-      exprstatement!(Value(rc!(Pandas), vec![(rc!(a), ex!(binexp!("+", val!("x"), val!("y"))))]))]));
+      exprstatement!(NamedStruct { name: rc!(Pandas), fields: vec![(rc!(a), ex!(binexp!("+", val!("x"), val!("y"))))]})
+    ]));
   }
 
   #[test]
@@ -1035,8 +1040,8 @@ mod parse_tests {
     }"#,
     AST(vec![exprstatement!(IfExpression(bx!(ex!(BoolLiteral(true))),
       vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(IntLiteral(10)) }),
-           exprstatement!(Value(rc!(b), vec![]))],
-      Some(vec![exprstatement!(Value(rc!(c), vec![]))])))])
+           exprstatement!(val!(rc!(b)))],
+      Some(vec![exprstatement!(val!(rc!(c)))])))])
     );
 
     parse_test!("if a { b } else { c }", AST(vec![exprstatement!(
@@ -1045,7 +1050,7 @@ mod parse_tests {
             Some(vec![exprstatement!(val!("c"))])))]));
 
     parse_test!("if (A {a: 1}) { b } else { c }", AST(vec![exprstatement!(
-          IfExpression(bx!(ex!(Value(rc!(A), vec![(rc!(a), ex!(IntLiteral(1)))]))),
+          IfExpression(bx!(ex!(NamedStruct { name: rc!(A), fields: vec![(rc!(a), ex!(IntLiteral(1)))]})),
             vec![exprstatement!(val!("b"))],
             Some(vec![exprstatement!(val!("c"))])))]));
 

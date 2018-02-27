@@ -121,7 +121,7 @@ impl<'a> State<'a> {
       BoolLiteral(b) => Ok(Bool(b)),
       PrefixExp(op, expr) => self.eval_prefix_exp(op, expr),
       BinExp(op, lhs, rhs) => self.eval_binexp(op, lhs, rhs),
-      Value(name, _) => self.eval_value(name),
+      Value(name) => self.eval_value(name),
       TupleLiteral(expressions) => {
         let mut evals = Vec::new();
         for expr in expressions {
@@ -140,7 +140,7 @@ impl<'a> State<'a> {
   fn eval_application(&mut self, f: Expression, _arguments: Vec<Expression>) -> EvalResult<FullyEvaluatedExpr> {
     use self::ExpressionType::*;
     match f {
-      Expression(Value(identifier, _), _) => {
+      Expression(Value(identifier), _) => {
         match self.values.get(&identifier) {
           Some(&ValueEntry::Function { ref body }) => {
             let mut new_state = State::new_with_parent(self);
