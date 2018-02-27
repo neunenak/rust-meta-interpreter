@@ -125,7 +125,18 @@ impl TypeContext {
         }
       },
       &Call { ref f, ref arguments } => {
-        Err(format!("Function type not yet implemented"))
+        let mut tf = self.infer(f)?;
+        for arg in arguments.iter() {
+          match tf {
+            Func(box t, box rest) => {
+              let t_arg = self.infer(arg)?;
+              self.unify(t, t_arg)?;
+              tf = rest;
+            },
+            other => return Err(format!("Function call failed to unify; last type: {:?}", other)),
+          }
+        }
+        Ok(tf)
       },
       /*
   TupleLiteral(Vec<Expression>),
