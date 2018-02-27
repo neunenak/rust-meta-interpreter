@@ -104,6 +104,10 @@ impl<'a> State<'a> {
           };
         }
       },
+      Binding { name, constant, expr } => {
+        let val = self.eval_expr(expr)?;
+        self.values.insert(name.clone(), ValueEntry::Binding { val });
+      },
       _ => return Err(format!("Declaration evaluation not yet implemented"))
     }
     Ok(())
