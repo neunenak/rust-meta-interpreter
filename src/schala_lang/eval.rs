@@ -156,16 +156,14 @@ impl<'a> State<'a> {
       Expression(Value(identifier), _) => {
         match self.values.get(&identifier) {
           Some(&ValueEntry::Function { ref body, ref param_names }) => {
-            let mut new_state = State::new_with_parent(self);
-            let sub_ast = body.clone();
-
             if arguments.len() != param_names.len() {
               return Err(format!("Wrong number of arguments for the function"));
             }
+            let mut new_state = State::new_with_parent(self);
+            let sub_ast = body.clone();
             for (param, val) in param_names.iter().zip(arguments.into_iter()) {
               new_state.values.insert(param.clone(), ValueEntry::Binding { val });
             }
-
             let mut ret: Option<FullyEvaluatedExpr> = None;
             for statement in sub_ast.into_iter() {
               ret = new_state.eval_statement(statement)?;
