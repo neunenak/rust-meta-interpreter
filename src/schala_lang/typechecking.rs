@@ -50,6 +50,19 @@ impl TypeContext {
   pub fn new() -> TypeContext {
     TypeContext { bindings: HashMap::new() }
   }
+}
+
+impl TypeContext {
+  pub fn add_top_level_types(&mut self, ast: &parsing::AST) {
+
+
+  }
+  pub fn debug_symbol_table(&self) -> String {
+    format!("Symbols: {:?}", self.bindings)
+  }
+}
+
+impl TypeContext {
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<Type> {
     use self::Type::*; use self::TConst::*;
     let mut ret_type = Const(Unit);
