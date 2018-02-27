@@ -124,12 +124,11 @@ impl TypeContext {
           None => Err(format!("No binding found for variable: {}", name)),
         }
       },
+      &Call { ref f, ref arguments } => {
+        Err(format!("Function type not yet implemented"))
+      },
       /*
   TupleLiteral(Vec<Expression>),
-  Call {
-    f: Box<Expression>,
-    arguments: Vec<Expression>,
-  },
   Index {
     indexee: Box<Expression>,
     indexers: Vec<Expression>,
