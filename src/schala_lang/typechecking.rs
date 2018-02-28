@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use schala_lang::parsing;
 
 pub struct TypeContext { 
+  type_var_count: u64,
   bindings: HashMap<Rc<String>, Type>,
 }
 
@@ -11,6 +12,7 @@ pub struct TypeContext {
 pub enum Type {
   Const(TConst),
   Func(Box<Type>, Box<Type>),
+  TVar(u64),
   Void
 }
 
@@ -48,7 +50,12 @@ pub type TypeResult<T> = Result<T, String>;
 
 impl TypeContext {
   pub fn new() -> TypeContext {
-    TypeContext { bindings: HashMap::new() }
+    TypeContext { bindings: HashMap::new(), type_var_count: 0 }
+  }
+  pub fn fresh(&mut self) -> Type {
+    let ret = self.type_var_count;
+    self.type_var_count += 1;
+    Type::TVar(ret)
   }
 }
 
