@@ -3,7 +3,7 @@
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
 extern crate getopts;
-extern crate linefeed;
+extern crate rustyline;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
@@ -22,6 +22,9 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::process::exit;
 use std::default::Default;
+
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
 
 mod language;
 mod webapp;
@@ -112,26 +115,26 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
   }
 }
 
-type LineReader = linefeed::Reader<linefeed::terminal::DefaultTerminal>;
 struct Repl {
   options: EvalOptions,
   languages: Vec<Box<ProgrammingLanguageInterface>>,
   current_language_index: usize,
   interpreter_directive_sigil: char,
-  reader: LineReader,
+  console: rustyline::Editor<()>,
 }
 
 impl Repl {
   fn new(languages: Vec<Box<ProgrammingLanguageInterface>>, initial_index: usize) -> Repl {
-    let reader: linefeed::Reader<_> = linefeed::Reader::new("Metainterpreter").unwrap();
     let i = if initial_index < languages.len() { initial_index } else { 0 };
+
+    let console = Editor::<()>::new();
 
     Repl {
       options: Repl::get_options(),
       languages: languages,
       current_language_index: i,
       interpreter_directive_sigil: '.',
-      reader: reader,
+      console
     }
   }
 
@@ -162,23 +165,19 @@ impl Repl {
   }
 
   fn run(&mut self) {
-    use linefeed::ReadResult::*;
     println!("MetaInterpreter v 0.05");
 
     loop {
       let language_name = self.languages[self.current_language_index].get_language_name();
       let prompt_str = format!("{} >> ", language_name);
-      self.reader.set_prompt(&prompt_str);
 
-      match self.reader.read_line() {
+      match self.console.readline(&prompt_str) {
+        Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => break,
         Err(e) => {
           println!("Terminal read error: {}", e);
         },
-        Ok(Eof) => {
-          break;
-        }
-        Ok(Input(ref input)) => {
-          self.reader.add_history(input.clone());
+        Ok(ref input) => {
+          self.console.add_history_entry(input);
           if self.handle_interpreter_directive(input) {
             continue;
           }
@@ -221,11 +220,6 @@ impl Repl {
       "exit" | "quit"  => {
         self.save_options();
         exit(0)
-      },
-      "history"  => {
-        for item in self.reader.history() {
-          println!("{}", item);
-        }
       },
       "help" => {
         println!("Commands:");
