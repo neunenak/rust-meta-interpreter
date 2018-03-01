@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::collections::HashMap;
+use std::char;
 
 use schala_lang::parsing;
 
@@ -12,8 +13,25 @@ pub struct TypeContext {
 pub enum Type {
   Const(TConst),
   Func(Box<Type>, Box<Type>),
-  TVar(u64),
+  UVar(String),
+  EVar(u64),
   Void
+}
+
+#[derive(Default)]
+struct UVarGenerator {
+  n: u32,
+}
+impl UVarGenerator {
+  fn new() -> UVarGenerator {
+    UVarGenerator::default()
+  }
+  fn next(&mut self) -> Type {
+    //TODO handle this in the case where someone wants to make a function with more than 26 variables
+    let s = format!("{}", unsafe { char::from_u32_unchecked(self.n + ('a' as u32)) });
+    self.n += 1;
+    Type::UVar(s)
+  }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -55,7 +73,7 @@ impl TypeContext {
   pub fn fresh(&mut self) -> Type {
     let ret = self.type_var_count;
     self.type_var_count += 1;
-    Type::TVar(ret)
+    Type::EVar(ret)
   }
 }
 
@@ -68,11 +86,10 @@ impl TypeContext {
       if let &self::parsing::Statement::Declaration(ref decl) = statement {
         match decl {
           &FuncSig(ref signature) | &FuncDecl(ref signature, _) => {
-            //TODO this needs to be a type variable, not Void
-            let mut ty: Type = signature.type_anno.as_ref().map(|name: &TypeName| name.to_type()).unwrap_or(Ok(Void))?;
-
-            for &(_, ref type_name) in signature.params.iter() {
-              let arg_type = type_name.as_ref().map(|name| name.to_type()).unwrap_or(Ok(Void))?;
+            let mut uvar_gen = UVarGenerator::new();
+            let mut ty: Type = signature.type_anno.as_ref().map(|name: &TypeName| name.to_type()).unwrap_or_else(|| {Ok(uvar_gen.next())} )?;
+            for &(_, ref type_name) in signature.params.iter().rev() {
+              let arg_type = type_name.as_ref().map(|name| name.to_type()).unwrap_or_else(|| {Ok(uvar_gen.next())} )?;
               ty = Func(bx!(arg_type), bx!(ty));
             }
             self.bindings.insert(signature.name.clone(), ty);
