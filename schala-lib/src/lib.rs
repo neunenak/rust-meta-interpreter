@@ -167,6 +167,8 @@ impl Repl {
   fn run(&mut self) {
     println!("MetaInterpreter v 0.05");
 
+    self.console.get_history().load(".schala_history").unwrap_or(());
+
     loop {
       let language_name = self.languages[self.current_language_index].get_language_name();
       let prompt_str = format!("{} >> ", language_name);
@@ -187,6 +189,7 @@ impl Repl {
         _ => (),
       }
     }
+    self.console.get_history().save(".schala_history").unwrap_or(());
     self.save_options();
     println!("Exiting...");
   }
