@@ -135,7 +135,7 @@ impl Parser {
     self.tokens.peek().map(|ref t| { t.token_type.clone() }).unwrap_or(TokenType::EOF)
   }
   fn peek_with_token_offset(&mut self) -> Token {
-    self.tokens.peek().map(|t: &Token| { t.clone()}).unwrap_or(Token { token_type: TokenType::EOF, offset: 0})
+    self.tokens.peek().map(|t: &Token| { t.clone()}).unwrap_or(Token { token_type: TokenType::EOF, offset: (0,0)})
   }
   fn next(&mut self) -> TokenType {
     self.tokens.next().map(|ref t| { t.token_type.clone() }).unwrap_or(TokenType::EOF)

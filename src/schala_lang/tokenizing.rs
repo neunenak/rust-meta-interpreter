@@ -70,7 +70,7 @@ lazy_static! {
 #[derive(Debug, Clone)]
 pub struct Token {
   pub token_type: TokenType,
-  pub offset: usize,
+  pub offset: (usize, usize),
 }
 
 impl Token {
@@ -104,7 +104,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 
   //let mut input: CharIter = input.chars().enumerate().peekable();
 
-  while let Some((_, idx, c)) = input.next() {
+  while let Some((line_idx, ch_idx, c)) = input.next() {
     let cur_tok_type = match c {
       '#' => {
         if let Some(&(_, _, '{')) = input.peek() {
@@ -129,7 +129,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
       c if is_operator(&c) => handle_operator(c, &mut input),
       unknown => Error(format!("Unexpected character: {}", unknown)),
     };
-    tokens.push(Token { token_type: cur_tok_type, offset: idx });
+    tokens.push(Token { token_type: cur_tok_type, offset: (line_idx, ch_idx) });
   }
   tokens
 }
