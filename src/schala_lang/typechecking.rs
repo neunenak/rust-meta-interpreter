@@ -1,6 +1,8 @@
 use std::rc::Rc;
 use std::collections::HashMap;
 use std::char;
+use std::fmt;
+use std::fmt::Write;
 
 use schala_lang::parsing;
 
@@ -16,6 +18,19 @@ pub enum Type {
   UVar(String),
   EVar(u64),
   Void
+}
+
+impl fmt::Display for Type {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    use self::Type::*;
+    match self {
+      &Const(ref c) => write!(f, "{:?}", c),
+      &Func(ref a, ref b) => write!(f, "{} -> {}", a, b),
+      &UVar(ref s) => write!(f, "{}_u", s),
+      &EVar(ref n) => write!(f, "{}_e", n),
+      &Void => write!(f, "Void")
+    }
+  }
 }
 
 #[derive(Default)]
@@ -101,7 +116,11 @@ impl TypeContext {
     Ok(())
   }
   pub fn debug_symbol_table(&self) -> String {
-    format!("Symbols: {:?}", self.bindings)
+    let mut output = format!("Symbols\n");
+    for (sym, ty) in &self.bindings {
+      write!(output, "{} : {}\n", sym, ty);
+    }
+    output
   }
 }
 
