@@ -87,37 +87,29 @@ fn is_operator(c: &char) -> bool {
   OPERATOR_CHARS.iter().any(|x| x == c)
 }
 
-type CharIter<'a> = Peekable<Enumerate<Chars<'a>>>;
-
-struct LineCharIter<'a> { source: &'a str }
-impl<'a> Iterator for LineCharIter<'a> {
-  type Item = (usize, usize, char);
-  fn next(&mut self) -> Option<Self::Item> {
-    None
-  }
-}
+type CharIter<I: Iterator<Item=(usize,usize,char)>> = Peekable<I>;
 
 pub fn tokenize(input: &str) -> Vec<Token> {
   let mut tokens: Vec<Token> = Vec::new();
 
-  let b = input.clone();
+  //let b = input.clone();
 
   //ound type `std::iter::Peekable<std::iter::FlatMap<std::iter::Enumerate<std::str::Lines<'_>>, std::iter::Map<std::iter::Enumerate<std::str::Chars<'_>>, [closure@src/schala_lang
 //               tokenizing.rs:99:40: 99:82 line_idx:_]>, [closure@src/schala_lang/tokenizing.rs:98:17: 100:8]>>`
 
-  let mut input2  = b.lines().enumerate()
+  let mut input  = input.lines().enumerate()
       .flat_map(|(line_idx, ref line)| {
           line.chars().enumerate().map(move |(ch_idx, ch)| (line_idx, ch_idx, ch))
       }).peekable();
 
-  let mut input: CharIter = input.chars().enumerate().peekable();
+  //let mut input: CharIter = input.chars().enumerate().peekable();
 
-  while let Some((idx, c)) = input.next() {
+  while let Some((_, idx, c)) = input.next() {
     let cur_tok_type = match c {
       '#' => {
-        if let Some(&(_, '{')) = input.peek() {
+        if let Some(&(_, _, '{')) = input.peek() {
         } else {
-          while let Some((_, c)) = input.next() {
+          while let Some((_, _, c)) = input.next() {
             if c == '\n' {
               break;
             }
@@ -142,28 +134,28 @@ pub fn tokenize(input: &str) -> Vec<Token> {
   tokens
 }
 
-fn handle_digit(c: char, input: &mut CharIter) -> TokenType {
-  if c == '0' && input.peek().map_or(false, |&(_, c)| { c == 'x' }) {
+fn handle_digit<I: Iterator<Item=(usize,usize,char)>>(c: char, input: &mut CharIter<I>) -> TokenType {
+  if c == '0' && input.peek().map_or(false, |&(_, _, c)| { c == 'x' }) {
     input.next();
-    let rest: String = input.peeking_take_while(|&(_, ref c)| c.is_digit(16) || *c == '_').map(|(_, c)| { c }).collect();
+    let rest: String = input.peeking_take_while(|&(_, _, ref c)| c.is_digit(16) || *c == '_').map(|(_, _, c)| { c }).collect();
     HexLiteral(Rc::new(rest))
-  } else if c == '0' && input.peek().map_or(false, |&(_, c)| { c == 'b' }) {
+  } else if c == '0' && input.peek().map_or(false, |&(_, _, c)| { c == 'b' }) {
     input.next();
     BinNumberSigil
   } else {
     let mut buf = c.to_string();
-    buf.extend(input.peeking_take_while(|&(_, ref c)| c.is_digit(10)).map(|(_, c)| { c }));
+    buf.extend(input.peeking_take_while(|&(_, _, ref c)| c.is_digit(10)).map(|(_, _, c)| { c }));
     DigitGroup(Rc::new(buf))
   }
 }
 
-fn handle_quote(input: &mut CharIter) -> TokenType {
+fn handle_quote<I: Iterator<Item=(usize,usize,char)>>(input: &mut CharIter<I>) -> TokenType {
   let mut buf = String::new();
   loop {
-    match input.next().map(|(_, c)| { c }) {
+    match input.next().map(|(_, _, c)| { c }) {
       Some('"') => break,
       Some('\\') => {
-        let next = input.peek().map(|&(_, c)| { c });
+        let next = input.peek().map(|&(_, _, c)| { c });
         if next == Some('n') {
           input.next();
           buf.push('\n')
@@ -182,15 +174,15 @@ fn handle_quote(input: &mut CharIter) -> TokenType {
   TokenType::StrLiteral(Rc::new(buf))
 }
 
-fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
+fn handle_alphabetic<I: Iterator<Item=(usize,usize,char)>>(c: char, input: &mut CharIter<I>) -> TokenType {
   let mut buf = String::new();
   buf.push(c);
-  if c == '_' && input.peek().map(|&(_, c)| { !c.is_alphabetic() }).unwrap_or(true) {
+  if c == '_' && input.peek().map(|&(_, _, c)| { !c.is_alphabetic() }).unwrap_or(true) {
     return TokenType::Underscore
   }
 
   loop {
-    match input.peek().map(|&(_, c)| { c }) {
+    match input.peek().map(|&(_, _, c)| { c }) {
       Some(c) if c.is_alphanumeric() => {
         input.next();
         buf.push(c);
@@ -205,10 +197,10 @@ fn handle_alphabetic(c: char, input: &mut CharIter) -> TokenType {
   }
 }
 
-fn handle_operator(c: char, input: &mut CharIter) -> TokenType {
+fn handle_operator<I: Iterator<Item=(usize,usize,char)>>(c: char, input: &mut CharIter<I>) -> TokenType {
   match c {
     '<' | '>' | '|' | '.' => {
-      let ref next = input.peek().map(|&(_, c)| { c });
+      let ref next = input.peek().map(|&(_, _, c)| { c });
       if !next.map(|n| { is_operator(&n) }).unwrap_or(false) {
         return match c {
           '<' => LAngleBracket,
@@ -225,7 +217,7 @@ fn handle_operator(c: char, input: &mut CharIter) -> TokenType {
   let mut buf = String::new();
   buf.push(c);
   loop {
-    match input.peek().map(|&(_, c)| { c }) {
+    match input.peek().map(|&(_, _, c)| { c }) {
       Some(c) if is_operator(&c) => {
         input.next();
         buf.push(c);
