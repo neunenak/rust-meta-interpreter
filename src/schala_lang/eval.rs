@@ -8,6 +8,20 @@ pub struct State<'a> {
   values: HashMap<Rc<String>, ValueEntry>,
 }
 
+impl<'a> State<'a> {
+
+  fn insert(&mut self, name: Rc<String>, value: ValueEntry) {
+    self.values.insert(name, value);
+  }
+  fn lookup(&self, name: &Rc<String>) -> Option<&ValueEntry> {
+    match (self.values.get(name), self.parent_frame) {
+      (None, None) => None,
+      (None, Some(parent)) => parent.lookup(name),
+      (Some(value), _) => Some(value),
+    }
+  }
+}
+
 #[derive(Debug)]
 enum ValueEntry {
   Binding {
@@ -95,12 +109,12 @@ impl<'a> State<'a> {
       FuncDecl(signature, statements) => {
         let name = signature.name;
         let param_names: Vec<Rc<String>> = signature.params.iter().map(|fp| fp.0.clone()).collect();
-        self.values.insert(name, ValueEntry::Function { body: statements.clone(), param_names });
+        self.insert(name, ValueEntry::Function { body: statements.clone(), param_names });
       },
       TypeDecl(_name, body) => {
         for variant in body.0.iter() {
           match variant {
-            &UnitStruct(ref name) => self.values.insert(name.clone(),
+            &UnitStruct(ref name) => self.insert(name.clone(),
               ValueEntry::Binding { val: FullyEvaluatedExpr::Custom { string_rep: name.clone() } }),
             &TupleStruct(ref _name, ref _args) =>  unimplemented!(),
             &Record(ref _name, ref _fields) => unimplemented!(),
@@ -109,7 +123,7 @@ impl<'a> State<'a> {
       },
       Binding { name, constant, expr } => {
         let val = self.eval_expr(expr)?;
-        self.values.insert(name.clone(), ValueEntry::Binding { val });
+        self.insert(name.clone(), ValueEntry::Binding { val });
       },
       _ => return Err(format!("Declaration evaluation not yet implemented"))
     }
@@ -154,7 +168,7 @@ impl<'a> State<'a> {
     use self::ExpressionType::*;
     match f {
       Expression(Value(identifier), _) => {
-        match self.values.get(&identifier) {
+        match self.lookup(&identifier) {
           Some(&ValueEntry::Function { ref body, ref param_names }) => {
             if arguments.len() != param_names.len() {
               return Err(format!("Wrong number of arguments for the function"));
@@ -162,7 +176,7 @@ impl<'a> State<'a> {
             let mut new_state = State::new_with_parent(self);
             let sub_ast = body.clone();
             for (param, val) in param_names.iter().zip(arguments.into_iter()) {
-              new_state.values.insert(param.clone(), ValueEntry::Binding { val });
+              new_state.insert(param.clone(), ValueEntry::Binding { val });
             }
             let mut ret: Option<FullyEvaluatedExpr> = None;
             for statement in sub_ast.into_iter() {
@@ -179,7 +193,7 @@ impl<'a> State<'a> {
 
   fn eval_value(&mut self, name: Rc<String>) -> EvalResult<FullyEvaluatedExpr> {
     use self::ValueEntry::*;
-    match self.values.get(&name) {
+    match self.lookup(&name) {
       None => return Err(format!("Value {} not found", *name)),
       Some(lookup) => match lookup {
         &Binding { ref val } => Ok(val.clone()),
