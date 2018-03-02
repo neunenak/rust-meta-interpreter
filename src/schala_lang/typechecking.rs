@@ -134,8 +134,6 @@ impl TypeContext {
     Ok(ret_type)
   }
   fn type_check_statement(&mut self, statement: &parsing::Statement) -> TypeResult<Type> {
-    println!("statement should be: {:?}", statement);
-
     use self::parsing::Statement::*;
     match statement {
       &ExpressionStatement(ref expr) => self.infer(expr),
