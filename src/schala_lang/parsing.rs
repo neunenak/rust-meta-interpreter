@@ -134,7 +134,9 @@ impl Parser {
   fn peek(&mut self) -> TokenType {
     self.tokens.peek().map(|ref t| { t.token_type.clone() }).unwrap_or(TokenType::EOF)
   }
-
+  fn peek_with_token_offset(&mut self) -> Token {
+    self.tokens.peek().map(|t: &Token| { t.clone()}).unwrap_or(Token { token_type: TokenType::EOF, offset: 0})
+  }
   fn next(&mut self) -> TokenType {
     self.tokens.next().map(|ref t| { t.token_type.clone() }).unwrap_or(TokenType::EOF)
   }
@@ -259,7 +261,7 @@ pub struct Pattern(Rc<String>);
 macro_rules! parse_method {
   ($name:ident(&mut $self:ident) -> $type:ty $body:block) => {
     fn $name(&mut $self) -> $type {
-      let next_token = $self.peek();
+      let next_token = $self.peek_with_token_offset();
       let record = ParseRecord {
         production_name: stringify!($name).to_string(),
         next_token: format!("{:?}", next_token),
@@ -405,7 +407,7 @@ impl Parser {
   parse_method!(func_declaration(&mut self) -> ParseResult<Declaration> {
     let signature = self.signature()?;
     if let LCurlyBrace = self.peek() {
-      let statements = delimited!(self, LCurlyBrace, '{', statement, Newline | Semicolon, RCurlyBrace, '}');
+      let statements = delimited!(self, LCurlyBrace, '{', statement, Newline | Semicolon, RCurlyBrace, '}', nonstrict);
       Ok(Declaration::FuncDecl(signature, statements))
     } else {
       Ok(Declaration::FuncSig(signature))
@@ -980,6 +982,9 @@ mod parse_tests {
 
 
     parse_test!("fn a(x) { x() }", AST(vec![Declaration(
+      FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
+        vec![exprstatement!(Call { f: bx!(ex!(val!("x"))), arguments: vec![] })]))]));
+    parse_test!("fn a(x) {\n x() }", AST(vec![Declaration(
       FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
         vec![exprstatement!(Call { f: bx!(ex!(val!("x"))), arguments: vec![] })]))]));
   }

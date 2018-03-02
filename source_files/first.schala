@@ -1,2 +1,8 @@
+fn main() {
+  const a = 10
+  const b = 20
+  a + b
+}
 
-1 + 2
+main()
+
