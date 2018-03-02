@@ -1,8 +1,8 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::iter::{Enumerate, Peekable};
-use std::str::Chars;
+use std::iter::{Iterator, Enumerate, Peekable, FlatMap};
+use std::str::{Lines, Chars};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
@@ -89,8 +89,27 @@ fn is_operator(c: &char) -> bool {
 
 type CharIter<'a> = Peekable<Enumerate<Chars<'a>>>;
 
+struct LineCharIter<'a> { source: &'a str }
+impl<'a> Iterator for LineCharIter<'a> {
+  type Item = (usize, usize, char);
+  fn next(&mut self) -> Option<Self::Item> {
+    None
+  }
+}
+
 pub fn tokenize(input: &str) -> Vec<Token> {
   let mut tokens: Vec<Token> = Vec::new();
+
+  let b = input.clone();
+
+  //ound type `std::iter::Peekable<std::iter::FlatMap<std::iter::Enumerate<std::str::Lines<'_>>, std::iter::Map<std::iter::Enumerate<std::str::Chars<'_>>, [closure@src/schala_lang
+//               tokenizing.rs:99:40: 99:82 line_idx:_]>, [closure@src/schala_lang/tokenizing.rs:98:17: 100:8]>>`
+
+  let mut input2  = b.lines().enumerate()
+      .flat_map(|(line_idx, ref line)| {
+          line.chars().enumerate().map(move |(ch_idx, ch)| (line_idx, ch_idx, ch))
+      }).peekable();
+
   let mut input: CharIter = input.chars().enumerate().peekable();
 
   while let Some((idx, c)) = input.next() {
