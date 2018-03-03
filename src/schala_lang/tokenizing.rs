@@ -1,10 +1,8 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::iter::{Iterator, Enumerate, Peekable, FlatMap};
-use std::str::{Lines, Chars};
+use std::iter::{Iterator, Peekable};
 use std::fmt;
-use std::fmt::Write;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
@@ -95,9 +93,6 @@ impl Token {
       TokenType::Error(ref s) => Some(s),
       _ => None,
     }
-  }
-  pub fn to_string(&self) -> String {
-    format!("{}", self.token_type)
   }
   pub fn to_string_with_metadata(&self) -> String {
     format!("{}(L:{},c:{})", self.token_type, self.offset.0, self.offset.1)

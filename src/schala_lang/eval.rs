@@ -121,7 +121,7 @@ impl<'a> State<'a> {
           };
         }
       },
-      Binding { name, constant, expr } => {
+      Binding { name, expr, ..} => {
         let val = self.eval_expr(expr)?;
         self.insert(name.clone(), ValueEntry::Binding { val });
       },
