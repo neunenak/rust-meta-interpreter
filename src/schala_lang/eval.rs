@@ -167,6 +167,7 @@ impl<'a> State<'a> {
   fn eval_application(&mut self, f: Expression, arguments: Vec<FullyEvaluatedExpr>) -> EvalResult<FullyEvaluatedExpr> {
     use self::ExpressionType::*;
     match f {
+      Expression(Value(ref identifier), _) if self.is_builtin(identifier) =>  self.eval_builtin(identifier, arguments),
       Expression(Value(identifier), _) => {
         match self.lookup(&identifier) {
           Some(&ValueEntry::Function { ref body, ref param_names }) => {
@@ -190,7 +191,30 @@ impl<'a> State<'a> {
       x => Err(format!("Trying to apply {:?} which is not a function", x)),
     }
   }
-
+  fn is_builtin(&self, name: &Rc<String>) -> bool {
+    match &name.as_ref()[..] {
+      "print" | "println" => true,
+      _ => false
+    }
+  }
+  fn eval_builtin(&mut self, name: &Rc<String>, args: Vec<FullyEvaluatedExpr>) -> EvalResult<FullyEvaluatedExpr> {
+    use self::FullyEvaluatedExpr::*;
+    match &name.as_ref()[..] {
+      "print" => {
+        for arg in args {
+          print!("{}", arg.to_string());
+        }
+        Ok(Tuple(vec![]))
+      },
+      "println" => {
+        for arg in args {
+          println!("{}", arg.to_string());
+        }
+        Ok(Tuple(vec![]))
+      },
+      _ => unreachable!()
+    }
+  }
   fn eval_value(&mut self, name: Rc<String>) -> EvalResult<FullyEvaluatedExpr> {
     use self::ValueEntry::*;
     match self.lookup(&name) {

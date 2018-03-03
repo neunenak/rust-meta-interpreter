@@ -110,8 +110,7 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
       compilation_sequence(llvm_bytecode, filename);
     }
   } else {
-    let interpretor_output = language.evaluate_in_repl(&buffer, &options);
-    interpretor_output.print_to_screen();
+    language.evaluate_in_repl(&buffer, &options);
   }
 }
 

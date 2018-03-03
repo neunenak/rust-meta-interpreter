@@ -4,5 +4,5 @@ fn main() {
   a + b
 }
 
-main()
+print(main())
 
