@@ -96,7 +96,7 @@ impl TypeContext {
   pub fn add_top_level_types(&mut self, ast: &parsing::AST) -> TypeResult<()> {
     use self::parsing::TypeName;
     use self::parsing::Declaration::*;
-    use self::Type::*; use self::TConst::*;
+    use self::Type::*;
     for statement in ast.0.iter() {
       if let &self::parsing::Statement::Declaration(ref decl) = statement {
         match decl {
