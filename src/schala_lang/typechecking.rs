@@ -224,8 +224,14 @@ impl TypeContext {
         }
         Ok(tf)
       },
+      &TupleLiteral(ref expressions) => {
+        let mut types = vec![];
+        for expr in expressions {
+          types.push(self.infer(expr)?);
+        }
+        Ok(Sum(types))
+      },
       /*
-  TupleLiteral(Vec<Expression>),
   Index {
     indexee: Box<Expression>,
     indexers: Vec<Expression>,
