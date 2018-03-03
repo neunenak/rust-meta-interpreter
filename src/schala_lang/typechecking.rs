@@ -4,6 +4,8 @@ use std::char;
 use std::fmt;
 use std::fmt::Write;
 
+use itertools::Itertools;
+
 use schala_lang::parsing;
 
 pub struct TypeContext { 
@@ -14,6 +16,7 @@ pub struct TypeContext {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
   Const(TConst),
+  Sum(Vec<Type>),
   Func(Box<Type>, Box<Type>),
   UVar(String),
   EVar(u64),
@@ -25,6 +28,16 @@ impl fmt::Display for Type {
     use self::Type::*;
     match self {
       &Const(ref c) => write!(f, "{:?}", c),
+      &Sum(ref types) => {
+        write!(f, "(")?;
+        for item in types.iter().map(|ty| Some(ty)).intersperse(None) {
+          match item {
+            Some(ty) => write!(f, "{}", ty)?,
+            None => write!(f, ",")?,
+          };
+        }
+        write!(f, ")")
+      },
       &Func(ref a, ref b) => write!(f, "{} -> {}", a, b),
       &UVar(ref s) => write!(f, "{}_u", s),
       &EVar(ref n) => write!(f, "{}_e", n),
