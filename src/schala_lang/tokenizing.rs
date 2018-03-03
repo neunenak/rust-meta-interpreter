@@ -92,17 +92,10 @@ type CharIter<I: Iterator<Item=(usize,usize,char)>> = Peekable<I>;
 pub fn tokenize(input: &str) -> Vec<Token> {
   let mut tokens: Vec<Token> = Vec::new();
 
-  //let b = input.clone();
-
-  //ound type `std::iter::Peekable<std::iter::FlatMap<std::iter::Enumerate<std::str::Lines<'_>>, std::iter::Map<std::iter::Enumerate<std::str::Chars<'_>>, [closure@src/schala_lang
-//               tokenizing.rs:99:40: 99:82 line_idx:_]>, [closure@src/schala_lang/tokenizing.rs:98:17: 100:8]>>`
-
   let mut input  = input.lines().enumerate()
       .flat_map(|(line_idx, ref line)| {
           line.chars().enumerate().map(move |(ch_idx, ch)| (line_idx, ch_idx, ch))
       }).peekable();
-
-  //let mut input: CharIter = input.chars().enumerate().peekable();
 
   while let Some((line_idx, ch_idx, c)) = input.next() {
     let cur_tok_type = match c {
