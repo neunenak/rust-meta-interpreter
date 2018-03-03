@@ -1,7 +1,11 @@
-use schala_lang::parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType};
-use schala_lang::builtin::{BinOp, PrefixOp};
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::fmt::Write;
+
+use itertools::Itertools;
+
+use schala_lang::parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType};
+use schala_lang::builtin::{BinOp, PrefixOp};
 
 pub struct State<'a> {
   parent_frame: Option<&'a State<'a>>,
@@ -59,7 +63,18 @@ impl FullyEvaluatedExpr {
       &Str(ref s) => format!("\"{}\"", s),
       &Bool(ref b) => format!("{}", b),
       &Custom { ref string_rep } => format!("{}", string_rep),
-      &Tuple(ref _items) => format!("(tuple to be defined later)"),
+      &Tuple(ref items) => {
+        let mut buf = String::new();
+        write!(buf, "(").unwrap();
+        for term in items.iter().map(|e| Some(e)).intersperse(None) {
+          match term {
+            Some(e) => write!(buf, "{}", e.to_string()).unwrap(),
+            None => write!(buf, ", ").unwrap(),
+          };
+        }
+        write!(buf, ")").unwrap();
+        buf
+      },
       &FuncLit(ref name) => format!("<function {}>", name),
     }
   }
