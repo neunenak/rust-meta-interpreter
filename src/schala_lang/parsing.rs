@@ -264,7 +264,7 @@ macro_rules! parse_method {
       let next_token = $self.peek_with_token_offset();
       let record = ParseRecord {
         production_name: stringify!($name).to_string(),
-        next_token: format!("{:?}", next_token),
+        next_token: format!("{}", next_token.to_string_with_metadata()),
         level: $self.parse_level,
       };
       $self.parse_level += 1;
@@ -525,10 +525,9 @@ impl Parser {
 
   // this implements Pratt parsing, see http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
   fn precedence_expr(&mut self, precedence: i32) -> ParseResult<Expression> {
-    let next_token = self.peek();
     let record = ParseRecord {
       production_name: "precedence_expr".to_string(),
-      next_token: format!("{:?}", next_token),
+      next_token: format!("{}", self.peek_with_token_offset().to_string_with_metadata()),
       level: self.parse_level,
     };
     self.parse_level += 1;
@@ -830,7 +829,7 @@ pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, Vec<String>) {
     for _ in 0..r.level {
       indent.push(' ');
     }
-    format!("{}Production `{}`, token: {:?}", indent, r.production_name, r.next_token)
+    format!("{}Production `{}`, token: {}", indent, r.production_name, r.next_token)
   }).collect();
   (ast, trace)
 }

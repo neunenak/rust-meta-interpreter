@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::iter::{Iterator, Enumerate, Peekable, FlatMap};
 use std::str::{Lines, Chars};
+use std::fmt;
+use std::fmt::Write;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
@@ -27,6 +29,20 @@ pub enum TokenType {
   Error(String),
 }
 use self::TokenType::*;
+
+impl fmt::Display for TokenType {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    match self {
+      &Operator(ref s) => write!(f, "Operator({})", **s),
+      &DigitGroup(ref s) => write!(f, "DigitGroup({})", s),
+      &HexLiteral(ref s) => write!(f, "HexLiteral({})", s),
+      &StrLiteral(ref s) => write!(f, "StrLiteral({})", s),
+      &Identifier(ref s) => write!(f, "Identifier({})", s),
+      &Error(ref s) => write!(f, "Error({})", s),
+      other => write!(f, "{:?}", other),
+    }
+  }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Kw {
@@ -79,6 +95,12 @@ impl Token {
       TokenType::Error(ref s) => Some(s),
       _ => None,
     }
+  }
+  pub fn to_string(&self) -> String {
+    format!("{}", self.token_type)
+  }
+  pub fn to_string_with_metadata(&self) -> String {
+    format!("{}(L:{},c:{})", self.token_type, self.offset.0, self.offset.1)
   }
 }
 

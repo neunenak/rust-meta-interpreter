@@ -118,7 +118,7 @@ impl TypeContext {
   pub fn debug_symbol_table(&self) -> String {
     let mut output = format!("Symbols\n");
     for (sym, ty) in &self.bindings {
-      write!(output, "{} : {}\n", sym, ty);
+      write!(output, "{} : {}\n", sym, ty).unwrap();
     }
     output
   }
