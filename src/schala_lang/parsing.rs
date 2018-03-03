@@ -305,7 +305,8 @@ macro_rules! delimited {
         acc.push($self.$parse_fn()?);
         match $self.peek() {
           $( $delim )|* => { $self.next(); continue },
-          _ => break
+          _ if $strictness => break,
+          _ => continue,
         };
       }
       expect!($self, $end, $end_str);
@@ -986,6 +987,26 @@ mod parse_tests {
     parse_test!("fn a(x) {\n x() }", AST(vec![Declaration(
       FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
         vec![exprstatement!(Call { f: bx!(ex!(val!("x"))), arguments: vec![] })]))]));
+
+    let multiline = r#"
+fn a(x) {
+  x()
+}
+"#;
+    parse_test!(multiline, AST(vec![Declaration(
+      FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
+        vec![exprstatement!(Call { f: bx!(ex!(val!("x"))), arguments: vec![] })]))]));
+    let multiline2 = r#"
+fn a(x) {
+
+  x()
+
+}
+"#;
+    parse_test!(multiline2, AST(vec![Declaration(
+      FuncDecl(Signature { name: rc!(a), params: vec![(rc!(x),None)], type_anno: None },
+        vec![exprstatement!(Call { f: bx!(ex!(val!("x"))), arguments: vec![] })]))]));
+
   }
 
   #[test]
