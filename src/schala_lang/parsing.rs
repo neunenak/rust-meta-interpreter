@@ -54,7 +54,9 @@ expression := precedence_expr type_anno+
 precedence_expr := prefix_expr
 prefix_expr := prefix_op primary
 prefix_op := '+' | '-' | '!' | '~'
-primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_expr
+primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_expr | curly_brace_expr
+curly_brace_expr := lambda_expr | anonymous_struct //TODO
+lambda_expr := '{' '|' (formal_param ',')* '|' (type_anno)* (statement)* '}'
 paren_expr := LParen paren_inner RParen
 paren_inner := (expression ',')*
 identifier_expr := named_struct | call_expr | index_expr | IDENTIFIER
@@ -63,6 +65,7 @@ literal := 'true' | 'false' | number_literal | STR_LITERAL
 named_struct := IDENTIFIER record_block
 record_block :=  '{' (record_entry, ',')* | '}' //TODO support anonymus structs, update syntax
 record_entry := IDENTIFIER ':' expression
+anonymous_struct := TODO
 
 if_expr := 'if' expression block else_clause
 else_clause := ε | 'else' block
@@ -246,7 +249,11 @@ pub enum ExpressionType {
   },
   IfExpression(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
   MatchExpression(Box<Expression>, Vec<MatchArm>),
-  ForExpression
+  ForExpression,
+  Lambda {
+    params: Vec<FormalParam>,
+    body: Vec<Statement>,
+  },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -578,6 +585,7 @@ impl Parser {
 
   parse_method!(primary(&mut self) -> ParseResult<Expression> {
     match self.peek() {
+      LCurlyBrace => self.curly_brace_expr(),
       LParen => self.paren_expr(),
       Keyword(Kw::If) => self.if_expr(),
       Keyword(Kw::Match) => self.match_expr(),
@@ -585,6 +593,28 @@ impl Parser {
       Identifier(_) => self.identifier_expr(),
       _ => self.literal(),
     }
+  });
+
+  parse_method!(curly_brace_expr(&mut self) -> ParseResult<Expression> {
+    self.lambda_expr()
+  });
+
+  parse_method!(lambda_expr(&mut self) -> ParseResult<Expression> {
+    expect!(self, LCurlyBrace, "{");
+    let params = delimited!(self, Pipe, '|', formal_param, Comma, Pipe, '|');
+    let mut body = Vec::new();
+    loop {
+      match self.peek() {
+        EOF | RCurlyBrace => break,
+        Newline | Semicolon => {
+          self.next();
+          continue;
+        },
+        _ => body.push(self.statement()?),
+      }
+    }
+    expect!(self, RCurlyBrace, "}");
+    Ok(Expression(ExpressionType::Lambda { params, body }, None)) //TODO need to handle types somehow
   });
 
   parse_method!(paren_expr(&mut self) -> ParseResult<Expression> {
@@ -1148,5 +1178,19 @@ fn a(x) {
         vec![ty!("Int"), Singleton(TypeSingletonName {
           name: rc!(Yolo), params: vec![ty!("a")]
         })]))]));
+  }
+
+  #[test]
+  fn parsing_lambdas() {
+    parse_test!("{|x| x + 1}", AST(vec![
+      exprstatement!(Lambda { params: vec![(rc!(x), None)], body: vec![exprstatement!(binexp!("+", val!("x"), IntLiteral(1)))]})
+    ]));
+
+    parse_test!("{      |x: Int, y| a;b;c;}", AST(vec![
+      exprstatement!(Lambda {
+        params: vec![(rc!(x), Some(ty!("Int"))), (rc!(y), None)],
+        body: vec![exprstatement!(val!("a")), exprstatement!(val!("b")), exprstatement!(val!("c"))]
+      })
+    ]));
   }
 }

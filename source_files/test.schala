@@ -96,3 +96,10 @@ fn main() {
  }
 
 }
+
+
+# lambdas
+#
+|x,y| { }() #is probably fine
+const a = |x: Type, y|: RetType { <statementblock> }
+const a: X -> Y -> Z = |x,y| { }
