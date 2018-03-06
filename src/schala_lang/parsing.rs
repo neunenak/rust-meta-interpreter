@@ -1192,5 +1192,10 @@ fn a(x) {
         body: vec![exprstatement!(val!("a")), exprstatement!(val!("b")), exprstatement!(val!("c"))]
       })
     ]));
+
+    parse_test!("{|x| y}(1)", AST(vec![
+      exprstatement!(Call { f: bx!(ex!(
+        Lambda { params: vec![(rc!(x), None)], body: vec![exprstatement!(val!("y"))] })),
+        arguments: vec![ex!(IntLiteral(1))] })]));
   }
 }
