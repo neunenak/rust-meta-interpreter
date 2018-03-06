@@ -54,13 +54,14 @@ expression := precedence_expr type_anno+
 precedence_expr := prefix_expr
 prefix_expr := prefix_op call_expr
 prefix_op := '+' | '-' | '!' | '~'
-call_expr := primary ( '(' expr_list ')' )*
+call_expr := index_expr ( '(' expr_list ')' )*
+index_expr := primary ( '[' (expression (',' (expression)* | ε) ']' )*
 primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_expr | curly_brace_expr
 curly_brace_expr := lambda_expr | anonymous_struct //TODO
 lambda_expr := '{' '|' (formal_param ',')* '|' (type_anno)* (statement)* '}'
 paren_expr := LParen paren_inner RParen
 paren_inner := (expression ',')*
-identifier_expr := named_struct | index_expr | IDENTIFIER
+identifier_expr := named_struct | IDENTIFIER
 literal := 'true' | 'false' | number_literal | STR_LITERAL
 
 named_struct := IDENTIFIER record_block
@@ -78,7 +79,6 @@ pattern := identifier //TODO NOT DONE
 
 block := '{' (statement)* '}'
 
-index_expr := '[' (expression (',' (expression)* | ε) ']'
 expr_list := expression (',' expression)* | ε
 
 for_expr := 'for' ... ????
@@ -584,10 +584,23 @@ impl Parser {
   });
 
   parse_method!(call_expr(&mut self) -> ParseResult<Expression> {
-    let primary = self.primary()?;
+    let index  = self.index_expr()?;
     Ok(if let LParen = self.peek() {
       let arguments = delimited!(self, LParen, ')', expression, Comma, RParen, '(');
-      Expression(ExpressionType::Call { f: bx!(primary), arguments }, None) //TODO fix this none
+      Expression(ExpressionType::Call { f: bx!(index), arguments }, None) //TODO fix this none
+    } else {
+      index
+    })
+  });
+
+  parse_method!(index_expr(&mut self) -> ParseResult<Expression> {
+    let primary = self.primary()?;
+    Ok(if let LSquareBracket = self.peek() {
+      let indexers = delimited!(self, LSquareBracket, '[', expression, Comma, RSquareBracket, ']');
+      Expression(ExpressionType::Index {
+        indexee: bx!(Expression(primary.0, None)),
+        indexers,
+      }, None)
     } else {
       primary
     })
@@ -651,13 +664,6 @@ impl Parser {
         let fields = self.record_block()?;
         Expression(NamedStruct { name: identifier, fields }, None)
       },
-      LSquareBracket => {
-        let indexers = self.index_expr()?;
-        Expression(Index {
-          indexee: bx!(Expression(Value(identifier), None)),
-          indexers,
-        }, None)
-      }
       _ => Expression(Value(identifier), None)
     })
   });
@@ -671,10 +677,6 @@ impl Parser {
     expect!(self, Colon, ":");
     let value = self.expression()?;
     Ok((field_name, value))
-  });
-
-  parse_method!(index_expr(&mut self) -> ParseResult<Vec<Expression>> {
-    Ok(delimited!(self, LSquareBracket, '[', expression, Comma, RSquareBracket, ']'))
   });
 
   parse_method!(if_expr(&mut self) -> ParseResult<Expression> {
