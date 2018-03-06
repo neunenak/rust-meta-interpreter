@@ -893,9 +893,6 @@ mod parse_tests {
     ($expr_type:expr) => { Statement::ExpressionStatement(Expression($expr_type, None)) };
     ($expr_type:expr, $type_anno:expr) => { Statement::ExpressionStatement(Expression($expr_type, Some($type_anno))) };
   }
-  macro_rules! ex {
-    ($expr_type:expr) => { Expression($expr_type, None) }
-  }
   macro_rules! ty {
     ($name:expr) => { Singleton(tys!($name)) }
   }
@@ -910,11 +907,19 @@ mod parse_tests {
     ($exprtype:expr) => { AST(vec![Statement::ExpressionStatement(Expression($exprtype, None))]) };
     ($exprtype:expr, $type:expr) => { AST(vec![Statement::ExpressionStatement(Expression($exprtype, $type))]) }
   }
+  macro_rules! ex {
+    ($expr_type:expr) => { Expression($expr_type, None) }
+  }
   macro_rules! binexp {
     ($op:expr, $lhs:expr, $rhs:expr) => { BinExp(BinOp::from_sigil($op), bx!(Expression($lhs, None)), bx!(Expression($rhs, None))) }
   }
   macro_rules! prefexp {
     ($op:expr, $lhs:expr) => { PrefixExp(PrefixOp::from_sigil($op), bx!(Expression($lhs, None))) }
+  }
+  macro_rules! exst {
+    ($expr_type:expr) => { Statement::ExpressionStatement(Expression($expr_type, None)) };
+    ($expr_type:expr, $type_anno:expr) => { Statement::ExpressionStatement(Expression($expr_type, Some($type_anno))) };
+    ($op:expr, $lhs:expr, $rhs:expr) => { Statement::ExpressionStatement(ex!(binexp!($op, $lhs, $rhs))) };
   }
 
   #[test]
@@ -1191,14 +1196,14 @@ fn a(x) {
 
   #[test]
   fn parsing_lambdas() {
-    parse_test!("{|x| x + 1}", AST(vec![
-      exprstatement!(Lambda { params: vec![(rc!(x), None)], body: vec![exprstatement!(binexp!("+", val!("x"), IntLiteral(1)))]})
-    ]));
+    parse_test! { "{|x| x + 1}", single_expr!(
+      Lambda { params: vec![(rc!(x), None)], body: vec![exst!("+", val!("x"), IntLiteral(1))] }
+    ) }
 
     parse_test!("{      |x: Int, y| a;b;c;}", AST(vec![
       exprstatement!(Lambda {
         params: vec![(rc!(x), Some(ty!("Int"))), (rc!(y), None)],
-        body: vec![exprstatement!(val!("a")), exprstatement!(val!("b")), exprstatement!(val!("c"))]
+        body: vec![exst!(val!("a")), exst!(val!("b")), exst!(val!("c"))]
       })
     ]));
 
