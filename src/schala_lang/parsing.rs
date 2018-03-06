@@ -52,14 +52,15 @@ type_params := '<' type_name (, type_name)* '>'
 
 expression := precedence_expr type_anno+
 precedence_expr := prefix_expr
-prefix_expr := prefix_op primary
+prefix_expr := prefix_op call_expr
 prefix_op := '+' | '-' | '!' | '~'
+call_expr := primary ( '(' expr_list ')' )*
 primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_expr | curly_brace_expr
 curly_brace_expr := lambda_expr | anonymous_struct //TODO
 lambda_expr := '{' '|' (formal_param ',')* '|' (type_anno)* (statement)* '}'
 paren_expr := LParen paren_inner RParen
 paren_inner := (expression ',')*
-identifier_expr := named_struct | call_expr | index_expr | IDENTIFIER
+identifier_expr := named_struct | index_expr | IDENTIFIER
 literal := 'true' | 'false' | number_literal | STR_LITERAL
 
 named_struct := IDENTIFIER record_block
@@ -77,7 +78,6 @@ pattern := identifier //TODO NOT DONE
 
 block := '{' (statement)* '}'
 
-call_expr := IDENTIFIER '(' expr_list ')' //TODO maybe make this optional? or no, have a bare identifier meant to be used as method taken care of in eval
 index_expr := '[' (expression (',' (expression)* | ε) ']'
 expr_list := expression (',' expression)* | ε
 
@@ -579,8 +579,18 @@ impl Parser {
             ExpressionType::PrefixExp(PrefixOp::from_sigil(sigil.as_str()), bx!(expr)),
             None))
       },
-      _ => self.primary()
+      _ => self.call_expr()
     }
+  });
+
+  parse_method!(call_expr(&mut self) -> ParseResult<Expression> {
+    let primary = self.primary()?;
+    Ok(if let LParen = self.peek() {
+      let arguments = delimited!(self, LParen, ')', expression, Comma, RParen, '(');
+      Expression(ExpressionType::Call { f: bx!(primary), arguments }, None) //TODO fix this none
+    } else {
+      primary
+    })
   });
 
   parse_method!(primary(&mut self) -> ParseResult<Expression> {
@@ -641,12 +651,6 @@ impl Parser {
         let fields = self.record_block()?;
         Expression(NamedStruct { name: identifier, fields }, None)
       },
-      LParen => {
-        let arguments = self.call_expr()?;
-        //TODO make this be more general
-        let f = bx!(Expression(Value(identifier), None));
-        Expression(Call { f, arguments }, None)
-      },
       LSquareBracket => {
         let indexers = self.index_expr()?;
         Expression(Index {
@@ -667,10 +671,6 @@ impl Parser {
     expect!(self, Colon, ":");
     let value = self.expression()?;
     Ok((field_name, value))
-  });
-
-  parse_method!(call_expr(&mut self) -> ParseResult<Vec<Expression>> {
-    Ok(delimited!(self, LParen, ')', expression, Comma, RParen, '('))
   });
 
   parse_method!(index_expr(&mut self) -> ParseResult<Vec<Expression>> {
