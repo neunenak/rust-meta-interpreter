@@ -886,12 +886,6 @@ mod parse_tests {
   macro_rules! parse_error {
     ($string:expr) => { assert!(parse(tokenize($string)).0.is_err()) }
   }
-  macro_rules! binexp {
-    ($op:expr, $lhs:expr, $rhs:expr) => { BinExp(BinOp::from_sigil($op), bx!(Expression($lhs, None)), bx!(Expression($rhs, None))) }
-  }
-  macro_rules! prefexp {
-    ($op:expr, $lhs:expr) => { PrefixExp(PrefixOp::from_sigil($op), bx!(Expression($lhs, None))) }
-  }
   macro_rules! val {
     ($var:expr) => { Value(Rc::new($var.to_string())) }
   }
@@ -909,22 +903,37 @@ mod parse_tests {
     ($name:expr) => { TypeSingletonName { name: Rc::new($name.to_string()), params: vec![] } };
   }
 
+
+  /* new style of test macros */
+
+  macro_rules! single_expr {
+    ($exprtype:expr) => { AST(vec![Statement::ExpressionStatement(Expression($exprtype, None))]) };
+    ($exprtype:expr, $type:expr) => { AST(vec![Statement::ExpressionStatement(Expression($exprtype, $type))]) }
+  }
+  macro_rules! binexp {
+    ($op:expr, $lhs:expr, $rhs:expr) => { BinExp(BinOp::from_sigil($op), bx!(Expression($lhs, None)), bx!(Expression($rhs, None))) }
+  }
+  macro_rules! prefexp {
+    ($op:expr, $lhs:expr) => { PrefixExp(PrefixOp::from_sigil($op), bx!(Expression($lhs, None))) }
+  }
+
   #[test]
   fn parsing_number_literals_and_binexps() {
-    parse_test!(".2", AST(vec![exprstatement!(FloatLiteral(0.2))]));
-    parse_test!("8.1", AST(vec![exprstatement!(FloatLiteral(8.1))]));
+    parse_test! { ".2", single_expr!(FloatLiteral(0.2)) };
+    parse_test! { "8.1", single_expr!(FloatLiteral(8.1)) };
 
-    parse_test!("0b010", AST(vec![exprstatement!(IntLiteral(2))]));
-    parse_test!("0b0_1_0_", AST(vec![exprstatement!(IntLiteral(2))]));
+    parse_test! { "0b010", single_expr!(IntLiteral(2)) };
+    parse_test! { "0b0_1_0_", single_expr!(IntLiteral(2)) }
 
-    parse_test!("0xff", AST(vec![exprstatement!(IntLiteral(255))]));
-    parse_test!("0xf_f_", AST(vec![exprstatement!(IntLiteral(255))]));
+    parse_test! {"0xff", single_expr!(IntLiteral(255)) };
+    parse_test! {"0xf_f_", single_expr!(IntLiteral(255)) };
 
     parse_test!("0xf_f_+1", AST(vec![exprstatement!(binexp!("+", IntLiteral(255), IntLiteral(1)))]));
 
-    parse_test!("3; 4; 4.3", AST(
+    parse_test! {"3; 4; 4.3", AST(
       vec![exprstatement!(IntLiteral(3)), exprstatement!(IntLiteral(4)),
-        exprstatement!(FloatLiteral(4.3))]));
+        exprstatement!(FloatLiteral(4.3))])
+    };
 
     parse_test!("1 + 2 * 3", AST(vec!
       [
