@@ -51,6 +51,7 @@ enum FullyEvaluatedExpr {
     string_rep: Rc<String>,
   },
   Tuple(Vec<FullyEvaluatedExpr>),
+  List(Vec<FullyEvaluatedExpr>)
 }
 
 impl FullyEvaluatedExpr {
@@ -76,6 +77,18 @@ impl FullyEvaluatedExpr {
         buf
       },
       &FuncLit(ref name) => format!("<function {}>", name),
+      &List(ref items) => {
+        let mut buf = String::new();
+        write!(buf, "[").unwrap();
+        for term in items.iter().map(|e| Some(e)).intersperse(None) {
+          match term {
+            Some(e) => write!(buf, "{}", e.to_string()).unwrap(),
+            None => write!(buf, ", ").unwrap()
+          }
+        }
+        write!(buf, "]").unwrap();
+        buf
+      }
     }
   }
 }
@@ -194,6 +207,7 @@ impl<'a> State<'a> {
           _ => Err(format!("Bad index expression"))
         }
       },
+      ListLiteral(items) => Ok(List(items.into_iter().map(|item| self.eval_expr(item)).collect::<Result<Vec<_>,_>>()?)),
       x => Err(format!("Unimplemented thing {:?}", x)),
     }
   }
