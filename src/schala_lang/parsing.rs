@@ -56,12 +56,14 @@ prefix_expr := prefix_op call_expr
 prefix_op := '+' | '-' | '!' | '~'
 call_expr := index_expr ( '(' expr_list ')' )*
 index_expr := primary ( '[' (expression (',' (expression)* | ε) ']' )*
-primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_expr | curly_brace_expr
+primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_expr | curly_brace_expr | list_expr
 curly_brace_expr := lambda_expr | anonymous_struct //TODO
+list_expr := '[' (expression, ',')* ']'
 lambda_expr := '{' '|' (formal_param ',')* '|' (type_anno)* (statement)* '}'
 paren_expr := LParen paren_inner RParen
 paren_inner := (expression ',')*
 identifier_expr := named_struct | IDENTIFIER
+
 literal := 'true' | 'false' | number_literal | STR_LITERAL
 
 named_struct := IDENTIFIER record_block
@@ -254,6 +256,7 @@ pub enum ExpressionType {
     params: Vec<FormalParam>,
     body: Vec<Statement>,
   },
+  ListLiteral(Vec<Expression>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -610,12 +613,18 @@ impl Parser {
     match self.peek() {
       LCurlyBrace => self.curly_brace_expr(),
       LParen => self.paren_expr(),
+      LSquareBracket => self.list_expr(),
       Keyword(Kw::If) => self.if_expr(),
       Keyword(Kw::Match) => self.match_expr(),
       Keyword(Kw::For) => self.for_expr(),
       Identifier(_) => self.identifier_expr(),
       _ => self.literal(),
     }
+  });
+
+  parse_method!(list_expr(&mut self) -> ParseResult<Expression> {
+    let exprs = delimited!(self, LSquareBracket, '[', expression, Comma, RSquareBracket, ']');
+    Ok(Expression(ExpressionType::ListLiteral(exprs), None))
   });
 
   parse_method!(curly_brace_expr(&mut self) -> ParseResult<Expression> {
@@ -1214,4 +1223,12 @@ fn a(x) {
         Lambda { params: vec![(rc!(x), None)], body: vec![exprstatement!(val!("y"))] })),
         arguments: vec![ex!(IntLiteral(1))] })]));
   }
+
+  #[test]
+   fn list_literals() {
+     parse_test! {
+       "[1,2]", AST(vec![
+         exprstatement!(ListLiteral(vec![ex!(IntLiteral(1)), ex!(IntLiteral(2))]))])
+     };
+   }
 }
