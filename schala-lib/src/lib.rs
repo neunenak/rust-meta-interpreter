@@ -32,7 +32,7 @@ pub mod llvm_wrap;
 
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
-pub use language::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TraceArtifact, LLVMCodeString};
+pub use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, LanguageOutput, LLVMCodeString};
 pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
 pub fn schala_main(generators: Vec<PLIGenerator>) {
@@ -110,7 +110,9 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
       compilation_sequence(llvm_bytecode, filename);
     }
   } else {
-    language.evaluate_in_repl(&buffer, &options);
+    let output = language.evaluate_in_repl(&buffer, &options);
+    // if output.has_error....
+
   }
 }
 

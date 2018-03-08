@@ -3,7 +3,7 @@ pub mod parser;
 pub mod eval;
 pub mod compilation;
 
-use schala_lib::{ProgrammingLanguageInterface, EvalOptions, ReplOutput, TraceArtifact, LLVMCodeString};
+use schala_lib::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput, TraceArtifact, LLVMCodeString};
 
 #[derive(Debug)]
 pub struct TokenError {
@@ -38,8 +38,8 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
     format!("maaru")
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> ReplOutput {
-    let mut output = ReplOutput::default();
+  fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> LanguageOutput {
+    let mut output = LanguageOutput::default();
 
     let tokens = match tokenizer::tokenize(input) {
       Ok(tokens) => {

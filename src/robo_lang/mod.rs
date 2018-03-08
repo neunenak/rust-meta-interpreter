@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use schala_lib::{ProgrammingLanguageInterface, EvalOptions, ReplOutput};
+use schala_lib::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput};
 
 pub struct Robo {
 }
@@ -150,8 +150,8 @@ impl ProgrammingLanguageInterface for Robo {
     format!("robo")
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, _eval_options: &EvalOptions) -> ReplOutput {
-    let mut output = ReplOutput::default();
+  fn evaluate_in_repl(&mut self, input: &str, _eval_options: &EvalOptions) -> LanguageOutput {
+    let mut output = LanguageOutput::default();
     let tokens = match tokenize(input) {
       Ok(tokens) => tokens,
       Err(e) => {

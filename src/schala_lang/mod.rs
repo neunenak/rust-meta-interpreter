@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, ReplOutput};
+use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, LanguageOutput};
 
 macro_rules! bx {
   ($e:expr) => { Box::new($e) }
@@ -37,8 +37,8 @@ impl ProgrammingLanguageInterface for Schala {
     format!("schala")
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> ReplOutput {
-    let mut output = ReplOutput::default();
+  fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> LanguageOutput {
+    let mut output = LanguageOutput::default();
     let tokens = tokenizing::tokenize(input);
     if options.debug_tokens {
       let token_string = tokens.iter().map(|t| format!("{:?}<L:{},C:{}>", t.token_type, t.offset.0, t.offset.1)).join(", ");
