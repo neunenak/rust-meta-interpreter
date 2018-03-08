@@ -175,14 +175,13 @@ impl<'a> State<'a> {
         }
         self.eval_application(*f, evaled_arguments)
       },
-      Index { box indexee, mut indexers } => {
+      Index { box indexee, indexers } => {
         let evaled = self.eval_expr(indexee)?;
         match evaled {
           Tuple(mut exprs) => {
             let len = indexers.len();
             if len == 1 {
-              indexers.truncate(1);
-              let idx = indexers.pop().unwrap();
+              let idx = indexers.into_iter().nth(0).unwrap();
               match self.eval_expr(idx)? {
                 UnsignedInt(n) if (n as usize) < exprs.len() => Ok(exprs.drain(n as usize..).next().unwrap()),
                 UnsignedInt(n) => Err(format!("Index {} out of range", n)),
