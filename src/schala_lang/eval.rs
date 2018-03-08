@@ -175,6 +175,26 @@ impl<'a> State<'a> {
         }
         self.eval_application(*f, evaled_arguments)
       },
+      Index { box indexee, mut indexers } => {
+        let evaled = self.eval_expr(indexee)?;
+        match evaled {
+          Tuple(mut exprs) => {
+            let len = indexers.len();
+            if len == 1 {
+              indexers.truncate(1);
+              let idx = indexers.pop().unwrap();
+              match self.eval_expr(idx)? {
+                UnsignedInt(n) if (n as usize) < exprs.len() => Ok(exprs.drain(n as usize..).next().unwrap()),
+                UnsignedInt(n) => Err(format!("Index {} out of range", n)),
+                other => Err(format!("{:?} is not an unsigned integer", other)),
+              }
+            } else {
+              Err(format!("Tuple index must be one integer"))
+            }
+          },
+          _ => Err(format!("Bad index expression"))
+        }
+      },
       x => Err(format!("Unimplemented thing {:?}", x)),
     }
   }
