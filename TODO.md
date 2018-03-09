@@ -42,3 +42,5 @@ struct CompilerPass {
 }
 
 -change "Type...." names in parser.rs to "Anno..." for non-collision with names in typechecking.rs
+
+-get rid of code pertaining to compilation specifically, have a more generation notion of "execution type"

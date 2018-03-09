@@ -18,7 +18,8 @@ pub struct EvalOptions {
 #[derive(Debug, Default)]
 pub struct LanguageOutput {
   output: String,
-  artifacts: Vec<TraceArtifact>
+  artifacts: Vec<TraceArtifact>,
+  failed: bool,
 }
 
 impl LanguageOutput {
@@ -91,6 +92,9 @@ impl TraceArtifact {
 
 pub trait ProgrammingLanguageInterface {
   fn evaluate_in_repl(&mut self, input: &str, eval_options: &EvalOptions) -> LanguageOutput;
+  fn evaluate_noninteractive(&mut self, input: &str, eval_options: &EvalOptions) -> LanguageOutput {
+    self.evaluate_in_repl(input, eval_options)
+  }
   fn get_language_name(&self) -> String;
   fn get_source_file_suffix(&self) -> String;
   fn compile(&mut self, _input: &str) -> LLVMCodeString {
