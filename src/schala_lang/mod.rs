@@ -49,6 +49,7 @@ impl ProgrammingLanguageInterface for Schala {
       let token_errors: Vec<&String> = tokens.iter().filter_map(|t| t.get_error()).collect();
       if token_errors.len() != 0 {
         output.add_output(format!("Tokenization error: {:?}\n", token_errors));
+        output.failed = true;
         return output;
       }
     }
@@ -64,6 +65,7 @@ impl ProgrammingLanguageInterface for Schala {
       (Err(err), trace) => {
         output.add_artifact(TraceArtifact::new_parse_trace(trace));
         output.add_output(format!("Parse error: {:?}\n", err.msg));
+        output.failed = true;
         return output;
       }
     };

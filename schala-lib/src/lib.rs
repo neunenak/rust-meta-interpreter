@@ -111,8 +111,9 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
     }
   } else {
     let output = language.evaluate_in_repl(&buffer, &options);
-    // if output.has_error....
-
+    if output.failed {
+      println!("{}", output.to_string());
+    }
   }
 }
 

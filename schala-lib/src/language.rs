@@ -19,7 +19,7 @@ pub struct EvalOptions {
 pub struct LanguageOutput {
   output: String,
   artifacts: Vec<TraceArtifact>,
-  failed: bool,
+  pub failed: bool,
 }
 
 impl LanguageOutput {
