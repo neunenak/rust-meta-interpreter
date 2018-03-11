@@ -1,5 +1,6 @@
 extern crate colored;
 
+use std::collections::HashMap;
 use self::colored::*;
 
 pub struct LLVMCodeString(pub String);
@@ -48,6 +49,29 @@ impl LanguageOutput {
       println!("{}: {}", stage, output);
     }
     println!("{}", self.output);
+  }
+}
+
+#[derive(Debug, Default)]
+pub struct UnfinishedComputation {
+  artifacts: HashMap<String, TraceArtifact>,
+}
+
+#[derive(Debug)]
+pub struct FinishedComputation {
+  artifacts: HashMap<String, TraceArtifact>,
+  text_output: Result<String, String>,
+}
+
+impl UnfinishedComputation {
+  pub fn add_artifact(&mut self, artifact: TraceArtifact) {
+    self.artifacts.insert(artifact.stage_name.clone(), artifact);
+  }
+  pub fn output(self, output: Result<String, String>) -> FinishedComputation {
+    FinishedComputation {
+      artifacts: self.artifacts,
+      text_output: output
+    }
   }
 }
 
