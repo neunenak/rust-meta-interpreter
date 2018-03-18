@@ -117,8 +117,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 
   while let Some((line_idx, ch_idx, c)) = input.next() {
     let cur_tok_type = match c {
-      '/' => match input.peek() {
-        Some(&(_, _, '/')) => {
+      '/' => match input.peek().map(|t| t.2) {
+        Some('/') => {
           while let Some((_, _, c)) = input.next() {
             if c == '\n' {
               break;
@@ -126,8 +126,22 @@ pub fn tokenize(input: &str) -> Vec<Token> {
           }
           continue;
         },
-        Some(&(_, _, '*')) => {
-          continue
+        Some('*') => {
+          input.next();
+          let mut comment_level = 1;
+          while let Some((_, _, c)) = input.next() {
+            if c == '*'  && input.peek().map(|t| t.2) == Some('/') {
+              input.next();
+              comment_level -= 1;
+            } else if c == '/' && input.peek().map(|t| t.2) == Some('*') {
+              input.next();
+              comment_level += 1;
+            }
+            if comment_level == 0 {
+              break;
+            }
+          }
+          continue;
         },
         _ => Slash
       },
@@ -251,7 +265,6 @@ mod schala_tokenizer_tests {
   macro_rules! ident { ($ident:expr) => { Identifier(Rc::new($ident.to_string())) } }
   macro_rules! op { ($ident:expr) => { Operator(Rc::new($ident.to_string())) } }
 
-
   #[test]
   fn tokens() {
     let a = tokenize("let a: A<B> = c ++ d");
@@ -264,5 +277,11 @@ mod schala_tokenizer_tests {
   fn underscores() {
     let token_types: Vec<TokenType> = tokenize("4_8").into_iter().map(move |t| t.token_type).collect();
     assert_eq!(token_types, vec![digit!("4"), Underscore, digit!("8")]);
+  }
+
+  #[test]
+  fn comments() {
+    let token_types: Vec<TokenType> = tokenize("1  + /* hella /* bro */ */ 2").into_iter().map(move |t| t.token_type).collect();
+    assert_eq!(token_types, vec![digit!("1"), op!("+"), digit!("2")]);
   }
 }
