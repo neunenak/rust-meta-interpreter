@@ -1,30 +1,30 @@
 
 fn main() {
 
-# comments are scripting-style
-#{ but can also be
+//comments are C-style
+/* nested comments /* are cool */ */
 
-}# blocks
+}
 
 @annotations are with @-
 
-# variable expressions
+// variable expressions
   var a: I32 = 20
   const b: String = 20
 
   there(); can(); be(); multiple(); statements(); per_line();
 
-  #string interpolation
+  //string interpolation
   const yolo = "I have ${a + b} people in my house"
 
-  # let expressions ??? not sure if I want this
+  // let expressions ??? not sure if I want this
   let a = 10, b = 20, c = 30 in a + b + c
 
-  #list literal
+  //list literal
   const q = [1,2,3,4]
 
-  #lambda literal ?? maybe? not sure how this should work
-  q.map(|item| { item * 100 })
+  //lambda literal 
+  q.map({|item| item * 100 })
 
   fn yolo(a: MyType, b: YourType): ReturnType<Param1, Param2> {
     if a == 20 {
@@ -36,35 +36,35 @@ fn main() {
 
 
   for {
-  # infinite loop
+  //infinite loop
   }
 
-  #iteration over a variable
+  //iteration over a variable
   for i <- [1..1000]  {
 
-  } #return type is return type of block
+  } //return type is return type of block
 
-  #while loop
+  //while loop
   for a != 3 || fuckTard() {
     break
-  } #return type is return type of block
+  } //return type is return type of block
 
-  #monadic decomposition
+  //monadic decomposition
   for {
     a <- maybeInt();
     s <- foo() 
   } return {
     a + s
-  } #return type is Monad<return type of block>
+  } //return type is Monad<return type of block>
 
-  # let statements too!!
+  // let statements too!!
   for (a = 20
   b = fuck) {
     a + b
   }
 
 
-  # pattern-matching
+  // pattern-matching
   match <expr> {
     Some(a) => {
 
@@ -74,21 +74,23 @@ fn main() {
     },
   }
 
- #syntax is, I guess, for <expr> <brace-block>, where <expr> is a bool, or a <arrow-expr>
+ //syntax is, I guess, for <expr> <brace-block>, where <expr> is a bool, or a <arrow-expr>
 
- # type level alises
+ // type level alises
  typealias <name> = <other type> #maybe thsi should be 'alias'?
 
-#what if type A = B meant that you could had to create A's with A(B), but when you used A's the interface was exactly like B's?
-# maybe introduce a 'newtype' keyword for this
+/*
+what if type A = B meant that you could had to create A's with A(B), but when you used A's the interface was exactly like B's?
+ maybe introduce a 'newtype' keyword for this
+ */
 
- #declaring types of all stripes
+ //declaring types of all stripes
  type MyData = { a: i32, b: String }
  type MyType = MyType
  type Option<a> = None | Some(a)
  type Signal = Absence | SimplePresence(i32) | ComplexPresence {a: i32, b: MyCustomData}
 
- #traits
+ //traits
  
  trait Bashable { }
  trait Luggable {
@@ -98,8 +100,6 @@ fn main() {
 }
 
 
-# lambdas
-#
-|x,y| { }() #is probably fine
-const a = |x: Type, y|: RetType { <statementblock> }
-const a: X -> Y -> Z = |x,y| { }
+// lambdas
+// ruby-style not rust-style
+const a: X -> Y -> Z = {|x,y|  }
