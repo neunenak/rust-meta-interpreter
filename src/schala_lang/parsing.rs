@@ -550,6 +550,7 @@ impl Parser {
         Operator(op) => BinOp::get_precedence(&*op),
         Period => BinOp::get_precedence("."),
         Pipe => BinOp::get_precedence("|"),
+        Slash => BinOp::get_precedence("/"),
         _ => break,
       };
 

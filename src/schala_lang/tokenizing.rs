@@ -15,6 +15,7 @@ pub enum TokenType {
   Pipe,
 
   Comma, Period, Colon, Underscore,
+  Slash,
 
   Operator(Rc<String>),
   DigitGroup(Rc<String>), HexLiteral(Rc<String>), BinNumberSigil,
@@ -99,7 +100,7 @@ impl Token {
   }
 }
 
-const OPERATOR_CHARS: [char; 19] = ['!', '$', '%', '&', '*', '+', '-', '.', '/', ':', '<', '>', '=', '?', '@', '^', '|', '~', '`'];
+const OPERATOR_CHARS: [char; 18] = ['!', '$', '%', '&', '*', '+', '-', '.', ':', '<', '>', '=', '?', '@', '^', '|', '~', '`'];
 fn is_operator(c: &char) -> bool {
   OPERATOR_CHARS.iter().any(|x| x == c)
 }
@@ -116,16 +117,19 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 
   while let Some((line_idx, ch_idx, c)) = input.next() {
     let cur_tok_type = match c {
-      '#' => {
-        if let Some(&(_, _, '{')) = input.peek() {
-        } else {
+      '/' => match input.peek() {
+        Some(&(_, _, '/')) => {
           while let Some((_, _, c)) = input.next() {
             if c == '\n' {
               break;
             }
           }
-        }
-        continue;
+          continue;
+        },
+        Some(&(_, _, '*')) => {
+          continue
+        },
+        _ => Slash
       },
       c if c.is_whitespace() && c != '\n' => continue,
       '\n' => Newline, ';' => Semicolon,

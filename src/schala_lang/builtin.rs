@@ -67,7 +67,7 @@ lazy_static! {
       "-" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 10),
       "*" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20),
       "/" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Float))))), (), 20),
-      "//" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20),
+      "//" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20), //TODO change this to `quot`
       "%" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20),
       "++" => (Func(bx!(Const(StringT)), bx!(Func(bx!(Const(StringT)), bx!(Const(StringT))))), (), 30),
       "^" => (Func(bx!(Const(Int)), bx!(Func(bx!(Const(Int)), bx!(Const(Int))))), (), 20),
