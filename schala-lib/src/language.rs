@@ -75,6 +75,15 @@ impl UnfinishedComputation {
   }
 }
 
+impl FinishedComputation {
+  pub fn to_string(&self) -> String {
+    match self.text_output {
+      Ok(ref s) => s.clone(),
+      Err(ref s) => format!("Error: {}", s)
+    }
+  }
+}
+
 /*
 //TODO I'll probably wanna implement this later
 #[derive(Debug)]
@@ -115,9 +124,15 @@ impl TraceArtifact {
 }
 
 pub trait ProgrammingLanguageInterface {
-  fn evaluate_in_repl(&mut self, input: &str, eval_options: &EvalOptions) -> LanguageOutput;
+  fn evaluate_in_repl(&mut self, input: &str, eval_options: &EvalOptions) -> LanguageOutput {
+    LanguageOutput { output: format!("Defunct"), artifacts: vec![], failed: false }
+  }
   fn evaluate_noninteractive(&mut self, input: &str, eval_options: &EvalOptions) -> LanguageOutput {
     self.evaluate_in_repl(input, eval_options)
+  }
+
+  fn repl_evaluate(&mut self, input: &str, eval_options: &EvalOptions) -> FinishedComputation {
+    FinishedComputation { artifacts: HashMap::new(), text_output: Err(format!("REPL evaluation not implemented")) }
   }
   fn get_language_name(&self) -> String;
   fn get_source_file_suffix(&self) -> String;

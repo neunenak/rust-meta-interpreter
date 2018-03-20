@@ -32,7 +32,7 @@ pub mod llvm_wrap;
 
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
-pub use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, LanguageOutput, LLVMCodeString};
+pub use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, LanguageOutput, LLVMCodeString, FinishedComputation, UnfinishedComputation};
 pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
 pub fn schala_main(generators: Vec<PLIGenerator>) {
@@ -198,7 +198,7 @@ impl Repl {
 
   fn input_handler(&mut self, input: &str) -> String {
     let ref mut language = self.languages[self.current_language_index];
-    let interpreter_output = language.evaluate_in_repl(input, &self.options);
+    let interpreter_output = language.repl_evaluate(input, &self.options);
     interpreter_output.to_string()
   }
 

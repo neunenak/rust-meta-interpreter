@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, LanguageOutput};
+use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, LanguageOutput, UnfinishedComputation, FinishedComputation};
 
 macro_rules! bx {
   ($e:expr) => { Box::new($e) }
@@ -11,6 +11,7 @@ mod tokenizing;
 mod parsing;
 mod typechecking;
 mod eval;
+
 
 use self::typechecking::{TypeContext};
 
@@ -37,68 +38,54 @@ impl ProgrammingLanguageInterface for Schala {
     format!("schala")
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> LanguageOutput {
-    let mut output = LanguageOutput::default();
+  fn repl_evaluate(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
+    let mut evaluation = UnfinishedComputation::default();
+
+    //tokenzing
     let tokens = tokenizing::tokenize(input);
-    if options.debug_tokens {
-      let token_string = tokens.iter().map(|t| format!("{:?}<L:{},C:{}>", t.token_type, t.offset.0, t.offset.1)).join(", ");
-      output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", token_string)));
-    }
+    let token_string = tokens.iter().map(|t| format!("{:?}<L:{},C:{}>", t.token_type, t.offset.0, t.offset.1)).join(", ");
+    evaluation.add_artifact(TraceArtifact::new("tokens", token_string));
 
     {
       let token_errors: Vec<&String> = tokens.iter().filter_map(|t| t.get_error()).collect();
       if token_errors.len() != 0 {
-        output.add_output(format!("Tokenization error: {:?}\n", token_errors));
-        output.failed = true;
-        return output;
+        return evaluation.output(Err(format!("Tokenization error: {:?}\n", token_errors)));
       }
     }
 
+    // parsing
     let ast = match parsing::parse(tokens) {
       (Ok(ast), trace) => {
-        if options.debug_parse {
-          output.add_artifact(TraceArtifact::new_parse_trace(trace));
-          output.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast)));
-        }
+        evaluation.add_artifact(TraceArtifact::new_parse_trace(trace));
+        evaluation.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast)));
         ast
       },
       (Err(err), trace) => {
-        output.add_artifact(TraceArtifact::new_parse_trace(trace));
-        output.add_output(format!("Parse error: {:?}\n", err.msg));
-        output.failed = true;
-        return output;
+        evaluation.add_artifact(TraceArtifact::new_parse_trace(trace));
+        return evaluation.output(Err(format!("Parse error: {:?}\n", err.msg)));
       }
     };
 
+
+    //symbol table
     match self.type_context.add_top_level_types(&ast) {
       Ok(()) => (),
       Err(msg) => {
-        output.add_artifact(TraceArtifact::new("type_check", msg));
-        //return output
+        evaluation.add_artifact(TraceArtifact::new("type_check", msg));
       }
     };
 
-    if options.debug_symbol_table {
-      let text = self.type_context.debug_symbol_table();
-      output.add_artifact(TraceArtifact::new("symbol_table", text));
-    }
-
+    //typechecking
     match self.type_context.type_check_ast(&ast) {
-      Ok(ty) => {
-        output.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty)));
-      },
-      Err(msg) => {
-        output.add_artifact(TraceArtifact::new("type_check", msg));
-        /*
-        output.add_output(format!("Type error"));
-        return output;
-        */
-      }
-    }
+      Ok(ty) => evaluation.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty))),
+      Err(msg) => evaluation.add_artifact(TraceArtifact::new("type_check", msg)),
+    };
+
+    let text = self.type_context.debug_symbol_table();
+    evaluation.add_artifact(TraceArtifact::new("symbol_table", text));
 
     let evaluation_outputs = self.state.evaluate(ast);
     let text_output: String = evaluation_outputs.into_iter().intersperse(format!("\n")).collect();
-    output.add_output(text_output);
-    return output;
+    evaluation.output(Ok(text_output))
   }
 }
