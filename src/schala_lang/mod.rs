@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, UnfinishedComputation, FinishedComputation};
+use schala_repl::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, UnfinishedComputation, FinishedComputation};
 
 macro_rules! bx {
   ($e:expr) => { Box::new($e) }

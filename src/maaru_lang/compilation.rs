@@ -6,9 +6,9 @@ use self::llvm_sys::prelude::*;
 use self::llvm_sys::{LLVMIntPredicate};
 
 use maaru_lang::parser::{AST, Statement, Function, Prototype, Expression, BinOp};
-use schala_lib::LLVMCodeString;
+use schala_repl::LLVMCodeString;
 
-use schala_lib::llvm_wrap as LLVMWrap;
+use schala_repl::llvm_wrap as LLVMWrap;
 
 type VariableMap = HashMap<String, LLVMValueRef>;
 

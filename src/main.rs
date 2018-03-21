@@ -11,8 +11,8 @@ mod maaru_lang;
 mod robo_lang;
 mod rukka_lang;
 
-extern crate schala_lib;
-use schala_lib::{PLIGenerator, schala_main};
+extern crate schala_repl;
+use schala_repl::{PLIGenerator, schala_main};
 
 extern { }
 

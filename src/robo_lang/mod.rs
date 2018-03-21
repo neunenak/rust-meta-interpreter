@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use schala_lib::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput};
+use schala_repl::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput};
 
 pub struct Robo {
 }

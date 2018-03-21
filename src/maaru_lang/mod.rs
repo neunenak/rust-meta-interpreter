@@ -3,7 +3,7 @@ pub mod parser;
 pub mod eval;
 pub mod compilation;
 
-use schala_lib::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput, TraceArtifact};
+use schala_repl::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput, TraceArtifact};
 
 #[derive(Debug)]
 pub struct TokenError {

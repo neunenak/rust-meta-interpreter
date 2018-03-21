@@ -12,7 +12,7 @@ lazy_static = "0.2.8"
 maplit = "*"
 colored = "1.5"
 
-schala-lib = { path = "schala-lib" }
+schala-repl = { path = "schala-repl" }
 
 [build-dependencies]
 includedir_codegen = "0.2.0"
