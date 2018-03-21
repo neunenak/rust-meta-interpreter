@@ -14,6 +14,7 @@ colored = "1.5"
 
 schala-repl = { path = "schala-repl" }
 maaru-lang = { path = "maaru" }
+rukka-lang = { path = "rukka" }
 
 [build-dependencies]
 includedir_codegen = "0.2.0"
