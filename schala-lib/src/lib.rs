@@ -33,7 +33,7 @@ pub mod llvm_wrap;
 
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
-pub use language::{ProgrammingLanguageInterface, EvalOptions, ExecutionMethod, TraceArtifact, LanguageOutput, LLVMCodeString, FinishedComputation, UnfinishedComputation};
+pub use language::{LLVMCodeString, ProgrammingLanguageInterface, EvalOptions, ExecutionMethod, TraceArtifact, LanguageOutput, FinishedComputation, UnfinishedComputation};
 pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
 pub fn schala_main(generators: Vec<PLIGenerator>) {
@@ -306,6 +306,7 @@ impl Repl {
   }
 }
 
+/*
 pub fn compilation_sequence(llvm_code: LLVMCodeString, sourcefile: &str) {
     use std::process::Command;
 
@@ -351,6 +352,7 @@ pub fn compilation_sequence(llvm_code: LLVMCodeString, sourcefile: &str) {
             .expect(&format!("failed to run rm {}", filename));
     }
 }
+*/
 
 fn program_options() -> getopts::Options {
   let mut options = getopts::Options::new();

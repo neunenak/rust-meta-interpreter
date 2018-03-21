@@ -3,7 +3,7 @@ pub mod parser;
 pub mod eval;
 pub mod compilation;
 
-use schala_lib::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput, TraceArtifact, LLVMCodeString};
+use schala_lib::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput, TraceArtifact};
 
 #[derive(Debug)]
 pub struct TokenError {
@@ -74,6 +74,8 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
     return output;
   }
 
+  /* TODO make this work with new framework */
+  /*
   fn can_compile(&self) -> bool {
     true
   }
@@ -96,4 +98,5 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
     };
     compilation::compile_ast(ast)
   }
+  */
 }

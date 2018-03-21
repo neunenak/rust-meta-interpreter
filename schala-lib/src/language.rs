@@ -9,15 +9,6 @@ pub struct LLVMCodeString(pub String);
 pub struct EvalOptions {
   pub debug: DebugOptions,
   pub execution_method: ExecutionMethod
-  /*
-  pub debug_tokens: bool,
-  pub debug_parse: bool,
-  pub debug_type: bool,
-  pub debug_symbol_table: bool,
-  pub show_llvm_ir: bool,
-  pub trace_evaluation: bool,
-  pub compile: bool,
-  */
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ExecutionMethod {
@@ -161,10 +152,4 @@ pub trait ProgrammingLanguageInterface {
   }
   fn get_language_name(&self) -> String;
   fn get_source_file_suffix(&self) -> String;
-  fn compile(&mut self, _input: &str) -> LLVMCodeString {
-    LLVMCodeString("".to_string())
-  }
-  fn can_compile(&self) -> bool {
-    false
-  }
 }
