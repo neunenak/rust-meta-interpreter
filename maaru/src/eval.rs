@@ -2,13 +2,13 @@ extern crate take_mut;
 
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use maaru_lang::parser::{AST, Statement, Expression, Function, Callable, BinOp};
+use parser::{AST, Statement, Expression, Function, Callable, BinOp};
 use std::rc::Rc;
 use std::io::{Write, Stdout, BufWriter};
 use std::convert::From;
 
-use maaru_lang::parser::Expression::*;
-use maaru_lang::parser::Statement::*;
+use parser::Expression::*;
+use parser::Statement::*;
 
 type Reduction<T> = (T, Option<SideEffect>);
 

@@ -1,5 +1,5 @@
-use maaru_lang::tokenizer::{Token, Kw, OpTok};
-use maaru_lang::tokenizer::Token::*;
+use tokenizer::{Token, Kw, OpTok};
+use tokenizer::Token::*;
 
 use std::fmt;
 use std::collections::VecDeque;

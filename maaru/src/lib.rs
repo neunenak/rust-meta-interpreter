@@ -1,7 +1,11 @@
-pub mod tokenizer;
-pub mod parser;
-pub mod eval;
-pub mod compilation;
+#![feature(box_patterns)]
+
+extern crate schala_repl;
+
+mod tokenizer;
+mod parser;
+mod eval;
+mod compilation;
 
 use schala_repl::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput, TraceArtifact};
 

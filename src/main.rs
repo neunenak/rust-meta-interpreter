@@ -6,8 +6,9 @@ extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
 
+extern crate maaru_lang;
+
 mod schala_lang;
-mod maaru_lang;
 mod robo_lang;
 mod rukka_lang;
 
