@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, LanguageOutput, UnfinishedComputation, FinishedComputation};
+use schala_lib::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, UnfinishedComputation, FinishedComputation};
 
 macro_rules! bx {
   ($e:expr) => { Box::new($e) }
@@ -11,7 +11,6 @@ mod tokenizing;
 mod parsing;
 mod typechecking;
 mod eval;
-
 
 use self::typechecking::{TypeContext};
 
@@ -38,7 +37,7 @@ impl ProgrammingLanguageInterface for Schala {
     format!("schala")
   }
 
-  fn repl_evaluate(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
+  fn execute(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
     let mut evaluation = UnfinishedComputation::default();
 
     //tokenzing

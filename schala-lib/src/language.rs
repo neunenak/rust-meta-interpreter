@@ -7,6 +7,9 @@ pub struct LLVMCodeString(pub String);
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EvalOptions {
+  pub debug: DebugOptions,
+  pub execution_method: ExecutionMethod
+  /*
   pub debug_tokens: bool,
   pub debug_parse: bool,
   pub debug_type: bool,
@@ -14,6 +17,28 @@ pub struct EvalOptions {
   pub show_llvm_ir: bool,
   pub trace_evaluation: bool,
   pub compile: bool,
+  */
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ExecutionMethod {
+  Compile,
+  Interpret,
+}
+impl Default for ExecutionMethod {
+  fn default() -> ExecutionMethod {
+    ExecutionMethod::Interpret
+  }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct DebugOptions {
+  pub tokens: bool,
+  pub parse_tree: bool,
+  pub ast: bool,
+  pub type_checking: bool,
+  pub symbol_table: bool,
+  pub evaluation: bool,
+  pub llvm_ir: bool,
 }
 
 #[derive(Debug, Default)]
@@ -76,22 +101,19 @@ impl UnfinishedComputation {
 }
 
 impl FinishedComputation {
-  pub fn to_string(&self) -> String {
+  pub fn to_repl(&self) -> String {
     match self.text_output {
       Ok(ref s) => s.clone(),
       Err(ref s) => format!("Error: {}", s)
     }
   }
+  pub fn to_noninteractive(&self) -> Option<String> {
+    match self.text_output {
+      Ok(ref s) => None,
+      Err(ref s) => Some(format!("Error: {}", s)),
+    }
+  }
 }
-
-/*
-//TODO I'll probably wanna implement this later
-#[derive(Debug)]
-pub struct CompilationOutput {
-  output: LLVMCodeString,
-  artifacts: Vec<TraceArtifact>,
-}
-*/
 
 #[derive(Debug)]
 pub struct TraceArtifact {
@@ -124,14 +146,17 @@ impl TraceArtifact {
 }
 
 pub trait ProgrammingLanguageInterface {
+  /* old */
   fn evaluate_in_repl(&mut self, input: &str, eval_options: &EvalOptions) -> LanguageOutput {
     LanguageOutput { output: format!("Defunct"), artifacts: vec![], failed: false }
   }
   fn evaluate_noninteractive(&mut self, input: &str, eval_options: &EvalOptions) -> LanguageOutput {
     self.evaluate_in_repl(input, eval_options)
   }
+  /* old */
 
-  fn repl_evaluate(&mut self, input: &str, eval_options: &EvalOptions) -> FinishedComputation {
+
+  fn execute(&mut self, input: &str, eval_options: &EvalOptions) -> FinishedComputation {
     FinishedComputation { artifacts: HashMap::new(), text_output: Err(format!("REPL evaluation not implemented")) }
   }
   fn get_language_name(&self) -> String;

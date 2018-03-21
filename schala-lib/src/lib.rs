@@ -5,6 +5,7 @@
 extern crate getopts;
 extern crate rustyline;
 extern crate itertools;
+
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
@@ -32,7 +33,7 @@ pub mod llvm_wrap;
 
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
-pub use language::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, LanguageOutput, LLVMCodeString, FinishedComputation, UnfinishedComputation};
+pub use language::{ProgrammingLanguageInterface, EvalOptions, ExecutionMethod, TraceArtifact, LanguageOutput, LLVMCodeString, FinishedComputation, UnfinishedComputation};
 pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
 pub fn schala_main(generators: Vec<PLIGenerator>) {
@@ -67,15 +68,14 @@ pub fn schala_main(generators: Vec<PLIGenerator>) {
     .unwrap_or(0);
 
   let mut options = EvalOptions::default();
-  options.compile = match option_matches.opt_str("eval-style") {
-    Some(ref s) if s == "compile" => true,
-    _ => false
+  options.execution_method = match option_matches.opt_str("eval-style") {
+    Some(ref s) if s == "compile" => ExecutionMethod::Compile,
+    _ => ExecutionMethod::Interpret,
   };
 
   match option_matches.free[..] {
     [] | [_] => {
       let mut repl = Repl::new(languages, initial_index);
-      repl.options.show_llvm_ir = true; //TODO make this be configurable
       repl.run();
     }
     [_, ref filename, _..] => {
@@ -102,17 +102,17 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
 
   source_file.read_to_string(&mut buffer).unwrap();
 
-  if options.compile {
-    if !language.can_compile() {
-      panic!("Trying to compile a non-compileable language");
-    } else {
+  match options.execution_method {
+    ExecutionMethod::Compile => {
+      /*
       let llvm_bytecode = language.compile(&buffer);
       compilation_sequence(llvm_bytecode, filename);
-    }
-  } else {
-    let output = language.evaluate_in_repl(&buffer, &options);
-    if output.failed {
-      println!("{}", output.to_string());
+      */
+      panic!("Not ready to go yet");
+    },
+    ExecutionMethod::Interpret => {
+      let output = language.execute(&buffer, &options);
+      output.to_noninteractive().map(|text| println!("{}", text));
     }
   }
 }
@@ -198,8 +198,8 @@ impl Repl {
 
   fn input_handler(&mut self, input: &str) -> String {
     let ref mut language = self.languages[self.current_language_index];
-    let interpreter_output = language.repl_evaluate(input, &self.options);
-    interpreter_output.to_string()
+    let interpreter_output = language.execute(input, &self.options);
+    interpreter_output.to_repl()
   }
 
   fn handle_interpreter_directive(&mut self, input: &str) -> bool {
@@ -285,14 +285,11 @@ impl Repl {
           }
         };
         match commands.get(2) {
-          Some(&"tokens") => self.options.debug_tokens = show,
-          Some(&"parse") => self.options.debug_parse = show,
-          Some(&"symbols") => self.options.debug_symbol_table = show,
-          Some(&"eval") => {
-            //let ref mut language = self.languages[self.current_language_index];
-            //language.set_option("trace_evaluation", show);
-          },
-          Some(&"llvm") => self.options.show_llvm_ir = show,
+          Some(&"tokens") => self.options.debug.tokens = show,
+          Some(&"parse") => self.options.debug.parse_tree = show,
+          Some(&"ast") => self.options.debug.ast = show,
+          Some(&"symbols") => self.options.debug.symbol_table = show,
+          Some(&"llvm") => self.options.debug.llvm_ir = show,
           Some(e) => {
             println!("Bad `show`/`hide` argument: {}", e);
             return true;
