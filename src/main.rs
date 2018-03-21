@@ -8,9 +8,9 @@ extern crate maplit;
 
 extern crate maaru_lang;
 extern crate rukka_lang;
+extern crate robo_lang;
 
 mod schala_lang;
-mod robo_lang;
 
 extern crate schala_repl;
 use schala_repl::{PLIGenerator, schala_main};

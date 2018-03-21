@@ -1,3 +1,8 @@
+#![feature(box_patterns)]
+
+extern crate itertools;
+extern crate schala_repl;
+
 use itertools::Itertools;
 use schala_repl::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput};
 
