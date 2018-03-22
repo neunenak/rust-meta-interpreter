@@ -95,13 +95,13 @@ impl FinishedComputation {
   pub fn to_repl(&self) -> String {
     match self.text_output {
       Ok(ref s) => s.clone(),
-      Err(ref s) => format!("Error: {}", s)
+      Err(ref s) => format!("{} {}", "Error: ".red().bold(), s)
     }
   }
   pub fn to_noninteractive(&self) -> Option<String> {
     match self.text_output {
       Ok(ref s) => None,
-      Err(ref s) => Some(format!("Error: {}", s)),
+      Err(ref s) => Some(format!("{} {}", "Error: ".red().bold(), s))
     }
   }
 }
