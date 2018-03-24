@@ -1,11 +1,3 @@
-#![feature(advanced_slice_patterns, slice_patterns, box_patterns, box_syntax)]
-#![feature(plugin)]
-extern crate itertools;
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate maplit;
-
 extern crate schala_repl;
 
 extern crate maaru_lang;
