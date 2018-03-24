@@ -31,6 +31,8 @@ mod language;
 mod webapp;
 pub mod llvm_wrap;
 
+const VERSION_STRING: &'static str = "0.1.0";
+
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
 pub use language::{LLVMCodeString, ProgrammingLanguageInterface, EvalOptions, ExecutionMethod, TraceArtifact, LanguageOutput, FinishedComputation, UnfinishedComputation};
@@ -167,7 +169,7 @@ impl Repl {
   }
 
   fn run(&mut self) {
-    println!("MetaInterpreter v 0.05");
+    println!("Schala MetaInterpreter version {}", VERSION_STRING);
 
     self.console.get_history().load(".schala_history").unwrap_or(());
 
