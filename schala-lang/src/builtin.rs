@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::collections::HashMap;
 
-use schala_lang::typechecking::{Type, TypeResult, TConst};
+use typechecking::{Type, TypeResult, TConst};
 use self::Type::*; use self::TConst::*;
 
 #[derive(Debug, PartialEq, Clone)]

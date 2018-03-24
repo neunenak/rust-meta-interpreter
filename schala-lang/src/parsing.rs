@@ -2,11 +2,11 @@ use std::rc::Rc;
 use std::iter::Peekable;
 use std::vec::IntoIter;
 
-use schala_lang::tokenizing::*;
-use schala_lang::tokenizing::Kw::*;
-use schala_lang::tokenizing::TokenType::*;
+use tokenizing::*;
+use tokenizing::Kw::*;
+use tokenizing::TokenType::*;
 
-use schala_lang::builtin::{BinOp, PrefixOp};
+use builtin::{BinOp, PrefixOp};
 
 /* Schala EBNF Grammar */
 /* Terminal productions are in 'single quotes' or UPPERCASE if they are a class

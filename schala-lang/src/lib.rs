@@ -1,3 +1,12 @@
+#![feature(advanced_slice_patterns, slice_patterns, box_patterns, box_syntax)]
+extern crate itertools;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate maplit;
+
+extern crate schala_repl;
+
 use itertools::Itertools;
 use schala_repl::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, UnfinishedComputation, FinishedComputation};
 

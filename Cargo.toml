@@ -16,6 +16,7 @@ schala-repl = { path = "schala-repl" }
 maaru-lang = { path = "maaru" }
 rukka-lang = { path = "rukka" }
 robo-lang = { path = "robo" }
+schala-lang = { path = "schala-lang" }
 
 [build-dependencies]
 includedir_codegen = "0.2.0"

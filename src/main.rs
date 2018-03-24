@@ -6,13 +6,12 @@ extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
 
+extern crate schala_repl;
+
 extern crate maaru_lang;
 extern crate rukka_lang;
 extern crate robo_lang;
-
-mod schala_lang;
-
-extern crate schala_repl;
+extern crate schala_lang;
 use schala_repl::{PLIGenerator, schala_main};
 
 extern { }

@@ -1,0 +1,12 @@
+[package]
+name = "schala-lang"
+version = "0.1.0"
+authors = ["greg <greg.shuflin@protonmail.com>"]
+
+[dependencies]
+itertools = "0.5.8"
+take_mut = "0.1.3"
+maplit = "*"
+lazy_static = "0.2.8"
+
+schala-repl = { path = "../schala-repl" }

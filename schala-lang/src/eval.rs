@@ -4,8 +4,8 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
-use schala_lang::parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType};
-use schala_lang::builtin::{BinOp, PrefixOp};
+use parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType};
+use builtin::{BinOp, PrefixOp};
 
 pub struct State<'a> {
   parent_frame: Option<&'a State<'a>>,

@@ -6,7 +6,7 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
-use schala_lang::parsing;
+use parsing;
 
 pub struct TypeContext { 
   type_var_count: u64,

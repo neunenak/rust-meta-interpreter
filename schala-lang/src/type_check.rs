@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 
-use schala_lang::parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName, TypeSingletonName};
+use parsing::{AST, Statement, Declaration, Signature, Expression, ExpressionType, Operation, Variant, TypeName, TypeSingletonName};
 
 // from Niko's talk
 /* fn type_check(expression, expected_ty) -> Ty {
