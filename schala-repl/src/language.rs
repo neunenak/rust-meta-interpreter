@@ -1,7 +1,5 @@
-extern crate colored;
-
 use std::collections::HashMap;
-use self::colored::*;
+use colored::*;
 use std::fmt::Write;
 
 pub struct LLVMCodeString(pub String);

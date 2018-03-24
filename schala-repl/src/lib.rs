@@ -5,6 +5,7 @@
 extern crate getopts;
 extern crate rustyline;
 extern crate itertools;
+extern crate colored;
 
 #[macro_use]
 extern crate serde_derive;
@@ -22,6 +23,7 @@ use std::default::Default;
 
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+use self::colored::*;
 
 mod language;
 mod webapp;
@@ -228,6 +230,7 @@ impl Repl {
         println!("exit | quit");
         println!("lang(uage) [go|show|next|previous]");
         println!("set [show|hide] [tokens|parse|symbols|eval|llvm]");
+        println!("options");
       }
       "lang" | "language" => {
         match commands.get(1) {
@@ -296,6 +299,15 @@ impl Repl {
             return true;
           }
         }
+      },
+      "options" => {
+        let ref d = self.options.debug;
+        let tokens = if d.tokens { "true".green() } else { "false".red() };
+        let parse_tree = if d.parse_tree { "true".green() } else { "false".red() };
+        let ast = if d.ast { "true".green() } else { "false".red() };
+        let symbol_table = if d.symbol_table { "true".green() } else { "false".red() };
+        println!(r#"Debug:
+tokens: {}, parse: {}, ast: {}, symbols: {}"#, tokens, parse_tree, ast, symbol_table);
       },
       e => println!("Unknown command: {}", e)
     }
