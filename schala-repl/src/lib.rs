@@ -38,7 +38,7 @@ include!(concat!(env!("OUT_DIR"), "/static.rs"));
 pub use language::{LLVMCodeString, ProgrammingLanguageInterface, EvalOptions, ExecutionMethod, TraceArtifact, LanguageOutput, FinishedComputation, UnfinishedComputation};
 pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
-pub fn schala_main(generators: Vec<PLIGenerator>) {
+pub fn repl_main(generators: Vec<PLIGenerator>) {
   let languages: Vec<Box<ProgrammingLanguageInterface>> = generators.iter().map(|x| x()).collect();
 
   let option_matches = program_options().parse(std::env::args()).unwrap_or_else(|e| {
@@ -190,7 +190,6 @@ impl Repl {
           let output = self.input_handler(input);
           println!("=> {}", output);
         }
-        _ => (),
       }
     }
     self.console.get_history().save(".schala_history").unwrap_or(());

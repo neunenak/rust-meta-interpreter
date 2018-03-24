@@ -4,7 +4,7 @@ extern crate maaru_lang;
 extern crate rukka_lang;
 extern crate robo_lang;
 extern crate schala_lang;
-use schala_repl::{PLIGenerator, schala_main};
+use schala_repl::{PLIGenerator, repl_main};
 
 extern { }
 
@@ -15,6 +15,6 @@ fn main() {
     Box::new(|| { Box::new(robo_lang::Robo::new())}),
     Box::new(|| { Box::new(rukka_lang::Rukka::new())}),
   ];
-  schala_main(generators);
+  repl_main(generators);
 }
 
