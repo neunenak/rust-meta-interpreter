@@ -2,6 +2,7 @@ extern crate colored;
 
 use std::collections::HashMap;
 use self::colored::*;
+use std::fmt::Write;
 
 pub struct LLVMCodeString(pub String);
 
@@ -94,7 +95,19 @@ impl UnfinishedComputation {
 impl FinishedComputation {
   pub fn to_repl(&self) -> String {
     match self.text_output {
-      Ok(ref s) => s.clone(),
+      Ok(ref output) => {
+        let mut buf = String::new();
+        for stage in ["tokens", "parse_trace", "ast", "symbol_table", "type_check"].iter() {
+          if let Some(artifact) = self.artifacts.get(&stage.to_string()) {
+            let color = artifact.text_color;
+            let stage = stage.color(color).bold();
+            let output = artifact.debug_output.color(color);
+            write!(&mut buf, "{}: {}\n", stage, output);
+          }
+        }
+        write!(&mut buf, "{}", output);
+        buf
+      }
       Err(ref s) => format!("{} {}", "Error: ".red().bold(), s)
     }
   }
