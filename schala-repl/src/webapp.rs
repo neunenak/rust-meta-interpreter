@@ -1,7 +1,6 @@
 use rocket;
 use rocket::State;
 use rocket::response::Content;
-use rocket::response::NamedFile;
 use rocket::http::ContentType;
 use rocket_contrib::Json;
 use language::{ProgrammingLanguageInterface, EvalOptions};

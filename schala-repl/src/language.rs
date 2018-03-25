@@ -100,10 +100,10 @@ impl FinishedComputation {
             let color = artifact.text_color;
             let stage = stage.color(color).bold();
             let output = artifact.debug_output.color(color);
-            write!(&mut buf, "{}: {}\n", stage, output);
+            write!(&mut buf, "{}: {}\n", stage, output).unwrap();
           }
         }
-        write!(&mut buf, "{}", output);
+        write!(&mut buf, "{}", output).unwrap();
         buf
       }
       Err(ref s) => format!("{} {}", "Error: ".red().bold(), s)
@@ -111,7 +111,7 @@ impl FinishedComputation {
   }
   pub fn to_noninteractive(&self) -> Option<String> {
     match self.text_output {
-      Ok(ref s) => None,
+      Ok(_) => None,
       Err(ref s) => Some(format!("{} {}", "Error: ".red().bold(), s))
     }
   }
@@ -154,7 +154,7 @@ pub trait ProgrammingLanguageInterface {
   }
   /* old */
 
-  fn execute(&mut self, input: &str, eval_options: &EvalOptions) -> FinishedComputation {
+  fn execute(&mut self, _input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
     FinishedComputation { artifacts: HashMap::new(), text_output: Err(format!("REPL evaluation not implemented")) }
   }
   fn get_language_name(&self) -> String;
