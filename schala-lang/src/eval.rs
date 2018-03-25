@@ -102,17 +102,17 @@ impl<'a> State<'a> {
     State { parent_frame: Some(parent), values: HashMap::new() }
   }
 
-  pub fn evaluate(&mut self, ast: AST) -> Vec<String> {
+  pub fn evaluate(&mut self, ast: AST) -> Vec<Result<String, String>> {
     let mut acc = vec![];
     for statement in ast.0 {
       match self.eval_statement(statement) {
         Ok(output) => {
           if let Some(fully_evaluated) = output {
-            acc.push(fully_evaluated.to_string());
+            acc.push(Ok(fully_evaluated.to_string()));
           }
         },
         Err(error) => {
-          acc.push(format!("Eval error: {}", error));
+          acc.push(Err(format!("Eval error: {}", error)));
           return acc;
         },
       }

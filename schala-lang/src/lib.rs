@@ -107,7 +107,12 @@ impl ProgrammingLanguageInterface for Schala {
     }
 
     let evaluation_outputs = self.state.evaluate(ast);
-    let text_output: String = evaluation_outputs.into_iter().intersperse(format!("\n")).collect();
-    evaluation.output(Ok(text_output))
+    let text_output: Result<Vec<String>, String> = evaluation_outputs
+      .into_iter()
+      .collect();
+
+    let eval_output = text_output
+      .map(|v| { v.into_iter().intersperse(format!("\n")).collect() });
+    evaluation.output(eval_output)
   }
 }

@@ -4,6 +4,9 @@ fn main() {
   a + b
 }
 
+foo
+
 print(main())
+
 
 
