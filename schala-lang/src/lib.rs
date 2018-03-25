@@ -82,7 +82,6 @@ impl ProgrammingLanguageInterface for Schala {
       }
     };
 
-
     //symbol table
     match self.type_context.add_top_level_types(&ast) {
       Ok(()) => (),

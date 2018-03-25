@@ -111,9 +111,11 @@ pub fn tokenize(input: &str) -> Vec<Token> {
   let mut tokens: Vec<Token> = Vec::new();
 
   let mut input  = input.lines().enumerate()
+      .intersperse((0, "\n"))
       .flat_map(|(line_idx, ref line)| {
           line.chars().enumerate().map(move |(ch_idx, ch)| (line_idx, ch_idx, ch))
-      }).peekable();
+      })
+      .peekable();
 
   while let Some((line_idx, ch_idx, c)) = input.next() {
     let cur_tok_type = match c {
