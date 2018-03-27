@@ -86,7 +86,9 @@ impl ProgrammingLanguageInterface for Schala {
     match self.type_context.add_top_level_types(&ast) {
       Ok(()) => (),
       Err(msg) => {
-        evaluation.add_artifact(TraceArtifact::new("type_check", msg));
+        if options.debug.type_checking {
+          evaluation.add_artifact(TraceArtifact::new("type_check", msg));
+        }
       }
     };
 

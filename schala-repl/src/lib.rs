@@ -62,13 +62,20 @@ pub fn repl_main(generators: Vec<PLIGenerator>) {
     exit(0);
   }
 
+  let mut options = EvalOptions::default();
+  if let Some(ref ltrs) = option_matches.opt_str("debug") {
+    options.debug.tokens = ltrs.contains("l");
+    options.debug.ast = ltrs.contains("a");
+    options.debug.parse_tree = ltrs.contains("r");
+    options.debug.symbol_table = ltrs.contains("s");
+  }
+
   let language_names: Vec<String> = languages.iter().map(|lang| {lang.get_language_name()}).collect();
   let initial_index: usize =
     option_matches.opt_str("lang")
     .and_then(|lang| { language_names.iter().position(|x| { x.to_lowercase() == lang.to_lowercase() }) })
     .unwrap_or(0);
 
-  let mut options = EvalOptions::default();
   options.execution_method = match option_matches.opt_str("eval-style") {
     Some(ref s) if s == "compile" => ExecutionMethod::Compile,
     _ => ExecutionMethod::Interpret,
@@ -368,5 +375,9 @@ fn program_options() -> getopts::Options {
   options.optflag("w",
                   "webapp",
                   "Start up web interpreter");
+  options.optopt("d",
+                  "debug",
+                  "Debug a stage (l = tokenizer, a = AST, r = parse trace, s = symbol table)",
+                  "[l|a|r|s]");
   options
 }

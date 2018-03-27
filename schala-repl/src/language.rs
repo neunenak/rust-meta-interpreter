@@ -111,7 +111,18 @@ impl FinishedComputation {
   }
   pub fn to_noninteractive(&self) -> Option<String> {
     match self.text_output {
-      Ok(_) => None,
+      Ok(_) => {
+        let mut buf = String::new();
+        for stage in ["tokens", "parse_trace", "ast", "symbol_table", "type_check"].iter() {
+          if let Some(artifact) = self.artifacts.get(&stage.to_string()) {
+            let color = artifact.text_color;
+            let stage = stage.color(color).bold();
+            let output = artifact.debug_output.color(color);
+            write!(&mut buf, "{}: {}\n", stage, output).unwrap();
+          }
+        }
+        if buf == "" { None } else { Some(buf) }
+      },
       Err(ref s) => Some(format!("{} {}", "Error: ".red().bold(), s))
     }
   }
