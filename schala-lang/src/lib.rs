@@ -1,4 +1,4 @@
-#![feature(advanced_slice_patterns, slice_patterns, box_patterns, box_syntax)]
+#![feature(slice_patterns, box_patterns, box_syntax)]
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
