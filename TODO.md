@@ -1,6 +1,11 @@
 
 # TODO Items
 
+
+- REPL:
+  - want to be able to do things like `:doc Identifier`, and have the language load up these definitions to the REPL
+
+
 * change 'trait' to 'interface'
   -think about idris-related ideas of multiple implementations of a type for an interface (+ vs * impl for monoids)
 

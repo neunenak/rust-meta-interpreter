@@ -143,7 +143,7 @@ impl Repl {
       options: Repl::get_options(),
       languages: languages,
       current_language_index: i,
-      interpreter_directive_sigil: '.',
+      interpreter_directive_sigil: ':',
       console
     }
   }
@@ -176,6 +176,7 @@ impl Repl {
 
   fn run(&mut self) {
     println!("Schala MetaInterpreter version {}", VERSION_STRING);
+    println!("Type {}help for help with the REPL", self.interpreter_directive_sigil);
 
     self.console.get_history().load(".schala_history").unwrap_or(());
 
