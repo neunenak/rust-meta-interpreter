@@ -277,72 +277,6 @@ impl Repl {
         writeln!(buf, "{}", lang.custom_interpreter_directives_help()).unwrap();
         Some(buf)
       },
-      _ => self.languages[self.current_language_index].handle_custom_interpreter_directives(&commands),
-    }
-  }
-
-  /*
-  fn handle_interpreter_directive(&mut self, input: &str) -> Option<String> {
-    let mut iter = input.chars();
-    iter.next();
-    let commands: Vec<&str> = iter
-      .as_str()
-      .split_whitespace()
-      .collect();
-
-    let cmd: &str = match commands.get(0).clone() {
-      None => return None,
-      Some(s) => s
-    };
-
-    match cmd {
-      "exit" | "quit"  => {
-        self.save_options();
-        exit(0)
-      },
-      "help" => {
-        Some(r#"Commands:
-exit | quit
-lang(uage) [go|show|next|previous]
-set [show|hide] [tokens|parse|symbols|eval|llvm]
-options"#.to_string())
-      }
-      "lang" | "language" => {
-        match commands.get(1) {
-          Some(&"show") => {
-            let mut buf = String::new();
-            for (i, lang) in self.languages.iter().enumerate() {
-              write!(buf, "{}{}\n", if i == self.current_language_index { "* "} else { "" }, lang.get_language_name()).unwrap();
-            }
-            Some(buf)
-          },
-          Some(&"go") => {
-            match commands.get(2) {
-              None => Some(format!("Must specify a language name")),
-              Some(&desired_name) => {
-                for (i, _) in self.languages.iter().enumerate() {
-                  let lang_name = self.languages[i].get_language_name();
-                  if lang_name.to_lowercase() == desired_name.to_lowercase() {
-                    self.current_language_index = i;
-                    return Some(format!("Switching to {}", self.languages[self.current_language_index].get_language_name()));
-                  }
-                }
-                Some(format!("Language {} not found", desired_name))
-              }
-            }
-          },
-          Some(&"next") => {
-            self.current_language_index = (self.current_language_index + 1) % self.languages.len();
-            Some(format!("Switching to {}", self.languages[self.current_language_index].get_language_name()))
-          }
-          Some(&"prev") | Some(&"previous") => {
-            self.current_language_index = if self.current_language_index == 0 { self.languages.len() - 1 } else { self.current_language_index - 1 };
-            Some(format!("Switching to {}", self.languages[self.current_language_index].get_language_name()))
-          },
-          Some(e) => Some(format!("Bad `lang` argument: {}", e)),
-          None => Some(format!("`lang` - valid arguments `show`, `next`, `prev`|`previous`")),
-        }
-      },
       "set" => {
         let show = match commands.get(1) {
           Some(&"show") => true,
@@ -374,10 +308,11 @@ options"#.to_string())
         Some(format!(r#"Debug:
 tokens: {}, parse: {}, ast: {}, symbols: {}"#, tokens, parse_tree, ast, symbol_table))
       },
-      e => Some(format!("Unknown command: {}", e))
+      e => self.languages[self.current_language_index]
+        .handle_custom_interpreter_directives(&commands)
+        .or(Some(format!("Unknown command: {}", e)))
     }
   }
-  */
 }
 
 /*
