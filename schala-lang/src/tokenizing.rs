@@ -52,7 +52,7 @@ pub enum Kw {
   Var, Const, Let, In,
   Return,
   Alias, Type, SelfType, SelfIdent,
-  Trait, Impl,
+  Interface, Impl,
   True, False,
   Module
 }
@@ -74,7 +74,7 @@ lazy_static! {
       "type" => Kw::Type,
       "Self" => Kw::SelfType,
       "self" => Kw::SelfIdent,
-      "trait" => Kw::Trait,
+      "interface" => Kw::Interface,
       "impl" => Kw::Impl,
       "true" => Kw::True,
       "false" => Kw::False,

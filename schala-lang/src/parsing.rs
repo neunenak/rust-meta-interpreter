@@ -36,13 +36,13 @@ formal_param := IDENTIFIER type_anno+
 binding_declaration: 'var' IDENTIFIER '=' expression
                       | 'const' IDENTIFIER '=' expression
 
-trait_declaration := 'trait' trait_name signature_block
-impl_declaration := 'impl' IDENTIFIER decl_block | 'impl' trait_name 'for' IDENTIFIER decl_block
+interface_declaration := 'interface' interface_name signature_block
+impl_declaration := 'impl' IDENTIFIER decl_block | 'impl' interface_name 'for' IDENTIFIER decl_block
 
 decl_block := '{' (func_declaration)* '}'
 signature_block := '{' (func_signature)* '}'
 
-trait_name := IDENTIFIER
+interface_name := IDENTIFIER
 
 type_anno := (':' type_name)+
 type_name := type_singleton_name | '(' type_names ')'
@@ -170,7 +170,7 @@ pub enum Statement {
 }
 
 type ParamName = Rc<String>;
-type TraitName = Rc<String>; //should be a singleton I think??
+type InterfaceName = Rc<String>; //should be a singleton I think??
 type FormalParam = (ParamName, Option<TypeName>);
 
 #[derive(Debug, PartialEq, Clone)]
@@ -186,10 +186,10 @@ pub enum Declaration {
   },
   Impl {
     type_name: TypeName,
-    trait_name: Option<TraitName>,
+    interface_name: Option<InterfaceName>,
     block: Vec<Declaration>,
   },
-  Trait {
+  Interface {
     name: Rc<String>,
     signatures: Vec<Signature>
   }
@@ -347,7 +347,7 @@ impl Parser {
       Keyword(Type) => self.type_declaration().map(|decl| { Statement::Declaration(decl) }),
       Keyword(Func)=> self.func_declaration().map(|func| { Statement::Declaration(func) }),
       Keyword(Var) | Keyword(Const) => self.binding_declaration().map(|decl| Statement::Declaration(decl)),
-      Keyword(Trait) => self.trait_declaration().map(|decl| Statement::Declaration(decl)),
+      Keyword(Interface) => self.interface_declaration().map(|decl| Statement::Declaration(decl)),
       Keyword(Impl) => self.impl_declaration().map(|decl| Statement::Declaration(decl)),
       _ => self.expression().map(|expr| { Statement::ExpressionStatement(expr) } ),
     }
@@ -458,11 +458,11 @@ impl Parser {
     Ok(Declaration::Binding { name, constant, expr })
   });
 
-  parse_method!(trait_declaration(&mut self) -> ParseResult<Declaration> {
-    expect!(self, Keyword(Trait), "'trait'");
+  parse_method!(interface_declaration(&mut self) -> ParseResult<Declaration> {
+    expect!(self, Keyword(Interface), "'interface'");
     let name = self.identifier()?;
     let signatures = self.signature_block()?;
-    Ok(Declaration::Trait { name, signatures })
+    Ok(Declaration::Interface { name, signatures })
   });
 
   parse_method!(signature_block(&mut self) -> ParseResult<Vec<Signature>> {
@@ -485,11 +485,11 @@ impl Parser {
       (first, Some(second)) => {
         match first {
           TypeName::Singleton(TypeSingletonName { ref name, ref params }) if params.len() == 0 =>
-            Declaration::Impl { type_name: second, trait_name: Some(name.clone()), block },
-          _ => return ParseError::new(&format!("Invalid name for a trait")),
+            Declaration::Impl { type_name: second, interface_name: Some(name.clone()), block },
+          _ => return ParseError::new(&format!("Invalid name for an interface")),
         }
       },
-      (first, None) => Declaration::Impl { type_name: first, trait_name: None, block }
+      (first, None) => Declaration::Impl { type_name: first, interface_name: None, block }
     };
     Ok(result)
   });
@@ -1138,9 +1138,9 @@ fn a(x) {
     parse_error!("if A {a: 1} { b } else { c }");
   }
   #[test]
-  fn parsing_traits() {
-    parse_test!("trait Unglueable { fn unglue(a: Glue); fn mar(): Glue }", AST(vec![
-      Declaration(Trait {
+  fn parsing_interfaces() {
+    parse_test!("interface Unglueable { fn unglue(a: Glue); fn mar(): Glue }", AST(vec![
+      Declaration(Interface {
         name: rc!(Unglueable),
         signatures: vec![
           Signature { name: rc!(unglue), params: vec![(rc!(a), Some(Singleton(TypeSingletonName { name: rc!(Glue), params: vec![] })))], type_anno: None },
@@ -1155,7 +1155,7 @@ fn a(x) {
     parse_test!("impl Heh { fn yolo(); fn swagg(); }", AST(vec![
       Declaration(Impl {
         type_name: ty!("Heh"),
-        trait_name: None,
+        interface_name: None,
         block: vec![
           FuncSig(Signature { name: rc!(yolo), params: vec![], type_anno: None }),
           FuncSig(Signature { name: rc!(swagg), params: vec![], type_anno: None })
@@ -1164,7 +1164,7 @@ fn a(x) {
     parse_test!("impl Mondai for Lollerino { fn yolo(); fn swagg(); }", AST(vec![
       Declaration(Impl {
         type_name: ty!("Lollerino"),
-        trait_name: Some(rc!(Mondai)),
+        interface_name: Some(rc!(Mondai)),
         block: vec![
           FuncSig(Signature { name: rc!(yolo), params: vec![], type_anno: None}),
           FuncSig(Signature { name: rc!(swagg), params: vec![], type_anno: None })
@@ -1172,7 +1172,7 @@ fn a(x) {
     parse_test!("impl Option<WTFMate> { fn oi() }", AST(vec![
       Declaration(Impl {
         type_name: Singleton(TypeSingletonName { name: rc!(Option), params: vec![ty!("WTFMate")]}),
-        trait_name: None,
+        interface_name: None,
         block: vec![
           FuncSig(Signature { name: rc!(oi), params: vec![], type_anno: None }),
         ]
