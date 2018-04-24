@@ -170,4 +170,10 @@ pub trait ProgrammingLanguageInterface {
   }
   fn get_language_name(&self) -> String;
   fn get_source_file_suffix(&self) -> String;
+  fn handle_custom_interpreter_directives(&mut self, commands: &Vec<&str>) -> Option<String> {
+    None
+  }
+  fn custom_interpreter_directives_help(&self) -> String {
+    format!(">> No custom interpreter directives specified <<")
+  }
 }

@@ -7,7 +7,7 @@
 
 
 * change 'trait' to 'interface'
-  -think about idris-related ideas of multiple implementations of a type for an interface (+ vs * impl for monoids)
+  -think about idris-related ideas of multiple implementations of a type for an interface (+ vs * impl for monoids, for preorder/inorder/postorder for Foldable)
 
 * Share state between programming languages
 
