@@ -1,6 +1,9 @@
 
 # TODO Items
 
+* change 'trait' to 'interface'
+  -think about idris-related ideas of multiple implementations of a type for an interface (+ vs * impl for monoids)
+
 * Share state between programming languages
 
 * idea for Schala - scoped types - be able to define a quick enum type scoped to a function ro something, that only is meant to be used as a quick bespoke interface between two other things
