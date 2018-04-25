@@ -1,6 +1,7 @@
 
 # TODO Items
 
+-should have an Idris-like `cast To From` function
 
 - REPL:
   - want to be able to do things like `:doc Identifier`, and have the language load up these definitions to the REPL
