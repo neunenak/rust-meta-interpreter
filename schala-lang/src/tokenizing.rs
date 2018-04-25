@@ -245,14 +245,31 @@ fn handle_operator<I: Iterator<Item=(usize,usize,char)>>(c: char, input: &mut Ch
   };
 
   let mut buf = String::new();
-  buf.push(c);
-  loop {
-    match input.peek().map(|&(_, _, c)| { c }) {
-      Some(c) if is_operator(&c) => {
-        input.next();
-        buf.push(c);
-      },
-      _ => break
+
+  if c == '`' {
+    loop {
+      match input.peek().map(|&(_, _, c)| { c }) {
+        Some(c) if c.is_alphabetic() || c == '_' => {
+          input.next();
+          buf.push(c);
+        },
+        Some('`') => {
+          input.next();
+          break;
+        },
+        _ => break
+      }
+    }
+  } else {
+    buf.push(c);
+    loop {
+      match input.peek().map(|&(_, _, c)| { c }) {
+        Some(c) if is_operator(&c) => {
+          input.next();
+          buf.push(c);
+        },
+        _ => break
+      }
     }
   }
   TokenType::Operator(Rc::new(buf))
@@ -285,5 +302,11 @@ mod schala_tokenizer_tests {
   fn comments() {
     let token_types: Vec<TokenType> = tokenize("1  + /* hella /* bro */ */ 2").into_iter().map(move |t| t.token_type).collect();
     assert_eq!(token_types, vec![digit!("1"), op!("+"), digit!("2")]);
+  }
+
+  #[test]
+  fn backtick_operators() {
+    let token_types: Vec<TokenType> = tokenize("1 `plus` 2").into_iter().map(move |t| t.token_type).collect();
+    assert_eq!(token_types, vec![digit!("1"), op!("plus"), digit!("2")]);
   }
 }
