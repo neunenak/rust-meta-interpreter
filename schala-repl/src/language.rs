@@ -92,22 +92,20 @@ impl UnfinishedComputation {
 
 impl FinishedComputation {
   pub fn to_repl(&self) -> String {
-    match self.text_output {
-      Ok(ref output) => {
-        let mut buf = String::new();
-        for stage in ["tokens", "parse_trace", "ast", "symbol_table", "type_check"].iter() {
-          if let Some(artifact) = self.artifacts.get(&stage.to_string()) {
-            let color = artifact.text_color;
-            let stage = stage.color(color).bold();
-            let output = artifact.debug_output.color(color);
-            write!(&mut buf, "{}: {}\n", stage, output).unwrap();
-          }
-        }
-        write!(&mut buf, "{}", output).unwrap();
-        buf
+    let mut buf = String::new();
+    for stage in ["tokens", "parse_trace", "ast", "symbol_table", "type_check"].iter() {
+      if let Some(artifact) = self.artifacts.get(&stage.to_string()) {
+        let color = artifact.text_color;
+        let stage = stage.color(color).bold();
+        let output = artifact.debug_output.color(color);
+        write!(&mut buf, "{}: {}\n", stage, output).unwrap();
       }
-      Err(ref s) => format!("{} {}", "Error: ".red().bold(), s)
     }
+    match self.text_output {
+      Ok(ref output) => write!(&mut buf, "{}", output).unwrap(),
+      Err(ref err) => write!(&mut buf, "{} {}", "Error: ".red().bold(), err).unwrap(),
+    }
+    buf
   }
   pub fn to_noninteractive(&self) -> Option<String> {
     match self.text_output {
