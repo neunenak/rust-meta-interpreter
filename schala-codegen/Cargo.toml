@@ -1,0 +1,9 @@
+[package]
+name = "schala-codegen"
+version = "0.1.0"
+authors = ["greg <greg.shuflin@protonmail.com>"]
+
+[dependencies]
+
+[lib]
+proc-macro = true

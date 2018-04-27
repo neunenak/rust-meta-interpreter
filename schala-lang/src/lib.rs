@@ -1,4 +1,5 @@
 #![feature(slice_patterns, box_patterns, box_syntax)]
+#![feature(proc_macro)]
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
@@ -6,6 +7,7 @@ extern crate lazy_static;
 extern crate maplit;
 
 extern crate schala_repl;
+extern crate schala_codegen;
 
 use itertools::Itertools;
 use schala_repl::{ProgrammingLanguageInterface, EvalOptions, TraceArtifact, UnfinishedComputation, FinishedComputation};
@@ -47,6 +49,8 @@ impl ProgrammingLanguageInterface for Schala {
   }
 
   fn execute(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
+    schala_codegen::print_a_thing!();
+
     let mut evaluation = UnfinishedComputation::default();
 
     //tokenzing

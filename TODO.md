@@ -1,6 +1,15 @@
 
 # TODO Items
 
+
+- sketch of an idea for the REPL:
+        -each compiler pass should be a (procedural?) macro like
+        compiler_pass!("parse", dataproducts: ["ast", "parse_tree"], {
+         match parsing::parse(INPUT) {
+           Ok(
+                PASS.add_artifact(
+        }
+
 -should have an Idris-like `cast To From` function
 
 - REPL:

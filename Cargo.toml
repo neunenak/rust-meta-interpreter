@@ -6,6 +6,7 @@ authors = ["greg <greg.shuflin@protonmail.com>"]
 [dependencies]
 
 schala-repl = { path = "schala-repl" }
+schala-codegen = { path = "schala-codegen" }
 maaru-lang = { path = "maaru" }
 rukka-lang = { path = "rukka" }
 robo-lang = { path = "robo" }

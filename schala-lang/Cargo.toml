@@ -10,3 +10,4 @@ maplit = "*"
 lazy_static = "0.2.8"
 
 schala-repl = { path = "../schala-repl" }
+schala-codegen = { path = "../schala-codegen" }
