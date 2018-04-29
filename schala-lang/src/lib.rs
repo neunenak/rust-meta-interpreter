@@ -40,11 +40,11 @@ impl Schala {
   }
 }
 
-fn tokenizing_stage(input: &str) -> Result<Vec<tokenizing::Token>, ()> {
+fn tokenizing_stage(handle: &mut Schala, input: &str) -> Result<Vec<tokenizing::Token>, ()> {
   Ok(tokenizing::tokenize(input))
 }
 
-fn parsing_stage(input: Vec<tokenizing::Token>) -> Result<parsing::AST, parsing::ParseError> {
+fn parsing_stage(handle: &mut Schala, input: Vec<tokenizing::Token>) -> Result<parsing::AST, parsing::ParseError> {
   parsing::parse(input).0
 }
 
@@ -59,7 +59,7 @@ impl ProgrammingLanguageInterface for Schala {
 
   fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
     //let chain = pass_chain![tokenizing::tokenize, parsing::parse];
-    let chain = pass_chain![self, tokenizing_stage, parsing_stage];
+    let mut chain = pass_chain![self, tokenizing_stage, parsing_stage];
     chain(input)
   }
 
