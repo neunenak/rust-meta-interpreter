@@ -59,7 +59,7 @@ impl ProgrammingLanguageInterface for Schala {
 
   fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
     //let chain = pass_chain![tokenizing::tokenize, parsing::parse];
-    let chain = pass_chain![tokenizing_stage, parsing_stage];
+    let chain = pass_chain![self, tokenizing_stage, parsing_stage];
     chain(input)
   }
 

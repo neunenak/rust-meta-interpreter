@@ -172,7 +172,7 @@ pub trait ProgrammingLanguageInterface {
   }
   fn get_language_name(&self) -> String;
   fn get_source_file_suffix(&self) -> String;
-  fn handle_custom_interpreter_directives(&mut self, commands: &Vec<&str>) -> Option<String> {
+  fn handle_custom_interpreter_directives(&mut self, _commands: &Vec<&str>) -> Option<String> {
     None
   }
   fn custom_interpreter_directives_help(&self) -> String {
@@ -182,8 +182,8 @@ pub trait ProgrammingLanguageInterface {
 
 #[macro_export]
 macro_rules! pass_chain {
-  ($($pass:path), *) => {
-    |text_input| { pass_chain_helper! { text_input $(, $pass)* } }
+  ($self:expr, $($pass:path), *) => {
+    |text_input| { pass_chain_helper! { $self, text_input $(, $pass)* } }
   };
 }
 
@@ -191,13 +191,13 @@ macro_rules! pass_chain {
 //but should in the future return a FinishedComputation
 #[macro_export]
 macro_rules! pass_chain_helper {
-  ($input:expr, $pass:path $(, $rest:path)*) => {
+  ($self:expr, $input:expr, $pass:path $(, $rest:path)*) => {
     {
       let pass_name = stringify!($pass);
       println!("Running pass {}", pass_name);
       let output = $pass($input);
       match output {
-        Ok(result) => pass_chain_helper! { result $(, $rest)* },
+        Ok(result) => pass_chain_helper! { $self, result $(, $rest)* },
         Err(err) => {
           let comp = UnfinishedComputation::default();
           comp.output(Err(format!("Pass {} failed with {:?}", pass_name, err)))
@@ -206,7 +206,7 @@ macro_rules! pass_chain_helper {
     }
   };
   // Done
-  ($final_output:expr) => {
+  ($self:expr, $final_output:expr) => {
     {
       let comp = UnfinishedComputation::default();
       let final_output: FinishedComputation = comp.output(Ok(format!("{:?}", $final_output)));
