@@ -40,12 +40,45 @@ impl Schala {
   }
 }
 
-fn tokenizing_stage(handle: &mut Schala, input: &str) -> Result<Vec<tokenizing::Token>, ()> {
+fn tokenizing_stage(_handle: &mut Schala, input: &str) -> Result<Vec<tokenizing::Token>, ()> {
   Ok(tokenizing::tokenize(input))
 }
 
-fn parsing_stage(handle: &mut Schala, input: Vec<tokenizing::Token>) -> Result<parsing::AST, parsing::ParseError> {
+fn parsing_stage(_handle: &mut Schala, input: Vec<tokenizing::Token>) -> Result<parsing::AST, parsing::ParseError> {
   parsing::parse(input).0
+}
+
+fn symbol_table_stage(handle: &mut Schala, input: parsing::AST) -> Result<parsing::AST, String> {
+  match handle.type_context.add_top_level_types(&input) {
+    Ok(()) => Ok(input),
+    Err(msg) => Err(msg)
+  }
+}
+
+fn typechecking_stage(handle: &mut Schala, input: parsing::AST) -> Result<parsing::AST, String> {
+  match handle.type_context.type_check_ast(&input) {
+    Ok(ty) => {
+      println!("FINAL TYPE: {:?}", ty);
+      /*
+         if options.debug.type_checking {
+         evaluation.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty)));
+         }
+         */
+      Ok(input)
+    },
+    Err(msg) => Err(msg)
+  }
+}
+
+fn eval_stage(handle: &mut Schala, input: parsing::AST) -> Result<String, String> {
+  let evaluation_outputs = handle.state.evaluate(input);
+  let text_output: Result<Vec<String>, String> = evaluation_outputs
+    .into_iter()
+    .collect();
+
+  let eval_output: Result<String, String> = text_output
+    .map(|v| { v.into_iter().intersperse(format!("\n")).collect() });
+  eval_output
 }
 
 impl ProgrammingLanguageInterface for Schala {
@@ -59,7 +92,13 @@ impl ProgrammingLanguageInterface for Schala {
 
   fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
     //let chain = pass_chain![tokenizing::tokenize, parsing::parse];
-    let mut chain = pass_chain![self, tokenizing_stage, parsing_stage];
+    let mut chain = pass_chain![self,
+      tokenizing_stage,
+      parsing_stage,
+      symbol_table_stage,
+      typechecking_stage,
+      eval_stage
+    ];
     chain(input)
   }
 
