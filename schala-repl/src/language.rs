@@ -82,6 +82,12 @@ impl UnfinishedComputation {
   pub fn add_artifact(&mut self, artifact: TraceArtifact) {
     self.artifacts.insert(artifact.stage_name.clone(), artifact);
   }
+  pub fn finish(self, text_output: Result<String, String>) -> FinishedComputation {
+    FinishedComputation {
+      artifacts: self.artifacts,
+      text_output
+    }
+  }
   pub fn output(self, output: Result<String, String>) -> FinishedComputation {
     FinishedComputation {
       artifacts: self.artifacts,
@@ -209,7 +215,7 @@ macro_rules! pass_chain_helper {
   ($state:expr, $final_output:expr) => {
     {
       let comp = UnfinishedComputation::default();
-      let final_output: FinishedComputation = comp.output(Ok(format!("{:?}", $final_output)));
+      let final_output: FinishedComputation = comp.finish(Ok($final_output));
       final_output
     }
   };
