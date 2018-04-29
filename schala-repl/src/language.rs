@@ -163,6 +163,10 @@ pub trait ProgrammingLanguageInterface {
   }
   /* old */
 
+  fn execute_pipeline(&mut self, _input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
+    FinishedComputation { artifacts: HashMap::new(), text_output: Err(format!("Execution pipeline not done")) }
+  }
+
   fn execute(&mut self, _input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
     FinishedComputation { artifacts: HashMap::new(), text_output: Err(format!("REPL evaluation not implemented")) }
   }
@@ -174,4 +178,31 @@ pub trait ProgrammingLanguageInterface {
   fn custom_interpreter_directives_help(&self) -> String {
     format!(">> No custom interpreter directives specified <<")
   }
+}
+
+#[macro_export]
+macro_rules! pass_chain {
+  ($($pass:path), *) => {
+    |begin| pass_chain_helper! { begin $(, $pass)* }
+  };
+}
+
+#[macro_export]
+macro_rules! pass_chain_helper {
+  ($e:expr, $next:path $(, $rest:path)*) => {
+    pass_chain_helper! {
+      {
+        let output = $next({
+          let input = $e;
+          println!("About to run: {}", stringify!($next));
+          input
+        });
+        println!("Finished running {}", stringify!($next));
+        output.unwrap()
+      }
+      $(, $rest)*
+    }
+  };
+  // Done
+  ($e:expr) => { $e };
 }

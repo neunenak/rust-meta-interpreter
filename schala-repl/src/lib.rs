@@ -210,7 +210,10 @@ impl Repl {
 
   fn input_handler(&mut self, input: &str) -> String {
     let ref mut language = self.languages[self.current_language_index];
+    /*
     let interpreter_output = language.execute(input, &self.options);
+    */
+    let interpreter_output = language.execute_pipeline(input, &self.options);
     interpreter_output.to_repl()
   }
 

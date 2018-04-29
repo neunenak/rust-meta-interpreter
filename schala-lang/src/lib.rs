@@ -6,6 +6,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
 
+#[macro_use]
 extern crate schala_repl;
 extern crate schala_codegen;
 
@@ -39,6 +40,14 @@ impl Schala {
   }
 }
 
+fn tokenizing_stage(input: &str) -> Result<Vec<tokenizing::Token>, ()> {
+  Ok(tokenizing::tokenize(input))
+}
+
+fn parsing_stage(input: Vec<tokenizing::Token>) -> Result<parsing::AST, parsing::ParseError> {
+  parsing::parse(input).0
+}
+
 impl ProgrammingLanguageInterface for Schala {
   fn get_language_name(&self) -> String {
     "Schala".to_string()
@@ -46,6 +55,14 @@ impl ProgrammingLanguageInterface for Schala {
 
   fn get_source_file_suffix(&self) -> String {
     format!("schala")
+  }
+
+  fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
+    //let chain = pass_chain![tokenizing::tokenize, parsing::parse];
+    let chain = pass_chain![tokenizing_stage, parsing_stage];
+    let output = Ok(format!("{:?}", chain(input)));
+    let mut evaluation = UnfinishedComputation::default();
+    evaluation.output(output) //TODO rename this method it's confusing
   }
 
   fn execute(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
