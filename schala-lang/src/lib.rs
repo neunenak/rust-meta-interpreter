@@ -60,9 +60,7 @@ impl ProgrammingLanguageInterface for Schala {
   fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
     //let chain = pass_chain![tokenizing::tokenize, parsing::parse];
     let chain = pass_chain![tokenizing_stage, parsing_stage];
-    let output = Ok(format!("{:?}", chain(input)));
-    let mut evaluation = UnfinishedComputation::default();
-    evaluation.output(output) //TODO rename this method it's confusing
+    chain(input)
   }
 
   fn execute(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {

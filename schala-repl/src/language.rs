@@ -183,26 +183,34 @@ pub trait ProgrammingLanguageInterface {
 #[macro_export]
 macro_rules! pass_chain {
   ($($pass:path), *) => {
-    |begin| pass_chain_helper! { begin $(, $pass)* }
+    |text_input| { pass_chain_helper! { text_input $(, $pass)* } }
   };
 }
 
+//generates a function resulting in (for now) the return type of the last one
+//but should in the future return a FinishedComputation
 #[macro_export]
 macro_rules! pass_chain_helper {
-  ($e:expr, $next:path $(, $rest:path)*) => {
-    pass_chain_helper! {
-      {
-        let output = $next({
-          let input = $e;
-          println!("About to run: {}", stringify!($next));
-          input
-        });
-        println!("Finished running {}", stringify!($next));
-        output.unwrap()
+  ($input:expr, $pass:path $(, $rest:path)*) => {
+    {
+      let pass_name = stringify!($pass);
+      println!("Running pass {}", pass_name);
+      let output = $pass($input);
+      match output {
+        Ok(result) => pass_chain_helper! { result $(, $rest)* },
+        Err(err) => {
+          let comp = UnfinishedComputation::default();
+          comp.output(Err(format!("Pass {} failed with {:?}", pass_name, err)))
+        }
       }
-      $(, $rest)*
     }
   };
   // Done
-  ($e:expr) => { $e };
+  ($final_output:expr) => {
+    {
+      let comp = UnfinishedComputation::default();
+      let final_output: FinishedComputation = comp.output(Ok(format!("{:?}", $final_output)));
+      final_output
+    }
+  };
 }
