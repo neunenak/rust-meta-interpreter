@@ -195,19 +195,19 @@ pub trait ProgrammingLanguageInterface {
 #[macro_export]
 macro_rules! pass_chain {
   ($state:expr, $($pass:path), *) => {
-    |text_input| { pass_chain_helper! { $state, text_input $(, $pass)* } }
+    |text_input| { pass_chain_helper! { $state; text_input $(, $pass)* } }
   };
 }
 
 #[macro_export]
 macro_rules! pass_chain_helper {
-  ($state:expr, $input:expr, $pass:path $(, $rest:path)*) => {
+  ($state:expr; $input:expr, $pass:path $(, $rest:path)*) => {
     {
       let pass_name = stringify!($pass);
       println!("Running pass {}", pass_name);
       let output = $pass($state, $input);
       match output {
-        Ok(result) => pass_chain_helper! { $state, result $(, $rest)* },
+        Ok(result) => pass_chain_helper! { $state; result $(, $rest)* },
         Err(err) => {
           let comp = UnfinishedComputation::default();
           comp.output(Err(format!("Pass {} failed with {:?}", pass_name, err)))
@@ -216,7 +216,7 @@ macro_rules! pass_chain_helper {
     }
   };
   // Done
-  ($state:expr, $final_output:expr) => {
+  ($state:expr; $final_output:expr) => {
     {
       let comp = UnfinishedComputation::default();
       let final_output: FinishedComputation = comp.finish(Ok($final_output));
