@@ -41,11 +41,24 @@ impl Schala {
 }
 
 fn tokenizing_stage(_handle: &mut Schala, input: &str, comp: Option<&mut UnfinishedComputation>) -> Result<Vec<tokenizing::Token>, ()> {
+  let tokens = tokenizing::tokenize(input);
+  comp.map(|comp| {
+    println!("This should only be evaluated when debugging tokens and not other times!!!");
+    let token_string = tokens.iter().map(|t| format!("{:?}<L:{},C:{}>", t.token_type, t.offset.0, t.offset.1)).join(", ");
+    comp.add_artifact(TraceArtifact::new("tokens", token_string));
+  });
   Ok(tokenizing::tokenize(input))
 }
 
 fn parsing_stage(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, parsing::ParseError> {
-  parsing::parse(input).0
+
+  let (ast, trace) = parsing::parse(input);
+  comp.map(|comp| {
+    //TODO need to control which of these debug stages get added
+    comp.add_artifact(TraceArtifact::new_parse_trace(trace));
+    comp.add_artifact(TraceArtifact::new("ast", format!("{:#?}", ast)));
+  });
+  ast
 }
 
 fn symbol_table_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
