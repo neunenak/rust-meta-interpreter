@@ -195,7 +195,10 @@ pub trait ProgrammingLanguageInterface {
 #[macro_export]
 macro_rules! pass_chain {
   ($state:expr, $($pass:path), *) => {
-    |text_input| { pass_chain_helper! { $state; text_input $(, $pass)* } }
+    |text_input| {
+      let mut comp = UnfinishedComputation::default();
+      pass_chain_helper! { $state; text_input $(, $pass)* }
+    }
   };
 }
 
