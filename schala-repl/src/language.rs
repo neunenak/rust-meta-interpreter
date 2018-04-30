@@ -173,9 +173,6 @@ pub trait ProgrammingLanguageInterface {
     FinishedComputation { artifacts: HashMap::new(), text_output: Err(format!("Execution pipeline not done")) }
   }
 
-  fn execute(&mut self, _input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
-    FinishedComputation { artifacts: HashMap::new(), text_output: Err(format!("REPL evaluation not implemented")) }
-  }
   fn get_language_name(&self) -> String;
   fn get_source_file_suffix(&self) -> String;
   fn handle_custom_interpreter_directives(&mut self, _commands: &Vec<&str>) -> Option<String> {

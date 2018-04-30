@@ -119,7 +119,7 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
       panic!("Not ready to go yet");
     },
     ExecutionMethod::Interpret => {
-      let output = language.execute(&buffer, &options);
+      let output = language.execute_pipeline(&buffer, &options);
       output.to_noninteractive().map(|text| println!("{}", text));
     }
   }
@@ -210,9 +210,6 @@ impl Repl {
 
   fn input_handler(&mut self, input: &str) -> String {
     let ref mut language = self.languages[self.current_language_index];
-    /*
-    let interpreter_output = language.execute(input, &self.options);
-    */
     let interpreter_output = language.execute_pipeline(input, &self.options);
     interpreter_output.to_repl()
   }
