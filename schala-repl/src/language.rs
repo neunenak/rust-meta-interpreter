@@ -197,32 +197,30 @@ macro_rules! pass_chain {
   ($state:expr, $($pass:path), *) => {
     |text_input| {
       let mut comp = UnfinishedComputation::default();
-      pass_chain_helper! { $state; text_input $(, $pass)* }
+      pass_chain_helper! { $state, comp; text_input $(, $pass)* }
     }
   };
 }
 
 #[macro_export]
 macro_rules! pass_chain_helper {
-  ($state:expr; $input:expr, $pass:path $(, $rest:path)*) => {
+  ($state:expr, $comp:expr; $input:expr, $pass:path $(, $rest:path)*) => {
     {
       let pass_name = stringify!($pass);
       println!("Running pass {}", pass_name);
       let output = $pass($state, $input);
       match output {
-        Ok(result) => pass_chain_helper! { $state; result $(, $rest)* },
+        Ok(result) => pass_chain_helper! { $state, $comp; result $(, $rest)* },
         Err(err) => {
-          let comp = UnfinishedComputation::default();
-          comp.output(Err(format!("Pass {} failed with {:?}", pass_name, err)))
+          $comp.output(Err(format!("Pass {} failed with {:?}", pass_name, err)))
         }
       }
     }
   };
   // Done
-  ($state:expr; $final_output:expr) => {
+  ($state:expr, $comp:expr; $final_output:expr) => {
     {
-      let comp = UnfinishedComputation::default();
-      let final_output: FinishedComputation = comp.finish(Ok($final_output));
+      let final_output: FinishedComputation = $comp.finish(Ok($final_output));
       final_output
     }
   };
