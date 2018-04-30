@@ -194,17 +194,17 @@ pub trait ProgrammingLanguageInterface {
 
 #[macro_export]
 macro_rules! pass_chain {
-  ($state:expr; $($pass:path), *) => {
+  ($state:expr, $options:expr; $($pass:path), *) => {
     |text_input| {
       let mut comp = UnfinishedComputation::default();
-      pass_chain_helper! { $state, comp; text_input $(, $pass)* }
+      pass_chain_helper! { ($state, comp, $options); text_input $(, $pass)* }
     }
   };
 }
 
 #[macro_export]
 macro_rules! pass_chain_helper {
-  ($state:expr, $comp:expr; $input:expr, $pass:path $(, $rest:path)*) => {
+  (($state:expr, $comp:expr, $options:expr); $input:expr, $pass:path $(, $rest:path)*) => {
     {
       let pass_name = stringify!($pass);
       println!("Running pass {}", pass_name);
@@ -213,7 +213,7 @@ macro_rules! pass_chain_helper {
         $pass($state, $input, debug_pointer)
       };
       match output {
-        Ok(result) => pass_chain_helper! { $state, $comp; result $(, $rest)* },
+        Ok(result) => pass_chain_helper! { ($state, $comp, $options); result $(, $rest)* },
         Err(err) => {
           $comp.output(Err(format!("Pass {} failed with {:?}", pass_name, err)))
         }
@@ -221,7 +221,7 @@ macro_rules! pass_chain_helper {
     }
   };
   // Done
-  ($state:expr, $comp:expr; $final_output:expr) => {
+  (($state:expr, $comp:expr, $options:expr); $final_output:expr) => {
     {
       let final_output: FinishedComputation = $comp.finish(Ok($final_output));
       final_output
