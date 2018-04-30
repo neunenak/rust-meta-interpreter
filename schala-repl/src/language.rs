@@ -186,6 +186,12 @@ pub trait ProgrammingLanguageInterface {
   }
 }
 
+/* a pass_chain function signature looks like: 
+ * fn(&mut ProgrammingLanguageInterface, A, Option<&mut DebugHandler>) -> Result<B, String>
+ *
+ * TODO use some kind of failure-handling library to make this better
+ */
+
 #[macro_export]
 macro_rules! pass_chain {
   ($state:expr, $($pass:path), *) => {
@@ -193,8 +199,6 @@ macro_rules! pass_chain {
   };
 }
 
-//generates a function resulting in (for now) the return type of the last one
-//but should in the future return a FinishedComputation
 #[macro_export]
 macro_rules! pass_chain_helper {
   ($state:expr, $input:expr, $pass:path $(, $rest:path)*) => {
