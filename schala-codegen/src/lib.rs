@@ -3,7 +3,9 @@ extern crate proc_macro;
 #[macro_use]
 extern crate quote;
 extern crate syn;
+
 use proc_macro::TokenStream;
+use syn::DeriveInput;
 
 #[proc_macro]
 pub fn print_a_thing(_input: TokenStream) -> TokenStream {
@@ -13,7 +15,13 @@ pub fn print_a_thing(_input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(ProgrammingLanguageInterface)]
 pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream {
-  input
+  let ast: DeriveInput = syn::parse(input).unwrap();
+  let name = &ast.ident;
+  let tokens = quote! {
+    impl ProgrammingLanguageInterface for #name {
+    }
+  };
+  tokens.into()
 }
 
 #[cfg(test)]
