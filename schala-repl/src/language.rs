@@ -208,7 +208,8 @@ macro_rules! pass_chain_helper {
     {
       let pass_name = stringify!($pass);
       println!("Running pass {}", pass_name);
-      let output = $pass($state, $input);
+      let debug_pointer: Option<&mut UnfinishedComputation> = None;
+      let output = $pass($state, $input, debug_pointer);
       match output {
         Ok(result) => pass_chain_helper! { $state, $comp; result $(, $rest)* },
         Err(err) => {

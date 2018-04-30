@@ -40,22 +40,22 @@ impl Schala {
   }
 }
 
-fn tokenizing_stage(_handle: &mut Schala, input: &str) -> Result<Vec<tokenizing::Token>, ()> {
+fn tokenizing_stage(_handle: &mut Schala, input: &str, comp: Option<&mut UnfinishedComputation>) -> Result<Vec<tokenizing::Token>, ()> {
   Ok(tokenizing::tokenize(input))
 }
 
-fn parsing_stage(_handle: &mut Schala, input: Vec<tokenizing::Token>) -> Result<parsing::AST, parsing::ParseError> {
+fn parsing_stage(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, parsing::ParseError> {
   parsing::parse(input).0
 }
 
-fn symbol_table_stage(handle: &mut Schala, input: parsing::AST) -> Result<parsing::AST, String> {
+fn symbol_table_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
   match handle.type_context.add_top_level_types(&input) {
     Ok(()) => Ok(input),
     Err(msg) => Err(msg)
   }
 }
 
-fn typechecking_stage(handle: &mut Schala, input: parsing::AST) -> Result<parsing::AST, String> {
+fn typechecking_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
   match handle.type_context.type_check_ast(&input) {
     Ok(ty) => {
       println!("FINAL TYPE: {:?}", ty);
@@ -70,7 +70,7 @@ fn typechecking_stage(handle: &mut Schala, input: parsing::AST) -> Result<parsin
   }
 }
 
-fn eval_stage(handle: &mut Schala, input: parsing::AST) -> Result<String, String> {
+fn eval_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
   let evaluation_outputs = handle.state.evaluate(input);
   let text_output: Result<Vec<String>, String> = evaluation_outputs
     .into_iter()
