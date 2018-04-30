@@ -163,12 +163,6 @@ impl TraceArtifact {
 }
 
 pub trait ProgrammingLanguageInterface {
-  /* old */
-  fn evaluate_in_repl(&mut self, _: &str, _: &EvalOptions) -> LanguageOutput {
-    LanguageOutput { output: format!("Defunct"), artifacts: vec![], failed: false }
-  }
-  /* old */
-
   fn execute_pipeline(&mut self, _input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
     FinishedComputation { artifacts: HashMap::new(), text_output: Err(format!("Execution pipeline not done")) }
   }

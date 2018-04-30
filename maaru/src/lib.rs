@@ -7,7 +7,7 @@ mod parser;
 mod eval;
 mod compilation;
 
-use schala_repl::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput, TraceArtifact};
+use schala_repl::{ProgrammingLanguageInterface, EvalOptions, UnfinishedComputation, FinishedComputation, TraceArtifact};
 
 #[derive(Debug)]
 pub struct TokenError {
@@ -42,8 +42,8 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
     format!("maaru")
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, options: &EvalOptions) -> LanguageOutput {
-    let mut output = LanguageOutput::default();
+  fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
+    let mut output = UnfinishedComputation::default();
 
     let tokens = match tokenizer::tokenize(input) {
       Ok(tokens) => {
@@ -53,8 +53,7 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
         tokens
       },
       Err(err) => {
-        output.add_output(format!("Tokenization error: {:?}\n", err.msg));
-        return output;
+        return output.finish(Err(format!("Tokenization error: {:?}\n", err.msg)))
       }
     };
 
@@ -66,16 +65,14 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
         ast
       },
       Err(err) => {
-        output.add_output(format!("Parse error: {:?}\n", err.msg));
-        return output;
+        return output.finish(Err(format!("Parse error: {:?}\n", err.msg)))
       }
     };
     let mut evaluation_output = String::new();
     for s in self.evaluator.run(ast).iter() {
       evaluation_output.push_str(s);
     }
-    output.add_output(evaluation_output);
-    return output;
+    output.finish(Ok(evaluation_output))
   }
 
   /* TODO make this work with new framework */

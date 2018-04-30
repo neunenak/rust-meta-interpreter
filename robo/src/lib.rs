@@ -4,7 +4,7 @@ extern crate itertools;
 extern crate schala_repl;
 
 use itertools::Itertools;
-use schala_repl::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput};
+use schala_repl::{ProgrammingLanguageInterface, EvalOptions, FinishedComputation, UnfinishedComputation};
 
 pub struct Robo {
 }
@@ -155,18 +155,16 @@ impl ProgrammingLanguageInterface for Robo {
     format!("robo")
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, _eval_options: &EvalOptions) -> LanguageOutput {
-    let mut output = LanguageOutput::default();
+  fn execute_pipeline(&mut self, input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
+    let output = UnfinishedComputation::default();
     let tokens = match tokenize(input) {
       Ok(tokens) => tokens,
       Err(e) => {
-        output.add_output(format!("Tokenize error: {:?}", e));
-        return output;
+        return output.finish(Err(format!("Tokenize error: {:?}", e)));
       }
     };
 
-    output.add_output(format!("{:?}", tokens));
-    output
+    output.finish(Ok(format!("{:?}", tokens)))
   }
 }
 

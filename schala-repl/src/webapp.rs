@@ -35,8 +35,8 @@ struct Output {
 fn interpreter_input(input: Json<Input>, generators: State<Vec<PLIGenerator>>) -> Json<Output> {
   let schala_gen = generators.get(0).unwrap();
   let mut schala: Box<ProgrammingLanguageInterface> = schala_gen();
-  let code_output = schala.evaluate_in_repl(&input.source, &EvalOptions::default());
-  Json(Output { text: code_output.to_string() })
+  let code_output = schala.execute_pipeline(&input.source, &EvalOptions::default());
+  Json(Output { text: code_output.to_repl() })
 }
 
 pub fn web_main(language_generators: Vec<PLIGenerator>) {

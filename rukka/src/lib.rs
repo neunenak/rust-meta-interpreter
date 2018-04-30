@@ -4,7 +4,7 @@ extern crate itertools;
 extern crate schala_repl;
 
 use itertools::Itertools;
-use schala_repl::{ProgrammingLanguageInterface, EvalOptions, LanguageOutput};
+use schala_repl::{ProgrammingLanguageInterface, EvalOptions, UnfinishedComputation, FinishedComputation};
 use std::iter::Peekable;
 use std::vec::IntoIter;
 use std::str::Chars;
@@ -73,12 +73,11 @@ impl ProgrammingLanguageInterface for Rukka {
     format!("rukka")
   }
 
-  fn evaluate_in_repl(&mut self, input: &str, _eval_options: &EvalOptions) -> LanguageOutput {
-    let mut output = LanguageOutput::default();
+  fn execute_pipeline(&mut self, input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
+    let mut output = UnfinishedComputation::default();
     let sexps = match read(input) {
       Err(err) => {
-        output.add_output(format!("Error: {}", err));
-        return output;
+        return output.finish(Err(format!("Error: {}", err)));
       },
       Ok(sexps) => sexps
     };
@@ -89,8 +88,7 @@ impl ProgrammingLanguageInterface for Rukka {
         Err(err) => format!("{} Error: {}", i, err),
       }
     }).intersperse(format!("\n")).collect();
-    output.add_output(output_str);
-    output
+    output.finish(Ok(output_str))
   }
 }
 
