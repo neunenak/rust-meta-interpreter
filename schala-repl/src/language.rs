@@ -207,12 +207,13 @@ macro_rules! pass_chain_helper {
   (($state:expr, $comp:expr, $options:expr); $input:expr, $pass:path $(, $rest:path)*) => {
     {
       let pass_name = stringify!($pass);
-      println!("Running pass {}", pass_name);
       let output = {
         let debug_pointer: Option<&mut UnfinishedComputation> = {
           //TODO this is janky fix it
           let debug_condition = ($options.debug.tokens && pass_name == "tokenizing_stage")
-            || ($options.debug.parse_tree && pass_name == "parsing_stage");
+            || ($options.debug.parse_tree && pass_name == "parsing_stage")
+            || ($options.debug.symbol_table && pass_name == "symbol_table_stage")
+            || (pass_name == "typechecking_stage");
           if debug_condition { Some(&mut $comp) } else { None }
         };
         $pass($state, $input, debug_pointer)

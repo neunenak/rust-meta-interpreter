@@ -43,7 +43,6 @@ impl Schala {
 fn tokenizing_stage(_handle: &mut Schala, input: &str, comp: Option<&mut UnfinishedComputation>) -> Result<Vec<tokenizing::Token>, ()> {
   let tokens = tokenizing::tokenize(input);
   comp.map(|comp| {
-    println!("This should only be evaluated when debugging tokens and not other times!!!");
     let token_string = tokens.iter().map(|t| format!("{:?}<L:{},C:{}>", t.token_type, t.offset.0, t.offset.1)).join(", ");
     comp.add_artifact(TraceArtifact::new("tokens", token_string));
   });
@@ -63,7 +62,11 @@ fn parsing_stage(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Opti
 
 fn symbol_table_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
   match handle.type_context.add_top_level_types(&input) {
-    Ok(()) => Ok(input),
+    Ok(()) => {
+      let text = handle.type_context.debug_symbol_table();
+      comp.map(|comp| comp.add_artifact(TraceArtifact::new("symbol_table", text)));
+      Ok(input)
+    },
     Err(msg) => Err(msg)
   }
 }
@@ -71,12 +74,7 @@ fn symbol_table_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mu
 fn typechecking_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
   match handle.type_context.type_check_ast(&input) {
     Ok(ty) => {
-      println!("FINAL TYPE: {:?}", ty);
-      /*
-         if options.debug.type_checking {
-         evaluation.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty)));
-         }
-         */
+      comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty))));
       Ok(input)
     },
     Err(msg) => Err(msg)
