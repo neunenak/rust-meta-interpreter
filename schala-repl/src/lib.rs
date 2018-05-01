@@ -294,14 +294,23 @@ impl Repl {
       Some(&"stages") => Some(stages.into_iter().intersperse(format!(" -> ")).collect()),
       b @ Some(&"show") | b @ Some(&"hide") => {
         let show = b == Some(&"show");
-        let debug_stage = match commands.get(2) {
-          Some(s) => s,
+        let debug_stage: String = match commands.get(2) {
+          Some(s) => s.to_string(),
           None => return Some(format!("Must specify a stage to debug")),
         };
-        let maybe_debug = stages.iter().find(|stage_name| stage_name == debug_stage);
-        match maybe_debug {
-          Some(s) => Some(format!("Will debug {}", s)),
-          None => Some(format!("couldn't find it"))
+        let maybe_debug = stages.iter().find(|stage_name| **stage_name == debug_stage);
+        match (show, maybe_debug) {
+          (true, Some(s)) => {
+            let msg = format!("Enabling debug for stage {}", debug_stage);
+            self.options.debug_stages.insert(debug_stage);
+            Some(msg)
+          },
+          (false, Some(s)) => {
+            let msg = format!("Disabling debug for stage {}", debug_stage);
+            self.options.debug_stages.remove(&debug_stage);
+            Some(msg)
+          },
+          (_, None) => Some(format!("couldn't find it"))
         }
       },
       _ => Some(format!("Unknown debug command"))

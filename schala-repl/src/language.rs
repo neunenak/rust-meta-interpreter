@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashSet, HashMap};
 use colored::*;
 use std::fmt::Write;
 
@@ -7,7 +7,8 @@ pub struct LLVMCodeString(pub String);
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EvalOptions {
   pub debug: DebugOptions,
-  pub execution_method: ExecutionMethod
+  pub execution_method: ExecutionMethod,
+  pub debug_stages: HashSet<String>,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ExecutionMethod {
