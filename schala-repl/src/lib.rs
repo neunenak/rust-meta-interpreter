@@ -277,7 +277,26 @@ impl Repl {
         writeln!(buf, "{}", lang.custom_interpreter_directives_help()).unwrap();
         Some(buf)
       },
-      "debug" => {
+      "debug" => self.handle_debug(commands),
+      e => self.languages[self.current_language_index]
+        .handle_custom_interpreter_directives(&commands)
+        .or(Some(format!("Unknown command: {}", e)))
+    }
+  }
+  fn handle_debug(&mut self, commands: Vec<&str>) -> Option<String> {
+    match commands.get(1) {
+      b @ Some(&"show") | b @ Some(&"hide") => {
+        let show = b == Some(&"show");
+        let debug_stage = match commands.get(2) {
+          Some(s) => s,
+          None => return Some(format!("Must specify a stage to debug")),
+        };
+        None
+      },
+      _ => Some(format!("Unknown debug command"))
+    }
+      /*
+       * {
         let show = match commands.get(1) {
           Some(&"show") => true,
           Some(&"hide") => false,
@@ -299,6 +318,9 @@ impl Repl {
         };
         None
       },
+
+      AND DEBUG OPTIONS
+
       "options" => {
         let ref d = self.options.debug;
         let tokens = if d.tokens { "true".green() } else { "false".red() };
@@ -308,10 +330,8 @@ impl Repl {
         Some(format!(r#"Debug:
 tokens: {}, parse: {}, ast: {}, symbols: {}"#, tokens, parse_tree, ast, symbol_table))
       },
-      e => self.languages[self.current_language_index]
-        .handle_custom_interpreter_directives(&commands)
-        .or(Some(format!("Unknown command: {}", e)))
-    }
+
+      */
   }
 }
 

@@ -169,6 +169,9 @@ pub trait ProgrammingLanguageInterface {
 
   fn get_language_name(&self) -> String;
   fn get_source_file_suffix(&self) -> String;
+  fn get_stages(&self) -> Vec<String> {
+    vec![]
+  }
   fn handle_custom_interpreter_directives(&mut self, _commands: &Vec<&str>) -> Option<String> {
     None
   }
