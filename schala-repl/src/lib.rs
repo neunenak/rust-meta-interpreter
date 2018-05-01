@@ -277,7 +277,7 @@ impl Repl {
         writeln!(buf, "{}", lang.custom_interpreter_directives_help()).unwrap();
         Some(buf)
       },
-      "set" => {
+      "debug" => {
         let show = match commands.get(1) {
           Some(&"show") => true,
           Some(&"hide") => false,
