@@ -22,6 +22,7 @@ use std::process::exit;
 use std::default::Default;
 use std::fmt::Write as FmtWrite;
 
+use itertools::Itertools;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 use self::colored::*;
@@ -146,6 +147,10 @@ impl Repl {
       interpreter_directive_sigil: ':',
       console
     }
+  }
+
+  fn get_cur_language(&self) -> &ProgrammingLanguageInterface {
+    self.languages[self.current_language_index].as_ref()
   }
 
   fn get_options() -> EvalOptions {
@@ -284,14 +289,20 @@ impl Repl {
     }
   }
   fn handle_debug(&mut self, commands: Vec<&str>) -> Option<String> {
+    let stages = self.get_cur_language().get_stages();
     match commands.get(1) {
+      Some(&"stages") => Some(stages.into_iter().intersperse(format!(" -> ")).collect()),
       b @ Some(&"show") | b @ Some(&"hide") => {
         let show = b == Some(&"show");
         let debug_stage = match commands.get(2) {
           Some(s) => s,
           None => return Some(format!("Must specify a stage to debug")),
         };
-        None
+        let maybe_debug = stages.iter().find(|stage_name| stage_name == debug_stage);
+        match maybe_debug {
+          Some(s) => Some(format!("Will debug {}", s)),
+          None => Some(format!("couldn't find it"))
+        }
       },
       _ => Some(format!("Unknown debug command"))
     }
