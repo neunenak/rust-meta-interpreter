@@ -87,7 +87,7 @@ fn typechecking_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mu
   }
 }
 
-fn eval_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
+fn eval_stage(handle: &mut Schala, input: parsing::AST, _comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
   let evaluation_outputs = handle.state.evaluate(input);
   let text_output: Result<Vec<String>, String> = evaluation_outputs
     .into_iter()
