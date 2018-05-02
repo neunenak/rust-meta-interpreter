@@ -89,9 +89,9 @@ pub struct Token {
 }
 
 impl Token {
-  pub fn get_error(&self) -> Option<&String> {
+  pub fn get_error(&self) -> Option<String> {
     match self.token_type {
-      TokenType::Error(ref s) => Some(s),
+      TokenType::Error(ref s) => Some(s.clone()),
       _ => None,
     }
   }

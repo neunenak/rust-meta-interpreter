@@ -40,15 +40,19 @@ impl Schala {
   }
 }
 
-fn tokenizing_stage(_handle: &mut Schala, input: &str, comp: Option<&mut UnfinishedComputation>) -> Result<Vec<tokenizing::Token>, ()> {
+fn tokenizing_stage(_handle: &mut Schala, input: &str, comp: Option<&mut UnfinishedComputation>) -> Result<Vec<tokenizing::Token>, String> {
   let tokens = tokenizing::tokenize(input);
   comp.map(|comp| {
     let token_string = tokens.iter().map(|t| format!("{:?}<L:{},C:{}>", t.token_type, t.offset.0, t.offset.1)).join(", ");
     comp.add_artifact(TraceArtifact::new("tokens", token_string));
   });
-  let token_errors: Vec<&String> = tokens.iter().filter_map(|t| t.get_error()).collect();
 
-  Ok(tokenizing::tokenize(input))
+  let errors: Vec<String> = tokens.iter().filter_map(|t| t.get_error()).collect();
+  if errors.len() == 0 {
+    Ok(tokens)
+  } else {
+    Err(format!("{:?}", errors))
+  }
 }
 
 fn parsing_stage(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, parsing::ParseError> {
