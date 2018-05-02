@@ -20,7 +20,7 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
   let attrs = &ast.attrs;
 
 
-  let language_name: Option<String> = attrs.iter().map(|attr| attr.interpret_meta()).find(|meta| {
+  let extracted_lang_name: Option<String> = attrs.iter().map(|attr| attr.interpret_meta()).find(|meta| {
     match meta {
       &Some(syn::Meta::NameValue(syn::MetaNameValue { ident, .. })) if ident.as_ref() == "LanguageName" => true,
       _ => false
@@ -31,6 +31,8 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
       _ => None,
     }
   });
+
+  let language_name = extracted_lang_name.unwrap();
 
   println!("LANG NAME: {:?}", language_name);
 
@@ -54,11 +56,11 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
   let tokens = quote! {
     impl ProgrammingLanguageInterface for #name {
       fn get_language_name(&self) -> String {
-        "Schala".to_string()
+        #language_name.to_string()
       }
 
       fn get_source_file_suffix(&self) -> String {
-        format!("schala")
+        #language_name.to_string()
       }
       fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
         let mut chain = pass_chain![self, options;
