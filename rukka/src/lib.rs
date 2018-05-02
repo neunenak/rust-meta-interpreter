@@ -74,7 +74,7 @@ impl ProgrammingLanguageInterface for Rukka {
   }
 
   fn execute_pipeline(&mut self, input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
-    let mut output = UnfinishedComputation::default();
+    let output = UnfinishedComputation::default();
     let sexps = match read(input) {
       Err(err) => {
         return output.finish(Err(format!("Error: {}", err)));
