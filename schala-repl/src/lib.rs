@@ -25,7 +25,6 @@ use std::fmt::Write as FmtWrite;
 use itertools::Itertools;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
-use self::colored::*;
 
 mod language;
 mod webapp;
@@ -301,9 +300,9 @@ impl Repl {
         if let Some(stage) = stages.iter().find(|stage_name| **stage_name == debug_stage) {
           let msg = format!("{} debug for stage {}", if show { "Enabling" } else { "Disabling" }, debug_stage);
           if show {
-            self.options.debug_stages.insert(debug_stage);
+            self.options.debug_stages.insert(stage.clone());
           } else {
-            self.options.debug_stages.remove(&debug_stage);
+            self.options.debug_stages.remove(stage);
           }
           Some(msg)
         } else {
