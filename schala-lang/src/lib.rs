@@ -8,6 +8,7 @@ extern crate maplit;
 
 #[macro_use]
 extern crate schala_repl;
+#[macro_use]
 extern crate schala_codegen;
 
 use itertools::Itertools;
@@ -26,6 +27,7 @@ mod eval;
 
 use self::typechecking::{TypeContext};
 
+#[derive(ProgrammingLanguageInterface)]
 pub struct Schala {
   state: eval::State<'static>,
   type_context: TypeContext
@@ -98,6 +100,7 @@ fn eval_stage(handle: &mut Schala, input: parsing::AST, _comp: Option<&mut Unfin
   eval_output
 }
 
+/*
 impl ProgrammingLanguageInterface for Schala {
   fn get_language_name(&self) -> String {
     "Schala".to_string()
@@ -128,3 +131,4 @@ impl ProgrammingLanguageInterface for Schala {
     ]
   }
 }
+*/
