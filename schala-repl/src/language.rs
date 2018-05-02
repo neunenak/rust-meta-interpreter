@@ -33,42 +33,6 @@ pub struct DebugOptions {
 }
 
 #[derive(Debug, Default)]
-pub struct LanguageOutput {
-  output: String,
-  artifacts: Vec<TraceArtifact>,
-  pub failed: bool,
-}
-
-impl LanguageOutput {
-  pub fn add_artifact(&mut self, artifact: TraceArtifact) {
-    self.artifacts.push(artifact);
-  }
-  pub fn add_output(&mut self, output: String) {
-    self.output = output;
-  }
-
-  pub fn to_string(&self) -> String {
-    let mut acc = String::new();
-    for line in self.artifacts.iter() {
-      acc.push_str(&line.debug_output.color(line.text_color).to_string());
-      acc.push_str(&"\n");
-    }
-    acc.push_str(&self.output);
-    acc
-  }
-
-  pub fn print_to_screen(&self) {
-    for line in self.artifacts.iter() {
-      let color = line.text_color;
-      let stage = line.stage_name.color(color).to_string();
-      let output = line.debug_output.color(color).to_string();
-      println!("{}: {}", stage, output);
-    }
-    println!("{}", self.output);
-  }
-}
-
-#[derive(Debug, Default)]
 pub struct UnfinishedComputation {
   artifacts: HashMap<String, TraceArtifact>,
 }
