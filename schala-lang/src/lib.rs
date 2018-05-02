@@ -114,11 +114,11 @@ impl ProgrammingLanguageInterface for Schala {
 
   fn get_stages(&self) -> Vec<String> {
     vec![
-      format!("tokenizing"),
-      format!("parsing"), //TODO handle both types of this
-      format!("symbol_table"),
-      format!("typechecking"),
-      format!("eval")
+      format!("tokenizing_stage"),
+      format!("parsing_stage"), //TODO handle both types of this
+      format!("symbol_table_stage"),
+      format!("typechecking_stage"),
+      format!("eval_stage")
     ]
   }
 }

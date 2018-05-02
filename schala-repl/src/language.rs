@@ -203,15 +203,13 @@ macro_rules! pass_chain_helper {
     {
       let pass_name = stringify!($pass);
       let output = {
-        let debug_pointer: Option<&mut UnfinishedComputation> = {
-          //TODO this is janky fix it
-          let debug_condition = ($options.debug.tokens && pass_name == "tokenizing_stage")
-            || ($options.debug.parse_tree && pass_name == "parsing_stage")
-            || ($options.debug.symbol_table && pass_name == "symbol_table_stage")
-            || (pass_name == "typechecking_stage");
-          if debug_condition { Some(&mut $comp) } else { None }
+        let ref debug_set = $options.debug_stages;
+        let debug_handle: Option<&mut UnfinishedComputation> = if debug_set.contains(pass_name) {
+          Some(&mut $comp)
+        } else {
+          None
         };
-        $pass($state, $input, debug_pointer)
+        $pass($state, $input, debug_handle)
       };
       match output {
         Ok(result) => pass_chain_helper! { ($state, $comp, $options); result $(, $rest)* },
