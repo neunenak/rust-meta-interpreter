@@ -19,8 +19,36 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
   let name = &ast.ident;
   let attrs = &ast.attrs;
 
+
+  let language_name: Option<String> = attrs.iter().map(|attr| attr.interpret_meta()).find(|meta| {
+    match meta {
+      &Some(syn::Meta::NameValue(syn::MetaNameValue { ident, .. })) if ident.as_ref() == "LanguageName" => true,
+      _ => false
+    }
+  }).and_then(|meta| {
+    match meta {
+      Some(syn::Meta::NameValue(syn::MetaNameValue { lit: syn::Lit::Str(litstr), .. })) => Some(litstr.value()),
+      _ => None,
+    }
+  });
+
+  println!("LANG NAME: {:?}", language_name);
+
+  /*
   println!("ATTRS {:?}", attrs);
-  //let language_name = attrs.iter().find(
+  let meta: Option<syn::Meta> = attrs.get(0).unwrap().interpret_meta();
+  println!("META: {:?}", meta);
+  match meta {
+    Some(syn::Meta::NameValue(syn::MetaNameValue { lit, .. })) => {
+      println!("GOT LIT: {:?}", lit);
+      match lit {
+        syn::Lit::Str(litstr) => println!("VAL: {}", litstr.value()),
+        _ => panic!("OI")
+      }
+    }
+    _ => panic!("YO")
+  }
+  */
 
 
   let tokens = quote! {
