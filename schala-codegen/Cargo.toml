@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["greg <greg.shuflin@protonmail.com>"]
 
 [dependencies]
-syn = "0.13.1"
+syn = { version = "0.13.1", features = ["full", "extra-traits"] }
 quote = "0.5"
 
 [lib]

@@ -28,6 +28,7 @@ mod eval;
 use self::typechecking::{TypeContext};
 
 #[derive(ProgrammingLanguageInterface)]
+#[LanguageName = "Schala"]
 pub struct Schala {
   state: eval::State<'static>,
   type_context: TypeContext

@@ -17,6 +17,11 @@ pub fn print_a_thing(_input: TokenStream) -> TokenStream {
 pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream {
   let ast: DeriveInput = syn::parse(input).unwrap();
   let name = &ast.ident;
+  let attrs = &ast.attrs;
+
+  println!("ATTRS {:?}", attrs);
+  //let language_name = attrs.iter().find(
+
 
   let tokens = quote! {
     impl ProgrammingLanguageInterface for #name {
