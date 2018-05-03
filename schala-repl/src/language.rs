@@ -8,7 +8,7 @@ pub struct LLVMCodeString(pub String);
 pub struct EvalOptions {
   pub debug: DebugOptions,
   pub execution_method: ExecutionMethod,
-  pub debug_stages: HashSet<String>,
+  pub debug_passes: HashSet<String>,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ExecutionMethod {
@@ -167,7 +167,7 @@ macro_rules! pass_chain_helper {
     {
       let pass_name = stringify!($pass);
       let output = {
-        let ref debug_set = $options.debug_stages;
+        let ref debug_set = $options.debug_passes;
         let debug_handle: Option<&mut UnfinishedComputation> = if debug_set.contains(pass_name) {
           Some(&mut $comp)
         } else {

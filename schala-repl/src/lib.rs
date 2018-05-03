@@ -288,25 +288,25 @@ impl Repl {
     }
   }
   fn handle_debug(&mut self, commands: Vec<&str>) -> Option<String> {
-    let stages = self.get_cur_language().get_stages();
+    let passes = self.get_cur_language().get_stages();
     match commands.get(1) {
-      Some(&"stages") => Some(stages.into_iter().intersperse(format!(" -> ")).collect()),
+      Some(&"passes") => Some(passes.into_iter().intersperse(format!(" -> ")).collect()),
       b @ Some(&"show") | b @ Some(&"hide") => {
         let show = b == Some(&"show");
-        let debug_stage: String = match commands.get(2) {
+        let debug_pass: String = match commands.get(2) {
           Some(s) => s.to_string(),
           None => return Some(format!("Must specify a stage to debug")),
         };
-        if let Some(stage) = stages.iter().find(|stage_name| **stage_name == debug_stage) {
-          let msg = format!("{} debug for stage {}", if show { "Enabling" } else { "Disabling" }, debug_stage);
+        if let Some(stage) = passes.iter().find(|stage_name| **stage_name == debug_pass) {
+          let msg = format!("{} debug for stage {}", if show { "Enabling" } else { "Disabling" }, debug_pass);
           if show {
-            self.options.debug_stages.insert(stage.clone());
+            self.options.debug_passes.insert(stage.clone());
           } else {
-            self.options.debug_stages.remove(stage);
+            self.options.debug_passes.remove(stage);
           }
           Some(msg)
         } else {
-          Some(format!("Couldn't find stage: {}", debug_stage))
+          Some(format!("Couldn't find stage: {}", debug_pass))
         }
       },
       _ => Some(format!("Unknown debug command"))
