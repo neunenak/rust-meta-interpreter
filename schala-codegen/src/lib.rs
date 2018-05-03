@@ -5,7 +5,7 @@ extern crate quote;
 extern crate syn;
 
 use proc_macro::TokenStream;
-use syn::{Attribute, DeriveInput};
+use syn::{Ident, Attribute, DeriveInput};
 
 fn extract_attribute_arg_by_name(name: &str, attrs: &Vec<Attribute>) -> Option<String> {
   use syn::{Meta, Lit, MetaNameValue};
@@ -22,6 +22,25 @@ fn extract_attribute_arg_by_name(name: &str, attrs: &Vec<Attribute>) -> Option<S
   })
 }
 
+fn extract_attribute_list(name: &str, attrs: &Vec<Attribute>) -> Option<Vec<Ident>> {
+  use syn::{Meta, MetaList, NestedMeta};
+  attrs.iter().find(|attr| {
+    match attr.path.segments.iter().nth(0) {
+      Some(segment) if segment.ident.as_ref() == name => true,
+      _ => false
+    }
+  }).and_then(|attr| {
+    match attr.interpret_meta() {
+      Some(Meta::List(MetaList { nested, .. })) => {
+        Some(nested.iter().map(|nested_meta| match nested_meta {
+          &NestedMeta::Meta(Meta::Word(ident)) => ident,
+          _ => panic!("Bad format for nested list")
+        }).collect())
+      },
+      _ => panic!("{} must be a comma-delimited list surrounded by parens", name)
+    }
+  })
+}
 
 #[proc_macro_derive(ProgrammingLanguageInterface, attributes(LanguageName, SourceFileExtension, PipelineSteps))]
 pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream {
@@ -31,28 +50,25 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
 
   let language_name: String = extract_attribute_arg_by_name("LanguageName", attrs).expect("LanguageName is required");
   let file_ext = extract_attribute_arg_by_name("SourceFileExtension", attrs).expect("SourceFileExtension is required");
+  let passes = extract_attribute_list("PipelineSteps", attrs).expect("PipelineSteps are required");
+  let pass_names: Vec<String> = passes.iter().map(|pass| pass.to_string()).collect();
 
   let tokens = quote! {
     impl ProgrammingLanguageInterface for #name {
       fn get_language_name(&self) -> String {
         #language_name.to_string()
       }
-
       fn get_source_file_suffix(&self) -> String {
         #file_ext.to_string()
       }
       fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
-        let mut chain = pass_chain![self, options;
-        tokenizing_stage,
-        parsing_stage,
-        symbol_table_stage,
-        typechecking_stage,
-        eval_stage
-        ];
+        let mut chain = pass_chain![self, options; #(#passes),* ];
         chain(input)
       }
 
-      fn get_stages(&self) -> Vec<String> {
+      fn get_stages(&self) -> Vec<String> { //TODO rename to passes
+        vec![ #(#pass_names.to_string()),* ]
+          /*
         vec![
           format!("tokenizing_stage"),
           format!("parsing_stage"), //TODO handle both types of this
@@ -60,6 +76,7 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
           format!("typechecking_stage"),
           format!("eval_stage")
         ]
+        */
       }
     }
   };
