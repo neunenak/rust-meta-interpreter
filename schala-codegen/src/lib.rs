@@ -5,11 +5,26 @@ extern crate quote;
 extern crate syn;
 
 use proc_macro::TokenStream;
-use syn::DeriveInput;
+use syn::{Attribute, DeriveInput};
 
 #[proc_macro]
 pub fn print_a_thing(_input: TokenStream) -> TokenStream {
   "println!(\"Invoked from a proc macro\");".parse().unwrap()
+}
+
+fn extract_attribute_arg_by_name(name: &str, attrs: &Vec<Attribute>) -> Option<String> {
+  use syn::{Meta, Lit, MetaNameValue};
+  attrs.iter().map(|attr| attr.interpret_meta()).find(|meta| {
+    match meta {
+      &Some(Meta::NameValue(MetaNameValue { ident, .. })) if ident.as_ref() == name => true,
+      _ => false
+    }
+  }).and_then(|meta| {
+    match meta {
+      Some(Meta::NameValue(MetaNameValue { lit: Lit::Str(litstr), .. })) => Some(litstr.value()),
+      _ => None,
+    }
+  })
 }
 
 
@@ -19,20 +34,7 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
   let name = &ast.ident;
   let attrs = &ast.attrs;
 
-
-  let extracted_lang_name: Option<String> = attrs.iter().map(|attr| attr.interpret_meta()).find(|meta| {
-    match meta {
-      &Some(syn::Meta::NameValue(syn::MetaNameValue { ident, .. })) if ident.as_ref() == "LanguageName" => true,
-      _ => false
-    }
-  }).and_then(|meta| {
-    match meta {
-      Some(syn::Meta::NameValue(syn::MetaNameValue { lit: syn::Lit::Str(litstr), .. })) => Some(litstr.value()),
-      _ => None,
-    }
-  });
-
-  let language_name = extracted_lang_name.unwrap();
+  let language_name: String = extract_attribute_arg_by_name("LanguageName", attrs).unwrap();
 
   println!("LANG NAME: {:?}", language_name);
 
