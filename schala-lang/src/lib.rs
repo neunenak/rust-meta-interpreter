@@ -29,6 +29,7 @@ use self::typechecking::{TypeContext};
 
 #[derive(ProgrammingLanguageInterface)]
 #[LanguageName = "Schala"]
+#[SourceFileExtension = "schala"]
 pub struct Schala {
   state: eval::State<'static>,
   type_context: TypeContext

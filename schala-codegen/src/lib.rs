@@ -7,11 +7,6 @@ extern crate syn;
 use proc_macro::TokenStream;
 use syn::{Attribute, DeriveInput};
 
-#[proc_macro]
-pub fn print_a_thing(_input: TokenStream) -> TokenStream {
-  "println!(\"Invoked from a proc macro\");".parse().unwrap()
-}
-
 fn extract_attribute_arg_by_name(name: &str, attrs: &Vec<Attribute>) -> Option<String> {
   use syn::{Meta, Lit, MetaNameValue};
   attrs.iter().map(|attr| attr.interpret_meta()).find(|meta| {
@@ -28,32 +23,14 @@ fn extract_attribute_arg_by_name(name: &str, attrs: &Vec<Attribute>) -> Option<S
 }
 
 
-#[proc_macro_derive(ProgrammingLanguageInterface, attributes(LanguageName, FileExtension, PipelineSteps))]
+#[proc_macro_derive(ProgrammingLanguageInterface, attributes(LanguageName, SourceFileExtension, PipelineSteps))]
 pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream {
   let ast: DeriveInput = syn::parse(input).unwrap();
   let name = &ast.ident;
   let attrs = &ast.attrs;
 
-  let language_name: String = extract_attribute_arg_by_name("LanguageName", attrs).unwrap();
-
-  println!("LANG NAME: {:?}", language_name);
-
-  /*
-  println!("ATTRS {:?}", attrs);
-  let meta: Option<syn::Meta> = attrs.get(0).unwrap().interpret_meta();
-  println!("META: {:?}", meta);
-  match meta {
-    Some(syn::Meta::NameValue(syn::MetaNameValue { lit, .. })) => {
-      println!("GOT LIT: {:?}", lit);
-      match lit {
-        syn::Lit::Str(litstr) => println!("VAL: {}", litstr.value()),
-        _ => panic!("OI")
-      }
-    }
-    _ => panic!("YO")
-  }
-  */
-
+  let language_name: String = extract_attribute_arg_by_name("LanguageName", attrs).expect("LanguageName is required");
+  let file_ext = extract_attribute_arg_by_name("SourceFileExtension", attrs).expect("SourceFileExtension is required");
 
   let tokens = quote! {
     impl ProgrammingLanguageInterface for #name {
@@ -62,7 +39,7 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
       }
 
       fn get_source_file_suffix(&self) -> String {
-        #language_name.to_string()
+        #file_ext.to_string()
       }
       fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
         let mut chain = pass_chain![self, options;
