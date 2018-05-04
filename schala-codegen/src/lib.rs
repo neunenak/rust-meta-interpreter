@@ -68,15 +68,6 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
 
       fn get_stages(&self) -> Vec<String> { //TODO rename to passes
         vec![ #(#pass_names.to_string()),* ]
-          /*
-        vec![
-          format!("tokenizing_stage"),
-          format!("parsing_stage"), //TODO handle both types of this
-          format!("symbol_table_stage"),
-          format!("typechecking_stage"),
-          format!("eval_stage")
-        ]
-        */
       }
     }
   };
