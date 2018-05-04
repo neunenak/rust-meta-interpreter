@@ -288,7 +288,7 @@ impl Repl {
     }
   }
   fn handle_debug(&mut self, commands: Vec<&str>) -> Option<String> {
-    let passes = self.get_cur_language().get_stages();
+    let passes = self.get_cur_language().get_passes();
     match commands.get(1) {
       Some(&"passes") => Some(passes.into_iter().intersperse(format!(" -> ")).collect()),
       b @ Some(&"show") | b @ Some(&"hide") => {

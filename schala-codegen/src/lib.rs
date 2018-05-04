@@ -66,7 +66,7 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
         chain(input)
       }
 
-      fn get_stages(&self) -> Vec<String> { //TODO rename to passes
+      fn get_passes(&self) -> Vec<String> {
         vec![ #(#pass_names.to_string()),* ]
       }
     }
