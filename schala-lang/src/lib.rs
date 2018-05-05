@@ -70,8 +70,8 @@ fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mu
 fn symbol_table(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
   match handle.type_context.add_top_level_types(&input) {
     Ok(()) => {
-      let text = handle.type_context.debug_symbol_table();
-      comp.map(|comp| comp.add_artifact(TraceArtifact::new("symbol_table", text)));
+      let artifact = TraceArtifact::new("symbol_table", handle.type_context.debug_symbol_table());
+      comp.map(|comp| comp.add_artifact(artifact));
       Ok(input)
     },
     Err(msg) => Err(msg)
@@ -85,7 +85,7 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
       Ok(input)
     },
     Err(msg) => {
-      comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("{:?}", msg))));
+      comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("Type error: {:?}", msg))));
       Ok(input)
     }
   }
