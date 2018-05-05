@@ -5,7 +5,6 @@ extern crate itertools;
 extern crate lazy_static;
 #[macro_use]
 extern crate maplit;
-
 #[macro_use]
 extern crate schala_repl;
 #[macro_use]
@@ -19,33 +18,30 @@ macro_rules! bx {
 }
 
 mod builtin;
-
 mod tokenizing;
 mod parsing;
 mod typechecking;
 mod eval;
 
-use self::typechecking::{TypeContext};
-
 #[derive(ProgrammingLanguageInterface)]
 #[LanguageName = "Schala"]
 #[SourceFileExtension = "schala"]
-#[PipelineSteps(tokenizing_stage, parsing_stage, symbol_table_stage, typechecking_stage, eval_stage)]
+#[PipelineSteps(tokenizing, parsing, symbol_table, typechecking, eval)]
 pub struct Schala {
   state: eval::State<'static>,
-  type_context: TypeContext
+  type_context: typechecking::TypeContext
 }
 
 impl Schala {
   pub fn new() -> Schala {
     Schala {
       state: eval::State::new(),
-      type_context: TypeContext::new(),
+      type_context: typechecking::TypeContext::new(),
     }
   }
 }
 
-fn tokenizing_stage(_handle: &mut Schala, input: &str, comp: Option<&mut UnfinishedComputation>) -> Result<Vec<tokenizing::Token>, String> {
+fn tokenizing(_handle: &mut Schala, input: &str, comp: Option<&mut UnfinishedComputation>) -> Result<Vec<tokenizing::Token>, String> {
   let tokens = tokenizing::tokenize(input);
   comp.map(|comp| {
     let token_string = tokens.iter().map(|t| format!("{:?}<L:{},C:{}>", t.token_type, t.offset.0, t.offset.1)).join(", ");
@@ -60,7 +56,7 @@ fn tokenizing_stage(_handle: &mut Schala, input: &str, comp: Option<&mut Unfinis
   }
 }
 
-fn parsing_stage(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, parsing::ParseError> {
+fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, parsing::ParseError> {
 
   let (ast, trace) = parsing::parse(input);
   comp.map(|comp| {
@@ -71,7 +67,7 @@ fn parsing_stage(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Opti
   ast
 }
 
-fn symbol_table_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
+fn symbol_table(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
   match handle.type_context.add_top_level_types(&input) {
     Ok(()) => {
       let text = handle.type_context.debug_symbol_table();
@@ -82,7 +78,7 @@ fn symbol_table_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mu
   }
 }
 
-fn typechecking_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
+fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
   match handle.type_context.type_check_ast(&input) {
     Ok(ty) => {
       comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty))));
@@ -92,7 +88,7 @@ fn typechecking_stage(handle: &mut Schala, input: parsing::AST, comp: Option<&mu
   }
 }
 
-fn eval_stage(handle: &mut Schala, input: parsing::AST, _comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
+fn eval(handle: &mut Schala, input: parsing::AST, _comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
   let evaluation_outputs = handle.state.evaluate(input);
   let text_output: Result<Vec<String>, String> = evaluation_outputs
     .into_iter()
