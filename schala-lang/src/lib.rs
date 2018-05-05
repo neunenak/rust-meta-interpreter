@@ -102,36 +102,3 @@ fn eval_stage(handle: &mut Schala, input: parsing::AST, _comp: Option<&mut Unfin
     .map(|v| { v.into_iter().intersperse(format!("\n")).collect() });
   eval_output
 }
-
-/*
-impl ProgrammingLanguageInterface for Schala {
-  fn get_language_name(&self) -> String {
-    "Schala".to_string()
-  }
-
-  fn get_source_file_suffix(&self) -> String {
-    format!("schala")
-  }
-
-  fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
-    let mut chain = pass_chain![self, options;
-      tokenizing_stage,
-      parsing_stage,
-      symbol_table_stage,
-      typechecking_stage,
-      eval_stage
-    ];
-    chain(input)
-  }
-
-  fn get_stages(&self) -> Vec<String> {
-    vec![
-      format!("tokenizing_stage"),
-      format!("parsing_stage"), //TODO handle both types of this
-      format!("symbol_table_stage"),
-      format!("typechecking_stage"),
-      format!("eval_stage")
-    ]
-  }
-}
-*/
