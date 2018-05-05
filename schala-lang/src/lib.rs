@@ -84,7 +84,10 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
       comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty))));
       Ok(input)
     },
-    Err(msg) => Err(msg)
+    Err(msg) => {
+      comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("{:?}", msg))));
+      Ok(input)
+    }
   }
 }
 
