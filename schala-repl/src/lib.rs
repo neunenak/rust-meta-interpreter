@@ -63,11 +63,8 @@ pub fn repl_main(generators: Vec<PLIGenerator>) {
   }
 
   let mut options = EvalOptions::default();
-  if let Some(ref ltrs) = option_matches.opt_str("debug") {
-    options.debug.tokens = ltrs.contains("l");
-    options.debug.ast = ltrs.contains("a");
-    options.debug.parse_tree = ltrs.contains("r");
-    options.debug.symbol_table = ltrs.contains("s");
+  if let Some(_) = option_matches.opt_str("debug") {
+    /* TODO - put some debug handling code here */
   }
 
   let language_names: Vec<String> = languages.iter().map(|lang| {lang.get_language_name()}).collect();

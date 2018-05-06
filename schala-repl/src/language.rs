@@ -6,7 +6,6 @@ pub struct LLVMCodeString(pub String);
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EvalOptions {
-  pub debug: DebugOptions,
   pub execution_method: ExecutionMethod,
   pub debug_passes: HashSet<String>,
 }
@@ -19,17 +18,6 @@ impl Default for ExecutionMethod {
   fn default() -> ExecutionMethod {
     ExecutionMethod::Interpret
   }
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct DebugOptions {
-  pub tokens: bool,
-  pub parse_tree: bool,
-  pub ast: bool,
-  pub type_checking: bool,
-  pub symbol_table: bool,
-  pub evaluation: bool,
-  pub llvm_ir: bool,
 }
 
 #[derive(Debug, Default)]

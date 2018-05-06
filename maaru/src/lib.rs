@@ -47,7 +47,7 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
 
     let tokens = match tokenizer::tokenize(input) {
       Ok(tokens) => {
-        if options.debug.tokens {
+        if let Some(_) = options.debug_passes.get("tokens") {
           output.add_artifact(TraceArtifact::new("tokens", format!("{:?}", tokens)));
         }
         tokens
@@ -59,7 +59,7 @@ impl<'a> ProgrammingLanguageInterface for Maaru<'a> {
 
     let ast = match parser::parse(&tokens, &[]) {
       Ok(ast) => {
-        if options.debug.ast {
+        if let Some(_) = options.debug_passes.get("ast") {
           output.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast)));
         }
         ast
