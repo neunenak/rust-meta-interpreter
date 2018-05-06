@@ -22,6 +22,7 @@ use std::process::exit;
 use std::default::Default;
 use std::fmt::Write as FmtWrite;
 
+use colored::*;
 use itertools::Itertools;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
@@ -287,7 +288,18 @@ impl Repl {
   fn handle_debug(&mut self, commands: Vec<&str>) -> Option<String> {
     let passes = self.get_cur_language().get_passes();
     match commands.get(1) {
-      Some(&"passes") => Some(passes.into_iter().intersperse(format!(" -> ")).collect()),
+      Some(&"passes") => Some(
+        passes.into_iter()
+        .map(|p| {
+          if self.options.debug_passes.contains(&p) {
+            let color = "green";
+            format!("*{}", p.color(color))
+          } else {
+            p
+          }
+        })
+        .intersperse(format!(" -> "))
+        .collect()),
       b @ Some(&"show") | b @ Some(&"hide") => {
         let show = b == Some(&"show");
         let debug_pass: String = match commands.get(2) {
