@@ -64,9 +64,12 @@ pub fn repl_main(generators: Vec<PLIGenerator>) {
   }
 
   let mut options = EvalOptions::default();
-  if let Some(_) = option_matches.opt_str("debug") {
-    /* TODO - put some debug handling code here */
-  }
+  let debug_passes = if let Some(opts) = option_matches.opt_str("debug") {
+    let output: Vec<String> = opts.split_terminator(",").map(|s| s.to_string()).collect();
+    output
+  } else {
+    vec![]
+  };
 
   let language_names: Vec<String> = languages.iter().map(|lang| {lang.get_language_name()}).collect();
   let initial_index: usize =
@@ -86,12 +89,12 @@ pub fn repl_main(generators: Vec<PLIGenerator>) {
     }
     [_, ref filename, _..] => {
 
-      run_noninteractive(filename, languages, options);
+      run_noninteractive(filename, languages, options, debug_passes);
     }
   };
 }
 
-fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInterface>>, options: EvalOptions) {
+fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInterface>>, mut options: EvalOptions, debug_passes: Vec<String>) {
   let path = Path::new(filename);
   let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_else(|| {
     println!("Source file lacks extension");
@@ -107,6 +110,12 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
   let mut buffer = String::new();
 
   source_file.read_to_string(&mut buffer).unwrap();
+
+  for pass in debug_passes.into_iter() {
+    if let Some(_) = language.get_passes().iter().find(|stage_name| **stage_name == pass) {
+      options.debug_passes.insert(pass);
+    }
+  }
 
   match options.execution_method {
     ExecutionMethod::Compile => {
