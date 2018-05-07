@@ -123,19 +123,28 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
   }
 }
 
+struct TabCompleteHandler { }
+
+impl rustyline::completion::Completer for TabCompleteHandler {
+  fn complete(&self, line: &str, pos: usize) -> rustyline::Result<(usize, Vec<String>)> {
+    Ok((pos, vec!(format!("tab-completion-no-done"), format!("tab-completion-still-not-done"))))
+  }
+}
+
 struct Repl {
   options: EvalOptions,
   languages: Vec<Box<ProgrammingLanguageInterface>>,
   current_language_index: usize,
   interpreter_directive_sigil: char,
-  console: rustyline::Editor<()>,
+  console: rustyline::Editor<TabCompleteHandler>,
 }
 
 impl Repl {
   fn new(languages: Vec<Box<ProgrammingLanguageInterface>>, initial_index: usize) -> Repl {
     let i = if initial_index < languages.len() { initial_index } else { 0 };
 
-    let console = Editor::<()>::new();
+    let mut console = Editor::<TabCompleteHandler>::new();
+    console.set_completer(Some(TabCompleteHandler {}));
 
     Repl {
       options: Repl::get_options(),
