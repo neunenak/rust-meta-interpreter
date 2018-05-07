@@ -169,6 +169,8 @@ pub enum Statement {
   Declaration(Declaration),
 }
 
+type Block = Vec<Statement>;
+
 type ParamName = Rc<String>;
 type InterfaceName = Rc<String>; //should be a singleton I think??
 type FormalParam = (ParamName, Option<TypeName>);
@@ -176,7 +178,7 @@ type FormalParam = (ParamName, Option<TypeName>);
 #[derive(Debug, PartialEq, Clone)]
 pub enum Declaration {
   FuncSig(Signature),
-  FuncDecl(Signature, Vec<Statement>),
+  FuncDecl(Signature, Block),
   TypeDecl(TypeSingletonName, TypeBody), //should have TypeSingletonName in it
   TypeAlias(Rc<String>, Rc<String>), //should have TypeSingletonName in it, or maybe just String, not sure
   Binding {
@@ -249,12 +251,12 @@ pub enum ExpressionType {
     indexee: Box<Expression>,
     indexers: Vec<Expression>,
   },
-  IfExpression(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
+  IfExpression(Box<Expression>, Block, Option<Block>),
   MatchExpression(Box<Expression>, Vec<MatchArm>),
   ForExpression,
   Lambda {
     params: Vec<FormalParam>,
-    body: Vec<Statement>,
+    body: Block,
   },
   ListLiteral(Vec<Expression>),
 }
@@ -702,7 +704,7 @@ impl Parser {
     Ok(Expression(ExpressionType::IfExpression(bx!(condition), then_clause, else_clause), None))
   });
 
-  parse_method!(else_clause(&mut self) -> ParseResult<Option<Vec<Statement>>> {
+  parse_method!(else_clause(&mut self) -> ParseResult<Option<Block>> {
     Ok(if let Keyword(Kw::Else) = self.peek() {
       self.next();
       Some(self.block()?)
@@ -711,7 +713,7 @@ impl Parser {
     })
   });
 
-  parse_method!(block(&mut self) -> ParseResult<Vec<Statement>> {
+  parse_method!(block(&mut self) -> ParseResult<Block> {
     Ok(delimited!(self, LCurlyBrace, '{', statement, Newline | Semicolon, RCurlyBrace, '}', nonstrict))
   });
 
