@@ -123,11 +123,37 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
   }
 }
 
-struct TabCompleteHandler { }
+struct TabCompleteHandler { 
+  passes: Vec<String>,
+  sigil: char,
+}
+
+impl TabCompleteHandler {
+  fn complete_interpreter_directive(&self, line: &str, pos: usize) -> rustyline::Result<(usize, Vec<String>)> {
+    let mut iter = line.chars();
+    iter.next();
+    let commands: Vec<&str> = iter
+      .as_str()
+      .split_whitespace()
+      .collect();
+    println!("POS {}---", pos);
+    let completes = match &commands[..] {
+      &["debug", "show"] | &["debug", "hide"] => self.passes.clone(),
+      &["debug"] | &["debug", _] => vec!["passes".to_string(), "show".to_string(), "hide".to_string()],
+      &[_cmd] => vec!["debug".to_string()],
+      _ => vec![],
+    };
+    Ok((pos, completes))
+  }
+}
 
 impl rustyline::completion::Completer for TabCompleteHandler {
   fn complete(&self, line: &str, pos: usize) -> rustyline::Result<(usize, Vec<String>)> {
-    Ok((pos, vec!(format!("tab-completion-no-done"), format!("tab-completion-still-not-done"))))
+    if line.starts_with(&format!("{}", self.sigil)) {
+      self.complete_interpreter_directive(line, pos)
+    } else {
+      Ok((pos, vec!(format!("tab-completion-no-done"), format!("tab-completion-still-not-done"))))
+    }
   }
 }
 
@@ -143,8 +169,7 @@ impl Repl {
   fn new(languages: Vec<Box<ProgrammingLanguageInterface>>, initial_index: usize) -> Repl {
     let i = if initial_index < languages.len() { initial_index } else { 0 };
 
-    let mut console = Editor::<TabCompleteHandler>::new();
-    console.set_completer(Some(TabCompleteHandler {}));
+    let console = Editor::<TabCompleteHandler>::new();
 
     Repl {
       options: Repl::get_options(),
@@ -193,6 +218,8 @@ impl Repl {
 
     loop {
       let language_name = self.languages[self.current_language_index].get_language_name();
+      let tab_complete_handler = TabCompleteHandler { sigil: self.interpreter_directive_sigil, passes: self.get_cur_language().get_passes() };
+      self.console.set_completer(Some(tab_complete_handler));
       let prompt_str = format!("{} >> ", language_name);
 
       match self.console.readline(&prompt_str) {
