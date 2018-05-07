@@ -65,20 +65,10 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
         let mut chain = pass_chain![self, options; #(#passes),* ];
         chain(input)
       }
-
       fn get_passes(&self) -> Vec<String> {
         vec![ #(#pass_names.to_string()),* ]
       }
     }
   };
-
   tokens.into()
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
 }
