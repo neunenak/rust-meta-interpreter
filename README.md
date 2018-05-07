@@ -66,6 +66,7 @@ https://skillsmatter.com/skillscasts/10868-inside-the-rust-compiler
 
 ### Parsing
 http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
+https://soc.github.io/languages/unified-condition-syntax
 
 [Crafting Interpreters](http://www.craftinginterpreters.com/)
 
