@@ -273,6 +273,8 @@ impl Repl {
         writeln!(buf, "MetaInterpreter options").unwrap();
         writeln!(buf, "-----------------------").unwrap();
         writeln!(buf, "exit | quit - exit the REPL").unwrap();
+        writeln!(buf, "debug [show|hide] <pass_name> - show or hide debug info for a given pass").unwrap();
+        writeln!(buf, "debug passes - display the names of all passes").unwrap();
         writeln!(buf, "lang [prev|next|go <name> |show] - toggle to previous or next language, go to a specific language by name, or show all languages").unwrap();
         writeln!(buf, "Language-specific help for {}", lang.get_language_name()).unwrap();
         writeln!(buf, "-----------------------").unwrap();
@@ -320,43 +322,6 @@ impl Repl {
       },
       _ => Some(format!("Unknown debug command"))
     }
-      /*
-       * {
-        let show = match commands.get(1) {
-          Some(&"show") => true,
-          Some(&"hide") => false,
-          Some(e) => {
-            return Some(format!("Bad `set` argument: {}", e));
-          }
-          None => {
-            return Some(format!("`set` - valid arguments `show {{option}}`, `hide {{option}}`"));
-          }
-        };
-        match commands.get(2) {
-          Some(&"tokens") => self.options.debug.tokens = show,
-          Some(&"parse") => self.options.debug.parse_tree = show,
-          Some(&"ast") => self.options.debug.ast = show,
-          Some(&"symbols") => self.options.debug.symbol_table = show,
-          Some(&"llvm") => self.options.debug.llvm_ir = show,
-          Some(e) => return Some(format!("Bad `show`/`hide` argument: {}", e)),
-          None => return Some(format!("`show`/`hide` requires an argument")),
-        };
-        None
-      },
-
-      AND DEBUG OPTIONS
-
-      "options" => {
-        let ref d = self.options.debug;
-        let tokens = if d.tokens { "true".green() } else { "false".red() };
-        let parse_tree = if d.parse_tree { "true".green() } else { "false".red() };
-        let ast = if d.ast { "true".green() } else { "false".red() };
-        let symbol_table = if d.symbol_table { "true".green() } else { "false".red() };
-        Some(format!(r#"Debug:
-tokens: {}, parse: {}, ast: {}, symbols: {}"#, tokens, parse_tree, ast, symbol_table))
-      },
-
-      */
   }
 }
 
