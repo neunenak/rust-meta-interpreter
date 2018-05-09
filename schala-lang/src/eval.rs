@@ -320,7 +320,27 @@ impl<'a> State<'a> {
 /* BELOW HERE NEW STUFF */
 
 impl<'a> State<'a> {
-  pub fn evaluate_new(&mut self, input: ReducedAST) -> Result<String, String> {
-    Ok("not done".to_string())
+  pub fn evaluate_new(&mut self, ast: ReducedAST) -> Vec<Result<String, String>> {
+    use ast_reducing::*;
+
+    let mut acc = vec![];
+    for statement in ast.0 {
+      match self.eval_statement_new(statement) {
+        Ok(output) => {
+          if let Some(fully_evaluated) = output {
+            acc.push(Ok(fully_evaluated/*.to_string()*/));
+          }
+        },
+        Err(error) => {
+          acc.push(Err(format!("Eval error: {}", error)));
+          return acc;
+        },
+      }
+    }
+    acc
+  }
+
+  fn eval_statement_new(&mut self, stmt: ::ast_reducing::Stmt) -> Result<Option<String>, String> {
+    Ok(Some(format!("stmt - {:?}", stmt)))
   }
 }
