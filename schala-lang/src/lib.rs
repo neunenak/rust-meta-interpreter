@@ -21,12 +21,13 @@ mod builtin;
 mod tokenizing;
 mod parsing;
 mod typechecking;
+mod ast_reducing;
 mod eval;
 
 #[derive(ProgrammingLanguageInterface)]
 #[LanguageName = "Schala"]
 #[SourceFileExtension = "schala"]
-#[PipelineSteps(tokenizing, parsing, symbol_table, typechecking, eval)]
+#[PipelineSteps(tokenizing, parsing, symbol_table, typechecking, ast_reducing, eval)]
 pub struct Schala {
   state: eval::State<'static>,
   type_context: typechecking::TypeContext
@@ -91,7 +92,13 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
   }
 }
 
-fn eval(handle: &mut Schala, input: parsing::AST, _comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
+type TempASTReduction = (ast_reducing::ReducedAST, parsing::AST);
+fn ast_reducing(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<TempASTReduction, String> {
+  Ok((ast_reducing::ReducedAST { }, input))
+}
+
+fn eval(handle: &mut Schala, input: TempASTReduction, _comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
+  let input = input.1;
   let evaluation_outputs = handle.state.evaluate(input);
   let text_output: Result<Vec<String>, String> = evaluation_outputs
     .into_iter()
@@ -101,3 +108,4 @@ fn eval(handle: &mut Schala, input: parsing::AST, _comp: Option<&mut UnfinishedC
     .map(|v| { v.into_iter().intersperse(format!("\n")).collect() });
   eval_output
 }
+
