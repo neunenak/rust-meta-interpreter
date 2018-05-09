@@ -16,7 +16,7 @@ pub enum Stmt {
 
 #[derive(Debug)]
 pub enum Expr {
-  Literal(Lit),
+  Lit(Lit),
   Func(Func),
   Call {
     f: Func,
@@ -50,8 +50,16 @@ pub fn perform_ast_reduction(ast: &AST) -> Result<ReducedAST, String> {
 }
 
 fn reduce_expr(expr: &Expression) -> Result<Stmt, String> {
-  Ok(Stmt::Expr(Expr::Literal(Lit::Int(0))))
+  use parsing::ExpressionType::*;
+  let ref input = expr.0;
+  let output_expr = match input {
+    &IntLiteral(ref n) => Expr::Lit(Lit::Int(*n)),
+    &StringLiteral(ref s) => Expr::Lit(Lit::StringLit(s.clone())),
+    &BoolLiteral(ref b) => Expr::Lit(Lit::Bool(*b)),
+    e => return Err(format!("{:?} not implemented in reduction", e))
+  };
+  Ok(Stmt::Expr(output_expr))
 }
 fn reduce_decl(expr: &Declaration) -> Result<Stmt, String> {
-  Ok(Stmt::Expr(Expr::Literal(Lit::Int(0))))
+  Ok(Stmt::Expr(Expr::Lit(Lit::Int(0))))
 }
