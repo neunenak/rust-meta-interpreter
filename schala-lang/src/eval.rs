@@ -5,6 +5,7 @@ use std::fmt::Write;
 use itertools::Itertools;
 
 use parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType};
+use ast_reducing::ReducedAST;
 use builtin::{BinOp, PrefixOp};
 
 pub struct State<'a> {
@@ -313,5 +314,13 @@ impl<'a> State<'a> {
       ("+", UnsignedInt(n)) => UnsignedInt(n),
       _ => return Err(format!("Runtime error: not yet implemented")),
     })
+  }
+}
+
+/* BELOW HERE NEW STUFF */
+
+impl<'a> State<'a> {
+  pub fn evaluate_new(&mut self, input: ReducedAST) -> Result<String, String> {
+    Ok("not done".to_string())
   }
 }
