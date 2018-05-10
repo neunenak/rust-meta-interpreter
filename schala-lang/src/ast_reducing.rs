@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use parsing::{AST, Expression, Declaration};
+use builtin::{BinOp, PrefixOp};
 
 #[derive(Debug)]
 pub struct ReducedAST(pub Vec<Stmt>);
@@ -27,6 +28,7 @@ pub enum Expr {
 #[derive(Debug)]
 pub enum Lit {
   Int(u64),
+  Float(f64),
   Bool(bool),
   StringLit(Rc<String>),
 }
@@ -54,12 +56,23 @@ fn reduce_expr(expr: &Expression) -> Result<Stmt, String> {
   let ref input = expr.0;
   let output_expr = match input {
     &IntLiteral(ref n) => Expr::Lit(Lit::Int(*n)),
+    &FloatLiteral(ref f) => Expr::Lit(Lit::Float(*f)),
     &StringLiteral(ref s) => Expr::Lit(Lit::StringLit(s.clone())),
     &BoolLiteral(ref b) => Expr::Lit(Lit::Bool(*b)),
+    &BinExp(ref binop, ref lhs, ref rhs) => reduce_binop(binop, lhs, rhs)?,
+    &PrefixExp(ref op, ref arg) => reduce_prefix(op, arg)?,
     e => return Err(format!("{:?} not implemented in reduction", e))
   };
   Ok(Stmt::Expr(output_expr))
 }
 fn reduce_decl(expr: &Declaration) -> Result<Stmt, String> {
   Ok(Stmt::Expr(Expr::Lit(Lit::Int(0))))
+}
+
+fn reduce_binop(binop: &BinOp, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Result<Expr, String> {
+    Err(format!("NOTDONE"))
+}
+
+fn reduce_prefix(op: &PrefixOp, arg: &Box<Expression>) -> Result<Expr, String> {
+    Err(format!("NOTDONE"))
 }
