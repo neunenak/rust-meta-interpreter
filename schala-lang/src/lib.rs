@@ -96,6 +96,7 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
 type TempASTReduction = (ast_reducing::ReducedAST, parsing::AST);
 fn ast_reducing(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<TempASTReduction, String> {
   let output = input.reduce();
+  comp.map(|comp| comp.add_artifact(TraceArtifact::new("ast_reducing", format!("{:?}", output))));
   Ok((output, input))
 }
 

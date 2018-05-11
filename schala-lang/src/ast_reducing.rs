@@ -72,6 +72,12 @@ impl Expression {
       &BinExp(ref binop, ref lhs, ref rhs) => binop.reduce(lhs, rhs),
       &PrefixExp(ref op, ref arg) => op.reduce(arg),
       &Value(ref name) => Expr::Val(name.clone()),
+      /*
+      &Call { ref f, ref arguments } => Expr::Call {
+        f: Box<Expression>,
+        arguments: Vec<Expression>,
+      },
+      */
       e => Expr::UnimplementedSigilValue,
     }
   }

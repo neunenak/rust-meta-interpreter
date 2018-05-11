@@ -95,6 +95,7 @@ impl TraceArtifact {
   pub fn new(stage: &str, debug: String) -> TraceArtifact {
     let color = match stage {
       "parse_trace"  | "ast" => "red",
+      "ast_reducing" => "red",
       "tokens" => "green",
       "type_check" => "magenta",
       _ => "blue",
