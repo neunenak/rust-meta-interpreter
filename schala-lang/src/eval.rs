@@ -4,14 +4,20 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
-use parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType};
+use util::StateStack;
 use ast_reducing::{ReducedAST, Stmt, Expr, Lit, Func};
 use builtin::{BinOp, PrefixOp};
 
 pub struct State<'a> {
-  parent_frame: Option<&'a State<'a>>,
-  values: HashMap<Rc<String>, ValueEntry>,
+  values: StateStack<'a, Rc<String>, ValueEntry>
 }
+
+impl<'a> State<'a> {
+  pub fn new() -> State<'a> {
+    State { values: StateStack::new(Some(format!("global"))) }
+  }
+}
+
 /*
 
 impl<'a> State<'a> {
@@ -32,16 +38,19 @@ impl<'a> State<'a> {
 #[derive(Debug)]
 enum ValueEntry {
   Binding {
-    val: FullyEvaluatedExpr,
+    val: /*FullyEvaluatedExpr*/ Expr,
   },
+  /*
   Function {
     param_names: Vec<Rc<String>>,
     body: Vec<Statement>,
   }
+  */
 }
 
 type EvalResult<T> = Result<T, String>;
 
+/*
 #[derive(Debug, PartialEq, Clone)]
 enum FullyEvaluatedExpr {
   UnsignedInt(u64),
@@ -57,7 +66,6 @@ enum FullyEvaluatedExpr {
   List(Vec<FullyEvaluatedExpr>)
 }
 
-/*
 impl FullyEvaluatedExpr {
   fn to_string(&self) -> String {
     use self::FullyEvaluatedExpr::*;
@@ -97,12 +105,6 @@ impl FullyEvaluatedExpr {
   }
 }
 */
-
-impl<'a> State<'a> {
-  pub fn new() -> State<'a> {
-    State { parent_frame: None, values: HashMap::new() }
-  }
-}
 
   /*
 

@@ -10,6 +10,13 @@ pub struct StateStack<'a, T: 'a, V: 'a>  where T: Hash + Eq {
 }
 
 impl<'a, T, V> StateStack<'a, T, V> where T: Hash + Eq {
+  pub fn new(name: Option<String>) -> StateStack<'a, T, V> where T: Hash + Eq {
+    StateStack {
+      parent: None,
+      values: HashMap::new(),
+      scope_name: name
+    }
+  }
   pub fn insert(&mut self, key: T, value: V) where T: Hash + Eq {
     self.values.insert(key, value);
   }
