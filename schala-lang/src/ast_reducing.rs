@@ -39,40 +39,51 @@ pub struct Func {
   body: Vec<Stmt>,
 }
 
-pub fn perform_ast_reduction(ast: &AST) -> Result<ReducedAST, String> {
-  use parsing::Statement::*;
-  let mut output = vec![];
-  for statement in ast.0.iter() {
-    match statement {
-      &ExpressionStatement(ref expr) => output.push(reduce_expr(expr)?),
-      &Declaration(ref decl) => output.push(reduce_decl(decl)?),
+impl AST {
+  pub fn reduce(&self) -> Result<ReducedAST, String> {
+    use parsing::Statement::*;
+    let mut output = vec![];
+    for statement in self.0.iter() {
+      match statement {
+        &ExpressionStatement(ref expr) => output.push(expr.reduce()?),
+        &Declaration(ref decl) => output.push(decl.reduce()?),
+      }
     }
+    Ok(ReducedAST(output))
   }
-  Ok(ReducedAST(output))
 }
 
-fn reduce_expr(expr: &Expression) -> Result<Stmt, String> {
-  use parsing::ExpressionType::*;
-  let ref input = expr.0;
-  let output_expr = match input {
-    &IntLiteral(ref n) => Expr::Lit(Lit::Int(*n)),
-    &FloatLiteral(ref f) => Expr::Lit(Lit::Float(*f)),
-    &StringLiteral(ref s) => Expr::Lit(Lit::StringLit(s.clone())),
-    &BoolLiteral(ref b) => Expr::Lit(Lit::Bool(*b)),
-    &BinExp(ref binop, ref lhs, ref rhs) => reduce_binop(binop, lhs, rhs)?,
-    &PrefixExp(ref op, ref arg) => reduce_prefix(op, arg)?,
-    e => return Err(format!("{:?} not implemented in reduction", e))
-  };
-  Ok(Stmt::Expr(output_expr))
-}
-fn reduce_decl(expr: &Declaration) -> Result<Stmt, String> {
-  Ok(Stmt::Expr(Expr::Lit(Lit::Int(0))))
+impl Expression {
+  fn reduce(&self) -> Result<Stmt, String> {
+    use parsing::ExpressionType::*;
+    let ref input = self.0;
+    let output_expr = match input {
+      &IntLiteral(ref n) => Expr::Lit(Lit::Int(*n)),
+      &FloatLiteral(ref f) => Expr::Lit(Lit::Float(*f)),
+      &StringLiteral(ref s) => Expr::Lit(Lit::StringLit(s.clone())),
+      &BoolLiteral(ref b) => Expr::Lit(Lit::Bool(*b)),
+      &BinExp(ref binop, ref lhs, ref rhs) => binop.reduce(lhs, rhs)?,
+      &PrefixExp(ref op, ref arg) => op.reduce(arg)?,
+      e => return Err(format!("{:?} not implemented in reduction", e))
+    };
+    Ok(Stmt::Expr(output_expr))
+  }
 }
 
-fn reduce_binop(binop: &BinOp, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Result<Expr, String> {
+impl Declaration {
+  fn reduce(&self) -> Result<Stmt, String> {
+    Ok(Stmt::Expr(Expr::Lit(Lit::Int(0))))
+  }
+}
+
+impl BinOp {
+  fn reduce(&self, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Result<Expr, String> {
     Err(format!("NOTDONE"))
+  }
 }
 
-fn reduce_prefix(op: &PrefixOp, arg: &Box<Expression>) -> Result<Expr, String> {
+impl PrefixOp {
+  fn reduce(&self, arg: &Box<Expression>) -> Result<Expr, String> {
     Err(format!("NOTDONE"))
+  }
 }
