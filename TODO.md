@@ -1,6 +1,7 @@
 
 # TODO Items
 
+- inclusive/exclusive range syntax like .. vs ..=
 
 - sketch of an idea for the REPL:
         -each compiler pass should be a (procedural?) macro like
