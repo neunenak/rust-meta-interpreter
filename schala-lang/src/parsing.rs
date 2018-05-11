@@ -563,6 +563,7 @@ impl Parser {
         Operator(op) => op,
         Period => Rc::new(".".to_string()),
         Pipe => Rc::new("|".to_string()),
+        Slash => Rc::new("/".to_string()),
         _ => unreachable!(),
       };
       let rhs = self.precedence_expr(new_precedence)?;
@@ -975,6 +976,7 @@ mod parse_tests {
       [exprstatement!(binexp!("*", binexp!("+", IntLiteral(1), IntLiteral(2)), IntLiteral(3)))]));
 
     parse_test!(".1 + .2", AST(vec![exprstatement!(binexp!("+", FloatLiteral(0.1), FloatLiteral(0.2)))]));
+    parse_test!("1 / 2", AST(vec![exprstatement!(binexp!("/", IntLiteral(1), IntLiteral(2)))]));
   }
 
   #[test]
