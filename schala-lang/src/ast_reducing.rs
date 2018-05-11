@@ -89,6 +89,7 @@ impl BinOp {
 
 impl PrefixOp {
   fn reduce(&self, arg: &Box<Expression>) -> Expr {
-    Expr::UnimplementedSigilValue
+    let f = Func::BuiltIn(self.sigil().clone());
+    Expr::Call { f, args: vec![arg.reduce()]}
   }
 }
