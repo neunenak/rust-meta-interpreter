@@ -19,5 +19,11 @@ impl<'a, T, V> StateStack<'a, T, V> where T: Hash + Eq {
       (Some(value), _) => Some(value),
     }
   }
+  pub fn new_frame(&'a self) -> StateStack<'a, T, V> where T: Hash + Eq {
+    StateStack {
+      parent: Some(self),
+      values: HashMap::default()
+    }
+  }
 }
 
