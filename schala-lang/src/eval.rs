@@ -5,7 +5,7 @@ use std::fmt::Write;
 use itertools::Itertools;
 
 use parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType};
-use ast_reducing::ReducedAST;
+use ast_reducing::{ReducedAST, Stmt, Expr, Lit};
 use builtin::{BinOp, PrefixOp};
 
 pub struct State<'a> {
@@ -319,18 +319,21 @@ impl<'a> State<'a> {
 
 /* BELOW HERE NEW STUFF */
 
+impl Expr {
+  fn to_repl(&self) -> String {
+    format!("{:?}", self)
+  }
+}
+
 impl<'a> State<'a> {
-  pub fn evaluate_new(&mut self, ast: ReducedAST) -> Vec<Result<String, String>> {
+  pub fn evaluate_new(&mut self, ast: ReducedAST, repl: bool) -> Vec<Result<String, String>> {
     use ast_reducing::*;
 
     let mut acc = vec![];
     for statement in ast.0 {
-      match self.eval_statement_new(statement) {
-        Ok(output) => {
-          if let Some(fully_evaluated) = output {
-            acc.push(Ok(fully_evaluated/*.to_string()*/));
-          }
-        },
+      match self.statement(statement) {
+        Ok(Some(ref output)) if repl => acc.push(Ok(output.to_repl())),
+        Ok(_) => (),
         Err(error) => {
           acc.push(Err(format!("Eval error: {}", error)));
           return acc;
@@ -340,7 +343,7 @@ impl<'a> State<'a> {
     acc
   }
 
-  fn eval_statement_new(&mut self, stmt: ::ast_reducing::Stmt) -> Result<Option<String>, String> {
-    Ok(Some(format!("stmt - {:?}", stmt)))
+  fn statement(&mut self, stmt: ::ast_reducing::Stmt) -> Result<Option<Expr>, String> {
+    Ok(Some(Expr::Lit(Lit::Int(1))))
   }
 }
