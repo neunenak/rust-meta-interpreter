@@ -10,6 +10,7 @@ pub struct ReducedAST(pub Vec<Stmt>);
 pub enum Stmt {
   Binding {
     name: Rc<String>,
+    constant: bool,
     expr: Expr,
   },
   Expr(Expr),
@@ -76,7 +77,11 @@ impl Expression {
 
 impl Declaration {
   fn reduce(&self) -> Stmt {
-    Stmt::Expr(Expr::UnimplementedSigilValue)
+    use self::Declaration::*;
+    match self {
+      &Binding { ref name, ref constant, ref expr } => Stmt::Binding { name: name.clone(), constant: *constant, expr: expr.reduce() },
+      _ => Stmt::Expr(Expr::UnimplementedSigilValue)
+    }
   }
 }
 

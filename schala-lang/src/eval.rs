@@ -19,6 +19,7 @@ impl<'a> State<'a> {
 #[derive(Debug)]
 enum ValueEntry {
   Binding {
+    constant: bool,
     val: /*FullyEvaluatedExpr*/ Expr,
   },
   /*
@@ -364,8 +365,9 @@ impl<'a> State<'a> {
 
   fn statement(&mut self, stmt: Stmt) -> EvalResult<Option<Expr>> {
     match stmt {
-      Stmt::Binding { .. } => {
-        //TODO mutate some state here
+      Stmt::Binding { name, constant, expr } => {
+        let val = self.expression(expr)?;
+        self.values.insert(name.clone(), ValueEntry::Binding { constant, val });
         Ok(None)
       },
       Stmt::Expr(expr) => Ok(Some(self.expression(expr)?)),
