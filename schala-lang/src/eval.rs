@@ -18,6 +18,21 @@ impl<'a> State<'a> {
   }
 }
 
+#[derive(Debug)]
+enum ValueEntry {
+  Binding {
+    val: /*FullyEvaluatedExpr*/ Expr,
+  },
+  /*
+  Function {
+    param_names: Vec<Rc<String>>,
+    body: Vec<Statement>,
+  }
+  */
+}
+
+type EvalResult<T> = Result<T, String>;
+
 /*
 
 impl<'a> State<'a> {
@@ -35,20 +50,6 @@ impl<'a> State<'a> {
 }
 */
 
-#[derive(Debug)]
-enum ValueEntry {
-  Binding {
-    val: /*FullyEvaluatedExpr*/ Expr,
-  },
-  /*
-  Function {
-    param_names: Vec<Rc<String>>,
-    body: Vec<Statement>,
-  }
-  */
-}
-
-type EvalResult<T> = Result<T, String>;
 
 /*
 #[derive(Debug, PartialEq, Clone)]
@@ -363,7 +364,7 @@ impl<'a> State<'a> {
     acc
   }
 
-  fn statement(&mut self, stmt: Stmt) -> Result<Option<Expr>, String> {
+  fn statement(&mut self, stmt: Stmt) -> EvalResult<Option<Expr>> {
     match stmt {
       Stmt::Binding { .. } => {
         //TODO mutate some state here
@@ -373,7 +374,7 @@ impl<'a> State<'a> {
     }
   }
 
-  fn expression(&mut self, expr: Expr) -> Result<Expr, String> {
+  fn expression(&mut self, expr: Expr) -> EvalResult<Expr> {
     use self::Expr::*;
     match expr {
       literal @ Lit(_) => Ok(literal),
@@ -382,7 +383,7 @@ impl<'a> State<'a> {
     }
   }
 
-  fn apply_function(&mut self, f: Func, args: Vec<Expr>) -> Result<Expr, String> {
+  fn apply_function(&mut self, f: Func, args: Vec<Expr>) -> EvalResult<Expr> {
     match f {
       Func::BuiltIn(sigil) => self.apply_builtin(sigil, args),
       Func::UserDefined { params, body } => {
@@ -391,7 +392,7 @@ impl<'a> State<'a> {
     }
   }
 
-  fn apply_builtin(&mut self, name: Rc<String>, args: Vec<Expr>) -> Result<Expr, String> {
+  fn apply_builtin(&mut self, name: Rc<String>, args: Vec<Expr>) -> EvalResult<Expr> {
     use self::Expr::*;
     use self::Lit::*;
     let evaled_args: Result<Vec<Expr>, String> = args.into_iter().map(|arg| self.expression(arg)).collect();
