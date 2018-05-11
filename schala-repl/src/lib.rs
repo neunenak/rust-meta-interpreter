@@ -237,12 +237,10 @@ impl Repl {
           println!("Terminal read error: {}", e);
         },
         Ok(ref input) => {
+          self.console.get_history().add(input);
           let output = match input.chars().nth(0) {
             Some(ch) if ch == self.interpreter_directive_sigil => self.handle_interpreter_directive(input),
-            _ => {
-              self.console.get_history().add(input);
-              Some(self.input_handler(input))
-            }
+            _ => Some(self.input_handler(input)),
           };
           if let Some(o) = output {
             println!("=> {}", o);
