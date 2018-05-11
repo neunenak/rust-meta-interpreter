@@ -17,6 +17,7 @@ macro_rules! bx {
   ($e:expr) => { Box::new($e) }
 }
 
+mod util;
 mod builtin;
 mod tokenizing;
 mod parsing;
