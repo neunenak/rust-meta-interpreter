@@ -102,15 +102,7 @@ fn ast_reducing(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
 fn eval(handle: &mut Schala, input: TempASTReduction, _comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
 
   let new_input = input.0;
-  let new_eval_output = handle.state.evaluate_new(new_input, true);
-  match new_eval_output[0] {
-    Ok(ref s) => println!("NEW OUTPUT> {}", s),
-    Err(ref s) => println!("NEW Err> {}", s),
-  };
-
-  /* old-style eval */
-  let input = input.1;
-  let evaluation_outputs = handle.state.evaluate(input);
+  let evaluation_outputs = handle.state.evaluate_new(new_input, true);
   let text_output: Result<Vec<String>, String> = evaluation_outputs
     .into_iter()
     .collect();

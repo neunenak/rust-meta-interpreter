@@ -12,6 +12,7 @@ pub struct State<'a> {
   parent_frame: Option<&'a State<'a>>,
   values: HashMap<Rc<String>, ValueEntry>,
 }
+/*
 
 impl<'a> State<'a> {
 
@@ -26,6 +27,7 @@ impl<'a> State<'a> {
     }
   }
 }
+*/
 
 #[derive(Debug)]
 enum ValueEntry {
@@ -55,6 +57,7 @@ enum FullyEvaluatedExpr {
   List(Vec<FullyEvaluatedExpr>)
 }
 
+/*
 impl FullyEvaluatedExpr {
   fn to_string(&self) -> String {
     use self::FullyEvaluatedExpr::*;
@@ -93,11 +96,15 @@ impl FullyEvaluatedExpr {
     }
   }
 }
+*/
 
 impl<'a> State<'a> {
   pub fn new() -> State<'a> {
     State { parent_frame: None, values: HashMap::new() }
   }
+}
+
+  /*
 
   pub fn new_with_parent(parent: &'a State<'a>) -> State<'a> {
     State { parent_frame: Some(parent), values: HashMap::new() }
@@ -316,6 +323,7 @@ impl<'a> State<'a> {
     })
   }
 }
+*/
 
 /* BELOW HERE NEW STUFF */
 
