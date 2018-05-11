@@ -14,6 +14,10 @@ impl<'a> State<'a> {
   pub fn new() -> State<'a> {
     State { values: StateStack::new(Some(format!("global"))) }
   }
+
+  pub fn debug_print(&self) -> String {
+    format!("Values: {:?}", self.values)
+  }
 }
 
 #[derive(Debug)]

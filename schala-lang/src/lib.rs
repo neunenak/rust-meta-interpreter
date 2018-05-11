@@ -99,8 +99,8 @@ fn ast_reducing(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
   Ok((output, input))
 }
 
-fn eval(handle: &mut Schala, input: TempASTReduction, _comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
-
+fn eval(handle: &mut Schala, input: TempASTReduction, comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
+  comp.map(|comp| comp.add_artifact(TraceArtifact::new("value_state", handle.state.debug_print())));
   let new_input = input.0;
   let evaluation_outputs = handle.state.evaluate_new(new_input, true);
   let text_output: Result<Vec<String>, String> = evaluation_outputs
