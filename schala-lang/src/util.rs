@@ -5,7 +5,8 @@ use std::cmp::Eq;
 #[derive(Default, Debug)]
 pub struct StateStack<'a, T: 'a, V: 'a>  where T: Hash + Eq {
   parent: Option<&'a StateStack<'a, T, V>>,
-  values: HashMap<T, V>
+  values: HashMap<T, V>,
+  scope_name: Option<String>
 }
 
 impl<'a, T, V> StateStack<'a, T, V> where T: Hash + Eq {
@@ -19,11 +20,15 @@ impl<'a, T, V> StateStack<'a, T, V> where T: Hash + Eq {
       (Some(value), _) => Some(value),
     }
   }
-  pub fn new_frame(&'a self) -> StateStack<'a, T, V> where T: Hash + Eq {
+  pub fn new_frame(&'a self, name: Option<String>) -> StateStack<'a, T, V> where T: Hash + Eq {
     StateStack {
       parent: Some(self),
-      values: HashMap::default()
+      values: HashMap::default(),
+      scope_name: name,
     }
+  }
+  pub fn get_name(&self) -> Option<&String> {
+    self.scope_name.as_ref()
   }
 }
 
