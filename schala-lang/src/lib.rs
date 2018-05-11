@@ -95,8 +95,7 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
 
 type TempASTReduction = (ast_reducing::ReducedAST, parsing::AST);
 fn ast_reducing(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<TempASTReduction, String> {
-  let output = input.reduce()?;
-  println!("REDUCED: {:?}", output);
+  let output = input.reduce();
   Ok((output, input))
 }
 
@@ -106,8 +105,8 @@ fn eval(handle: &mut Schala, input: TempASTReduction, _comp: Option<&mut Unfinis
   let new_eval_output = handle.state.evaluate_new(new_input, true);
   match new_eval_output[0] {
     Ok(ref s) => println!("NEW OUTPUT> {}", s),
-    Err(ref e) => println!("NEW ERR> {}", e),
-  }
+    Err(ref s) => println!("NEW Err> {}", s),
+  };
 
   /* old-style eval */
   let input = input.1;

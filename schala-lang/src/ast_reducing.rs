@@ -23,6 +23,7 @@ pub enum Expr {
     f: Func,
     args: Vec<Expr>,
   },
+  UnimplementedSigilValue
 }
 
 #[derive(Debug)]
@@ -44,51 +45,50 @@ pub enum Func {
 }
 
 impl AST {
-  pub fn reduce(&self) -> Result<ReducedAST, String> {
+  pub fn reduce(&self) -> ReducedAST {
     use parsing::Statement::*;
     let mut output = vec![];
     for statement in self.0.iter() {
       match statement {
-        &ExpressionStatement(ref expr) => output.push(Stmt::Expr(expr.reduce()?)),
-        &Declaration(ref decl) => output.push(decl.reduce()?),
+        &ExpressionStatement(ref expr) => output.push(Stmt::Expr(expr.reduce())),
+        &Declaration(ref decl) => output.push(decl.reduce()),
       }
     }
-    Ok(ReducedAST(output))
+    ReducedAST(output)
   }
 }
 
 impl Expression {
-  fn reduce(&self) -> Result<Expr, String> {
+  fn reduce(&self) -> Expr {
     use parsing::ExpressionType::*;
     let ref input = self.0;
-    let output_expr = match input {
+    match input {
       &IntLiteral(ref n) => Expr::Lit(Lit::Nat(*n)), //TODO I should rename IntLiteral if I want the Nat/Int distinction, which I do
       &FloatLiteral(ref f) => Expr::Lit(Lit::Float(*f)),
       &StringLiteral(ref s) => Expr::Lit(Lit::StringLit(s.clone())),
       &BoolLiteral(ref b) => Expr::Lit(Lit::Bool(*b)),
-      &BinExp(ref binop, ref lhs, ref rhs) => binop.reduce(lhs, rhs)?,
-      &PrefixExp(ref op, ref arg) => op.reduce(arg)?,
-      e => return Err(format!("{:?} not implemented in reduction", e))
-    };
-    Ok(output_expr)
+      &BinExp(ref binop, ref lhs, ref rhs) => binop.reduce(lhs, rhs),
+      &PrefixExp(ref op, ref arg) => op.reduce(arg),
+      e => Expr::UnimplementedSigilValue,
+    }
   }
 }
 
 impl Declaration {
-  fn reduce(&self) -> Result<Stmt, String> {
-    Ok(Stmt::Expr(Expr::Lit(Lit::Int(0))))
+  fn reduce(&self) -> Stmt {
+    Stmt::Expr(Expr::UnimplementedSigilValue)
   }
 }
 
 impl BinOp {
-  fn reduce(&self, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Result<Expr, String> {
+  fn reduce(&self, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Expr {
     let f = Func::BuiltIn(self.sigil().clone());
-    Ok(Expr::Call { f, args: vec![lhs.reduce()?, rhs.reduce()?]})
+    Expr::Call { f, args: vec![lhs.reduce(), rhs.reduce()]}
   }
 }
 
 impl PrefixOp {
-  fn reduce(&self, arg: &Box<Expression>) -> Result<Expr, String> {
-    Err(format!("NOTDONE"))
+  fn reduce(&self, arg: &Box<Expression>) -> Expr {
+    Expr::UnimplementedSigilValue
   }
 }
