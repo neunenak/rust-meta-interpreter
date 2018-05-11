@@ -5,7 +5,7 @@ use std::fmt::Write;
 use itertools::Itertools;
 
 use parsing::{AST, Statement, Declaration, Expression, Variant, ExpressionType};
-use ast_reducing::{ReducedAST, Stmt, Expr, Lit};
+use ast_reducing::{ReducedAST, Stmt, Expr, Lit, Func};
 use builtin::{BinOp, PrefixOp};
 
 pub struct State<'a> {
@@ -359,16 +359,52 @@ impl<'a> State<'a> {
         //TODO mutate some state here
         Ok(None)
       },
-      Stmt::Expr(expr) => self.expression(expr),
+      Stmt::Expr(expr) => Ok(Some(self.expression(expr)?)),
     }
   }
 
-  fn expression(&mut self, expr: Expr) -> Result<Option<Expr>, String> {
+  fn expression(&mut self, expr: Expr) -> Result<Expr, String> {
     use self::Expr::*;
-    use self::Lit::*;
     match expr {
-      literal @ Lit(_) => Ok(Some(literal)),
+      literal @ Lit(_) => Ok(literal),
+      Call { f, args } => self.apply_function(f, args),
       _ => Err(format!("NOT IMPLEMENTED YET"))
     }
+  }
+
+  fn apply_function(&mut self, f: Func, args: Vec<Expr>) -> Result<Expr, String> {
+    match f {
+      Func::BuiltIn(sigil) => self.apply_builtin(sigil, args),
+      Func::UserDefined { params, body } => {
+        Err(format!("Function application not done yet"))
+      }
+    }
+  }
+
+  fn apply_builtin(&mut self, name: Rc<String>, args: Vec<Expr>) -> Result<Expr, String> {
+    use self::Expr::*;
+    use self::Lit::*;
+    let evaled_args: Result<Vec<Expr>, String> = args.into_iter().map(|arg| self.expression(arg)).collect();
+    let evaled_args = evaled_args?;
+
+    Ok(match (name.as_str(), evaled_args.as_slice()) {
+      ("+", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l + r)),
+      /*
+      ("++", Str(s1), Str(s2)) => Str(format!("{}{}", s1, s2)),
+      ("-", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l - r),
+      ("*", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l * r),
+      ("/", UnsignedInt(l), UnsignedInt(r)) => Float((l as f64)/ (r as f64)),
+      ("//", UnsignedInt(l), UnsignedInt(r)) => if r == 0 {
+        return Err(format!("Runtime error: divide by zero"));
+      } else {
+        UnsignedInt(l / r)
+      },
+      ("%", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l % r),
+      ("^", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l ^ r),
+      ("&", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l & r),
+      ("|", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l | r),
+      */
+      _ => return Err(format!("Runtime error: not yet implemented")),
+    })
   }
 }
