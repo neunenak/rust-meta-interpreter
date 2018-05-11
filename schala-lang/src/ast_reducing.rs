@@ -27,16 +27,20 @@ pub enum Expr {
 
 #[derive(Debug)]
 pub enum Lit {
-  Int(u64),
+  Nat(u64),
+  Int(i64),
   Float(f64),
   Bool(bool),
   StringLit(Rc<String>),
 }
 
 #[derive(Debug)]
-pub struct Func {
-  params: Vec<Rc<String>>,
-  body: Vec<Stmt>,
+pub enum Func {
+  BuiltIn(Rc<String>),
+  UserDefined {
+    params: Vec<Rc<String>>,
+    body: Vec<Stmt>,
+  }
 }
 
 impl AST {
@@ -45,7 +49,7 @@ impl AST {
     let mut output = vec![];
     for statement in self.0.iter() {
       match statement {
-        &ExpressionStatement(ref expr) => output.push(expr.reduce()?),
+        &ExpressionStatement(ref expr) => output.push(Stmt::Expr(expr.reduce()?)),
         &Declaration(ref decl) => output.push(decl.reduce()?),
       }
     }
@@ -54,11 +58,11 @@ impl AST {
 }
 
 impl Expression {
-  fn reduce(&self) -> Result<Stmt, String> {
+  fn reduce(&self) -> Result<Expr, String> {
     use parsing::ExpressionType::*;
     let ref input = self.0;
     let output_expr = match input {
-      &IntLiteral(ref n) => Expr::Lit(Lit::Int(*n)),
+      &IntLiteral(ref n) => Expr::Lit(Lit::Nat(*n)), //TODO I should rename IntLiteral if I want the Nat/Int distinction, which I do
       &FloatLiteral(ref f) => Expr::Lit(Lit::Float(*f)),
       &StringLiteral(ref s) => Expr::Lit(Lit::StringLit(s.clone())),
       &BoolLiteral(ref b) => Expr::Lit(Lit::Bool(*b)),
@@ -66,7 +70,7 @@ impl Expression {
       &PrefixExp(ref op, ref arg) => op.reduce(arg)?,
       e => return Err(format!("{:?} not implemented in reduction", e))
     };
-    Ok(Stmt::Expr(output_expr))
+    Ok(output_expr)
   }
 }
 
@@ -78,7 +82,8 @@ impl Declaration {
 
 impl BinOp {
   fn reduce(&self, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Result<Expr, String> {
-    Err(format!("NOTDONE"))
+    let f = Func::BuiltIn(self.sigil().clone());
+    Ok(Expr::Call { f, args: vec![lhs.reduce()?, rhs.reduce()?]})
   }
 }
 
