@@ -388,6 +388,7 @@ impl<'a> State<'a> {
     let evaled_args = evaled_args?;
 
     Ok(match (name.as_str(), evaled_args.as_slice()) {
+      /* binops */
       ("+", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l + r)),
       ("++", &[Lit(StringLit(ref s1)), Lit(StringLit(ref s2))]) => Lit(StringLit(Rc::new(format!("{}{}", s1, s2)))),
       ("-", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l - r)),
@@ -402,6 +403,15 @@ impl<'a> State<'a> {
       ("^", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l ^ r)),
       ("&", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l & r)),
       ("|", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l | r)),
+
+      /* prefix ops */
+      ("!", &[Lit(Bool(true))]) => Lit(Bool(false)),
+      ("!", &[Lit(Bool(false))]) => Lit(Bool(true)),
+      ("-", &[Lit(Nat(n))]) => Lit(Int(-1*(n as i64))),
+      ("-", &[Lit(Int(n))]) => Lit(Int(-1*(n as i64))),
+      ("+", &[Lit(Int(n))]) => Lit(Int(n)),
+      ("+", &[Lit(Nat(n))]) => Lit(Nat(n)),
+
       _ => return Err(format!("Runtime error: not yet implemented")),
     })
   }
