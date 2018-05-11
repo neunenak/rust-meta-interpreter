@@ -389,21 +389,19 @@ impl<'a> State<'a> {
 
     Ok(match (name.as_str(), evaled_args.as_slice()) {
       ("+", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l + r)),
-      /*
-      ("++", Str(s1), Str(s2)) => Str(format!("{}{}", s1, s2)),
-      ("-", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l - r),
-      ("*", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l * r),
-      ("/", UnsignedInt(l), UnsignedInt(r)) => Float((l as f64)/ (r as f64)),
-      ("//", UnsignedInt(l), UnsignedInt(r)) => if r == 0 {
+      ("++", &[Lit(StringLit(ref s1)), Lit(StringLit(ref s2))]) => Lit(StringLit(Rc::new(format!("{}{}", s1, s2)))),
+      ("-", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l - r)),
+      ("*", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l * r)),
+      ("/", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Float((l as f64)/ (r as f64))),
+      ("//", &[Lit(Nat(l)), Lit(Nat(r))]) => if r == 0 {
         return Err(format!("Runtime error: divide by zero"));
       } else {
-        UnsignedInt(l / r)
+        Lit(Nat(l / r))
       },
-      ("%", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l % r),
-      ("^", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l ^ r),
-      ("&", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l & r),
-      ("|", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l | r),
-      */
+      ("%", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l % r)),
+      ("^", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l ^ r)),
+      ("&", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l & r)),
+      ("|", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l | r)),
       _ => return Err(format!("Runtime error: not yet implemented")),
     })
   }
