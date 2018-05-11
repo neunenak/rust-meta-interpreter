@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::fmt::Write;
 
@@ -6,7 +5,6 @@ use itertools::Itertools;
 
 use util::StateStack;
 use ast_reducing::{ReducedAST, Stmt, Expr, Lit, Func};
-use builtin::{BinOp, PrefixOp};
 
 pub struct State<'a> {
   values: StateStack<'a, Rc<String>, ValueEntry>
