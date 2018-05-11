@@ -321,7 +321,17 @@ impl<'a> State<'a> {
 
 impl Expr {
   fn to_repl(&self) -> String {
-    format!("{:?}", self)
+    use self::Lit::*;
+    match self {
+      Expr::Lit(ref l) => match l {
+        Nat(n) => format!("{}", n),
+        Int(i) => format!("{}", i),
+        Float(f) => format!("{}", f),
+        Bool(b) => format!("{}", b),
+        StringLit(s) => format!("{}", s),
+      },
+      _ => format!("{:?}", self),
+    }
   }
 }
 
@@ -343,7 +353,22 @@ impl<'a> State<'a> {
     acc
   }
 
-  fn statement(&mut self, stmt: ::ast_reducing::Stmt) -> Result<Option<Expr>, String> {
-    Ok(Some(Expr::Lit(Lit::Int(1))))
+  fn statement(&mut self, stmt: Stmt) -> Result<Option<Expr>, String> {
+    match stmt {
+      Stmt::Binding { .. } => {
+        //TODO mutate some state here
+        Ok(None)
+      },
+      Stmt::Expr(expr) => self.expression(expr),
+    }
+  }
+
+  fn expression(&mut self, expr: Expr) -> Result<Option<Expr>, String> {
+    use self::Expr::*;
+    use self::Lit::*;
+    match expr {
+      literal @ Lit(_) => Ok(Some(literal)),
+      _ => Err(format!("NOT IMPLEMENTED YET"))
+    }
   }
 }
