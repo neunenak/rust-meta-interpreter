@@ -105,7 +105,7 @@ fn is_operator(c: &char) -> bool {
   OPERATOR_CHARS.iter().any(|x| x == c)
 }
 
-type CharIter<I: Iterator<Item=(usize,usize,char)>> = Peekable<I>;
+type CharData = (usize, usize, char);
 
 pub fn tokenize(input: &str) -> Vec<Token> {
   let mut tokens: Vec<Token> = Vec::new();
@@ -164,7 +164,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
   tokens
 }
 
-fn handle_digit<I: Iterator<Item=(usize,usize,char)>>(c: char, input: &mut CharIter<I>) -> TokenType {
+fn handle_digit(c: char, input: &mut Peekable<impl Iterator<Item=CharData>>) -> TokenType {
   if c == '0' && input.peek().map_or(false, |&(_, _, c)| { c == 'x' }) {
     input.next();
     let rest: String = input.peeking_take_while(|&(_, _, ref c)| c.is_digit(16) || *c == '_').map(|(_, _, c)| { c }).collect();
@@ -179,7 +179,7 @@ fn handle_digit<I: Iterator<Item=(usize,usize,char)>>(c: char, input: &mut CharI
   }
 }
 
-fn handle_quote<I: Iterator<Item=(usize,usize,char)>>(input: &mut CharIter<I>) -> TokenType {
+fn handle_quote(input: &mut Peekable<impl Iterator<Item=CharData>>) -> TokenType {
   let mut buf = String::new();
   loop {
     match input.next().map(|(_, _, c)| { c }) {
@@ -204,7 +204,7 @@ fn handle_quote<I: Iterator<Item=(usize,usize,char)>>(input: &mut CharIter<I>) -
   TokenType::StrLiteral(Rc::new(buf))
 }
 
-fn handle_alphabetic<I: Iterator<Item=(usize,usize,char)>>(c: char, input: &mut CharIter<I>) -> TokenType {
+fn handle_alphabetic(c: char, input: &mut Peekable<impl Iterator<Item=CharData>>) -> TokenType {
   let mut buf = String::new();
   buf.push(c);
   if c == '_' && input.peek().map(|&(_, _, c)| { !c.is_alphabetic() }).unwrap_or(true) {
@@ -227,7 +227,7 @@ fn handle_alphabetic<I: Iterator<Item=(usize,usize,char)>>(c: char, input: &mut 
   }
 }
 
-fn handle_operator<I: Iterator<Item=(usize,usize,char)>>(c: char, input: &mut CharIter<I>) -> TokenType {
+fn handle_operator(c: char, input: &mut Peekable<impl Iterator<Item=CharData>>) -> TokenType {
   match c {
     '<' | '>' | '|' | '.' => {
       let ref next = input.peek().map(|&(_, _, c)| { c });
