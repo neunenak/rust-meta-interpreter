@@ -302,7 +302,7 @@ impl Expr {
 }
 
 impl<'a> State<'a> {
-  pub fn evaluate_new(&mut self, ast: ReducedAST, repl: bool) -> Vec<Result<String, String>> {
+  pub fn evaluate(&mut self, ast: ReducedAST, repl: bool) -> Vec<Result<String, String>> {
     use ast_reducing::*;
 
     let mut acc = vec![];
@@ -440,7 +440,7 @@ mod eval_tests {
   macro_rules! fresh_env {
     ($string:expr, $correct:expr) => {
       let mut state = State::new();
-      let all_output = state.evaluate_new(parse(tokenize($string)).0.unwrap().reduce(), true);
+      let all_output = state.evaluate(parse(tokenize($string)).0.unwrap().reduce(), true);
       let ref output = all_output[0];
       assert_eq!(*output, Ok($correct.to_string()));
     }

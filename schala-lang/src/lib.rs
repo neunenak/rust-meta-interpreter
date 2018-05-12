@@ -93,17 +93,15 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
   }
 }
 
-type TempASTReduction = (ast_reducing::ReducedAST, parsing::AST);
-fn ast_reducing(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<TempASTReduction, String> {
+fn ast_reducing(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<ast_reducing::ReducedAST, String> {
   let output = input.reduce();
   comp.map(|comp| comp.add_artifact(TraceArtifact::new("ast_reducing", format!("{:?}", output))));
-  Ok((output, input))
+  Ok(output)
 }
 
-fn eval(handle: &mut Schala, input: TempASTReduction, comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
+fn eval(handle: &mut Schala, input: ast_reducing::ReducedAST, comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
   comp.map(|comp| comp.add_artifact(TraceArtifact::new("value_state", handle.state.debug_print())));
-  let new_input = input.0;
-  let evaluation_outputs = handle.state.evaluate_new(new_input, true);
+  let evaluation_outputs = handle.state.evaluate(input, true);
   let text_output: Result<Vec<String>, String> = evaluation_outputs
     .into_iter()
     .collect();
