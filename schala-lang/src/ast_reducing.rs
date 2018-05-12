@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use parsing::{AST, Expression, Declaration};
+use parsing::{AST, Statement, Expression, Declaration};
 use builtin::{BinOp, PrefixOp};
 
 #[derive(Debug)]
@@ -48,15 +48,21 @@ pub enum Func {
 
 impl AST {
   pub fn reduce(&self) -> ReducedAST {
-    use parsing::Statement::*;
     let mut output = vec![];
     for statement in self.0.iter() {
-      match statement {
-        &ExpressionStatement(ref expr) => output.push(Stmt::Expr(expr.reduce())),
-        &Declaration(ref decl) => output.push(decl.reduce()),
-      }
+      output.push(statement.reduce());
     }
     ReducedAST(output)
+  }
+}
+
+impl Statement {
+  fn reduce(&self) -> Stmt { 
+    use parsing::Statement::*;
+    match self {
+      ExpressionStatement(expr) => Stmt::Expr(expr.reduce()),
+      Declaration(decl) => decl.reduce(),
+    }
   }
 }
 
@@ -87,7 +93,15 @@ impl Declaration {
   fn reduce(&self) -> Stmt {
     use self::Declaration::*;
     match self {
-      &Binding { ref name, ref constant, ref expr } => Stmt::Binding { name: name.clone(), constant: *constant, expr: expr.reduce() },
+      Binding {name, constant, expr } => Stmt::Binding { name: name.clone(), constant: *constant, expr: expr.reduce() },
+      FuncDecl(::parsing::Signature { name, params, type_anno }, statements) => Stmt::Binding {
+        name: name.clone(),
+        constant: true,
+        expr: Expr::Func(Func::UserDefined {
+          params: params.iter().map(|param| param.0.clone()).collect(),
+          body: statements.iter().map(|stmt| stmt.reduce()).collect(),
+        })
+      },
       _ => Stmt::Expr(Expr::UnimplementedSigilValue)
     }
   }
