@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::fmt::Write;
+use std::io;
 
 use itertools::Itertools;
 
@@ -21,6 +22,7 @@ impl<'a> State<'a> {
     let mut values = StateStack::new(Some(format!("global")));
     builtin_binding!("print", values);
     builtin_binding!("println", values);
+    builtin_binding!("getline", values);
     State { values }
   }
 
@@ -409,6 +411,11 @@ impl<'a> State<'a> {
       ("println", &[ref anything]) => {
         println!("{}", anything.to_repl());
         Expr::Unit
+      },
+      ("getline", &[]) => {
+        let mut buf = String::new();
+        io::stdin().read_line(&mut buf).expect("Error readling line in 'getline'");
+        Lit(StringLit(Rc::new(buf)))
       },
       _ => return Err(format!("Runtime error: bad or unimplemented builtin")),
     })
