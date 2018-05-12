@@ -291,7 +291,7 @@ impl Expr {
         Int(i) => format!("{}", i),
         Float(f) => format!("{}", f),
         Bool(b) => format!("{}", b),
-        StringLit(s) => format!("{}", s),
+        StringLit(s) => format!("\"{}\"", s),
       },
       Expr::Func(f) => match f {
         BuiltIn(name) => format!("<built-in function {}>", name),
@@ -486,5 +486,6 @@ mod eval_tests {
     fresh_env!("1 + 2", "3");
     fresh_env!("var a = 1; a = 2", "Unit");
     fresh_env!("var a = 1; a = 2; a", "2");
+    fresh_env!(r#"("a", 1 + 2)"#, r#"("a", 3)"#);
   }
 }
