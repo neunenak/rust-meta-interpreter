@@ -427,6 +427,12 @@ impl<'a> State<'a> {
       ("&", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l & r)),
       ("|", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l | r)),
 
+      ("==", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Bool(l == r)),
+      ("==", &[Lit(Int(l)), Lit(Int(r))]) => Lit(Bool(l == r)),
+      ("==", &[Lit(Float(l)), Lit(Float(r))]) => Lit(Bool(l == r)),
+      ("==", &[Lit(Bool(l)), Lit(Bool(r))]) => Lit(Bool(l == r)),
+      ("==", &[Lit(StringLit(ref l)), Lit(StringLit(ref r))]) => Lit(Bool(l == r)),
+
       /* prefix ops */
       ("!", &[Lit(Bool(true))]) => Lit(Bool(false)),
       ("!", &[Lit(Bool(false))]) => Lit(Bool(true)),
