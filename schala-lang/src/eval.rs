@@ -454,7 +454,7 @@ impl<'a> State<'a> {
       ("getline", &[]) => {
         let mut buf = String::new();
         io::stdin().read_line(&mut buf).expect("Error readling line in 'getline'");
-        Lit(StringLit(Rc::new(buf)))
+        Lit(StringLit(Rc::new(buf.trim().to_string())))
       },
       (x, args) => return Err(format!("bad or unimplemented builtin {:?} | {:?}", x, args)),
     })
