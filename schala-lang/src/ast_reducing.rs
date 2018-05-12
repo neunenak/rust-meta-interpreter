@@ -22,7 +22,7 @@ pub enum Expr {
   Func(Func),
   Val(Rc<String>),
   Call {
-    f: Func,
+    f: Box<Expr>,
     args: Vec<Expr>,
   },
   UnimplementedSigilValue
@@ -79,12 +79,10 @@ impl Expression {
       BinExp(binop, lhs, rhs) => binop.reduce(lhs, rhs),
       PrefixExp(op, arg) => op.reduce(arg),
       Value(name) => Expr::Val(name.clone()),
-      /*
-      &Call { ref f, ref arguments } => Expr::Call {
-        f: Box<Expression>,
-        arguments: Vec<Expression>,
+      Call { f, arguments } => Expr::Call {
+        f: Box::new(f.reduce()),
+        args: arguments.iter().map(|arg| arg.reduce()).collect(),
       },
-      */
       e => Expr::UnimplementedSigilValue,
     }
   }
@@ -111,14 +109,14 @@ impl Declaration {
 
 impl BinOp {
   fn reduce(&self, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Expr {
-    let f = Func::BuiltIn(self.sigil().clone());
+    let f = Box::new(Expr::Func(Func::BuiltIn(self.sigil().clone())));
     Expr::Call { f, args: vec![lhs.reduce(), rhs.reduce()]}
   }
 }
 
 impl PrefixOp {
   fn reduce(&self, arg: &Box<Expression>) -> Expr {
-    let f = Func::BuiltIn(self.sigil().clone());
+    let f = Box::new(Expr::Func(Func::BuiltIn(self.sigil().clone())));
     Expr::Call { f, args: vec![arg.reduce()]}
   }
 }

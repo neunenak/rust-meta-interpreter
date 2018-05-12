@@ -388,7 +388,13 @@ impl<'a> State<'a> {
     use self::Expr::*;
     match expr {
       literal @ Lit(_) => Ok(literal),
-      Call { f, args } => self.apply_function(f, args),
+      Call { box f, args } => {
+        let f = match self.expression(f)? {
+          Func(f) => f,
+          other => return Err(format!("Tried to call {:?} which is not a function", other)),
+        };
+        self.apply_function(f, args)
+      },
       Val(v) => self.value(v),
       func @ Func(_) => Ok(func),
       e => Err(format!("Expr {:?} eval not implemented", e))
