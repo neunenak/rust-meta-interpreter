@@ -336,6 +336,7 @@ impl<'a> State<'a> {
 impl Expr {
   fn to_repl(&self) -> String {
     use self::Lit::*;
+    use self::Func::*;
     match self {
       Expr::Lit(ref l) => match l {
         Nat(n) => format!("{}", n),
@@ -343,6 +344,11 @@ impl Expr {
         Float(f) => format!("{}", f),
         Bool(b) => format!("{}", b),
         StringLit(s) => format!("{}", s),
+      },
+      Expr::Func(f) => match f {
+        BuiltIn(name) => format!("<built-in function {}>", name),
+        UserDefined { name: None, .. } => format!("<function>"),
+        UserDefined { name: Some(name), .. } => format!("<function {}>", name),
       },
       _ => format!("{:?}", self),
     }
@@ -384,14 +390,15 @@ impl<'a> State<'a> {
       literal @ Lit(_) => Ok(literal),
       Call { f, args } => self.apply_function(f, args),
       Val(v) => self.value(v),
-      _ => Err(format!("NOT IMPLEMENTED YET"))
+      func @ Func(_) => Ok(func),
+      e => Err(format!("Expr {:?} eval not implemented", e))
     }
   }
 
   fn apply_function(&mut self, f: Func, args: Vec<Expr>) -> EvalResult<Expr> {
     match f {
       Func::BuiltIn(sigil) => self.apply_builtin(sigil, args),
-      Func::UserDefined { params, body } => {
+      Func::UserDefined { params, body, .. } => {
         Err(format!("Function application not done yet"))
       }
     }
@@ -437,10 +444,16 @@ impl<'a> State<'a> {
     match self.values.lookup(&name) {
       None => return Err(format!("Value {} not found", *name)),
       Some(lookup) => match lookup {
-        &Binding { ref val, .. } => Ok(val.clone()),
+        Binding { val, .. } => Ok(
+          if let Expr::Func(Func::UserDefined { name: None, params, body }) = val {
+            Expr::Func(Func::UserDefined { name: Some(name.clone()), params: params.clone(), body: body.clone() }) //TODO here is unnecessary cloning
+          } else {
+            val.clone()
+          }),
         _ => Err(format!("Functions not done")),
       }
     }
+  }
       /*
   fn eval_value(&mut self, name: Rc<String>) -> EvalResult<FullyEvaluatedExpr> {
     use self::ValueEntry::*;
@@ -453,5 +466,4 @@ impl<'a> State<'a> {
     }
   }
   */
-  }
 }

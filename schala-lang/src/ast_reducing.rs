@@ -41,6 +41,7 @@ pub enum Lit {
 pub enum Func {
   BuiltIn(Rc<String>),
   UserDefined {
+    name: Option<Rc<String>>,
     params: Vec<Rc<String>>,
     body: Vec<Stmt>,
   }
@@ -98,6 +99,7 @@ impl Declaration {
         name: name.clone(),
         constant: true,
         expr: Expr::Func(Func::UserDefined {
+          name: None,
           params: params.iter().map(|param| param.0.clone()).collect(),
           body: statements.iter().map(|stmt| stmt.reduce()).collect(),
         })
