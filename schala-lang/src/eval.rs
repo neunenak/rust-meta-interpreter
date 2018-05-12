@@ -25,33 +25,10 @@ enum ValueEntry {
   Binding {
     constant: bool,
     val: /*FullyEvaluatedExpr*/ Expr,
-  },
-  /*
-  Function {
-    param_names: Vec<Rc<String>>,
-    body: Vec<Statement>,
   }
-  */
 }
 
 type EvalResult<T> = Result<T, String>;
-
-/*
-
-impl<'a> State<'a> {
-
-  fn insert(&mut self, name: Rc<String>, value: ValueEntry) {
-    self.values.insert(name, value);
-  }
-  fn lookup(&self, name: &Rc<String>) -> Option<&ValueEntry> {
-    match (self.values.get(name), self.parent_frame) {
-      (None, None) => None,
-      (None, Some(parent)) => parent.lookup(name),
-      (Some(value), _) => Some(value),
-    }
-  }
-}
-*/
 
 
 /*
@@ -288,46 +265,6 @@ impl<'a> State<'a> {
     }
   }
 
-  fn eval_binexp(&mut self, op: BinOp, lhs: Box<Expression>, rhs: Box<Expression>) -> EvalResult<FullyEvaluatedExpr> {
-    use self::FullyEvaluatedExpr::*;
-    let evaled_lhs = self.eval_expr(*lhs)?;
-    let evaled_rhs = self.eval_expr(*rhs)?;
-    let sigil = op.sigil();
-    //let sigil: &str = op.sigil().as_ref().as_str();
-    Ok(match (sigil.as_str(), evaled_lhs, evaled_rhs) {
-      ("+", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l + r),
-      ("++", Str(s1), Str(s2)) => Str(format!("{}{}", s1, s2)),
-      ("-", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l - r),
-      ("*", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l * r),
-      ("/", UnsignedInt(l), UnsignedInt(r)) => Float((l as f64)/ (r as f64)),
-      ("//", UnsignedInt(l), UnsignedInt(r)) => if r == 0 {
-        return Err(format!("Runtime error: divide by zero"));
-      } else {
-        UnsignedInt(l / r)
-      },
-      ("%", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l % r),
-      ("^", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l ^ r),
-      ("&", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l & r),
-      ("|", UnsignedInt(l), UnsignedInt(r)) => UnsignedInt(l | r),
-      _ => return Err(format!("Runtime error: not yet implemented")),
-    })
-  }
-
-  fn eval_prefix_exp(&mut self, op: PrefixOp, expr: Box<Expression>) -> EvalResult<FullyEvaluatedExpr> {
-    use self::FullyEvaluatedExpr::*;
-    let evaled_expr = self.eval_expr(*expr)?;
-    let sigil = op.sigil();
-
-    Ok(match (sigil.as_str(), evaled_expr) {
-      ("!", Bool(true)) => Bool(false),
-      ("!", Bool(false)) => Bool(true),
-      ("-", UnsignedInt(n)) => SignedInt(-1*(n as i64)),
-      ("-", SignedInt(n)) => SignedInt(-1*(n as i64)),
-      ("+", SignedInt(n)) => SignedInt(n),
-      ("+", UnsignedInt(n)) => UnsignedInt(n),
-      _ => return Err(format!("Runtime error: not yet implemented")),
-    })
-  }
 }
 */
 
@@ -454,7 +391,7 @@ impl<'a> State<'a> {
       ("+", &[Lit(Int(n))]) => Lit(Int(n)),
       ("+", &[Lit(Nat(n))]) => Lit(Nat(n)),
 
-      _ => return Err(format!("Runtime error: not yet implemented")),
+      _ => return Err(format!("Runtime error: bad or unimplemented builtin")),
     })
   }
 
@@ -473,16 +410,4 @@ impl<'a> State<'a> {
       }
     }
   }
-      /*
-  fn eval_value(&mut self, name: Rc<String>) -> EvalResult<FullyEvaluatedExpr> {
-    use self::ValueEntry::*;
-    match self.lookup(&name) {
-      None => return Err(format!("Value {} not found", *name)),
-      Some(lookup) => match lookup {
-        &Binding { ref val } => Ok(val.clone()),
-        &Function { .. } =>  Ok(FullyEvaluatedExpr::FuncLit(name.clone()))
-      }
-    }
-  }
-  */
 }
