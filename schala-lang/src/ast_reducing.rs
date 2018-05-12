@@ -26,6 +26,10 @@ pub enum Expr {
     f: Box<Expr>,
     args: Vec<Expr>,
   },
+  Assign {
+    val: Box<Expr>,
+    expr: Box<Expr>,
+  },
   UnimplementedSigilValue
 }
 
@@ -110,8 +114,15 @@ impl Declaration {
 
 impl BinOp {
   fn reduce(&self, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Expr {
-    let f = Box::new(Expr::Func(Func::BuiltIn(self.sigil().clone())));
-    Expr::Call { f, args: vec![lhs.reduce(), rhs.reduce()]}
+    if **self.sigil() == "=" {
+      Expr::Assign {
+        val: Box::new(lhs.reduce()),
+        expr: Box::new(rhs.reduce()),
+      }
+    } else {
+      let f = Box::new(Expr::Func(Func::BuiltIn(self.sigil().clone())));
+      Expr::Call { f, args: vec![lhs.reduce(), rhs.reduce()]}
+    }
   }
 }
 

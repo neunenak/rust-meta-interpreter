@@ -345,6 +345,23 @@ impl<'a> State<'a> {
       },
       Val(v) => self.value(v),
       func @ Func(_) => Ok(func),
+      Assign { box val, box expr } => {
+        let name = match val  {
+          Expr::Val(name) => name,
+          _ => return Err(format!("Trying to assign to a non-value")),
+        };
+
+        let constant = match self.values.lookup(&name) {
+          None => return Err(format!("Runtime error: {} is undefined", name)),
+          Some(ValueEntry::Binding { constant, .. }) => constant.clone(),
+        };
+        if constant {
+          return Err(format!("Runtime error: trying to update {}, a non-mutable binding", name));
+        }
+        let val = self.expression(expr)?;
+        self.values.insert(name.clone(), ValueEntry::Binding { constant: false, val });
+        Ok(Expr::Unit)
+      },
       e => Err(format!("Expr {:?} eval not implemented", e))
     }
   }
@@ -402,8 +419,8 @@ impl<'a> State<'a> {
       ("+", &[Lit(Int(n))]) => Lit(Int(n)),
       ("+", &[Lit(Nat(n))]) => Lit(Nat(n)),
 
-      /* builtin functions */
 
+      /* builtin functions */
       ("print", &[ref anything]) => {
         print!("{}", anything.to_repl());
         Expr::Unit
@@ -417,7 +434,7 @@ impl<'a> State<'a> {
         io::stdin().read_line(&mut buf).expect("Error readling line in 'getline'");
         Lit(StringLit(Rc::new(buf)))
       },
-      _ => return Err(format!("Runtime error: bad or unimplemented builtin")),
+      (x, args) => return Err(format!("Runtime error: bad or unimplemented builtin {:?} | {:?}", x, args)),
     })
   }
 
@@ -431,8 +448,8 @@ impl<'a> State<'a> {
             Expr::Func(Func::UserDefined { name: Some(name.clone()), params: params.clone(), body: body.clone() }) //TODO here is unnecessary cloning
           } else {
             val.clone()
-          }),
-        _ => Err(format!("Functions not done")),
+          }
+        )
       }
     }
   }
@@ -448,13 +465,15 @@ mod eval_tests {
     ($string:expr, $correct:expr) => {
       let mut state = State::new();
       let all_output = state.evaluate(parse(tokenize($string)).0.unwrap().reduce(), true);
-      let ref output = all_output[0];
-      assert_eq!(*output, Ok($correct.to_string()));
+      let ref output = all_output.last().unwrap();
+      assert_eq!(**output, Ok($correct.to_string()));
     }
   }
 
   #[test]
   fn test_basic_eval() {
     fresh_env!("1 + 2", "3");
+    fresh_env!("var a = 1; a = 2", "Unit");
+    fresh_env!("var a = 1; a = 2; a", "2");
   }
 }
