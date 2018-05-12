@@ -383,6 +383,7 @@ impl<'a> State<'a> {
     match expr {
       literal @ Lit(_) => Ok(literal),
       Call { f, args } => self.apply_function(f, args),
+      Val(v) => self.value(v),
       _ => Err(format!("NOT IMPLEMENTED YET"))
     }
   }
@@ -429,5 +430,28 @@ impl<'a> State<'a> {
 
       _ => return Err(format!("Runtime error: not yet implemented")),
     })
+  }
+
+  fn value(&mut self, name: Rc<String>) -> EvalResult<Expr> {
+    use self::ValueEntry::*;
+    match self.values.lookup(&name) {
+      None => return Err(format!("Value {} not found", *name)),
+      Some(lookup) => match lookup {
+        &Binding { ref val, .. } => Ok(val.clone()),
+        _ => Err(format!("Functions not done")),
+      }
+    }
+      /*
+  fn eval_value(&mut self, name: Rc<String>) -> EvalResult<FullyEvaluatedExpr> {
+    use self::ValueEntry::*;
+    match self.lookup(&name) {
+      None => return Err(format!("Value {} not found", *name)),
+      Some(lookup) => match lookup {
+        &Binding { ref val } => Ok(val.clone()),
+        &Function { .. } =>  Ok(FullyEvaluatedExpr::FuncLit(name.clone()))
+      }
+    }
+  }
+  */
   }
 }

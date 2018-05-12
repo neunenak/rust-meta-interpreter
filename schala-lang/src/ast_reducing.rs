@@ -6,7 +6,7 @@ use builtin::{BinOp, PrefixOp};
 #[derive(Debug)]
 pub struct ReducedAST(pub Vec<Stmt>);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Stmt {
   Binding {
     name: Rc<String>,
@@ -16,10 +16,11 @@ pub enum Stmt {
   Expr(Expr),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
   Lit(Lit),
   Func(Func),
+  Val(Rc<String>),
   Call {
     f: Func,
     args: Vec<Expr>,
@@ -27,7 +28,7 @@ pub enum Expr {
   UnimplementedSigilValue
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Lit {
   Nat(u64),
   Int(i64),
@@ -36,7 +37,7 @@ pub enum Lit {
   StringLit(Rc<String>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Func {
   BuiltIn(Rc<String>),
   UserDefined {
@@ -70,6 +71,7 @@ impl Expression {
       &BoolLiteral(ref b) => Expr::Lit(Lit::Bool(*b)),
       &BinExp(ref binop, ref lhs, ref rhs) => binop.reduce(lhs, rhs),
       &PrefixExp(ref op, ref arg) => op.reduce(arg),
+      &Value(ref name) => Expr::Val(name.clone()),
       e => Expr::UnimplementedSigilValue,
     }
   }
