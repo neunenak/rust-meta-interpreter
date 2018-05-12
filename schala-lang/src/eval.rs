@@ -313,7 +313,7 @@ impl<'a> State<'a> {
         Ok(Some(ref output)) if repl => acc.push(Ok(output.to_repl())),
         Ok(_) => (),
         Err(error) => {
-          acc.push(Err(format!("Eval error: {}", error)));
+          acc.push(Err(format!("Runtime error: {}", error)));
           return acc;
         },
       }
@@ -352,11 +352,11 @@ impl<'a> State<'a> {
         };
 
         let constant = match self.values.lookup(&name) {
-          None => return Err(format!("Runtime error: {} is undefined", name)),
+          None => return Err(format!("{} is undefined", name)),
           Some(ValueEntry::Binding { constant, .. }) => constant.clone(),
         };
         if constant {
-          return Err(format!("Runtime error: trying to update {}, a non-mutable binding", name));
+          return Err(format!("trying to update {}, a non-mutable binding", name));
         }
         let val = self.expression(expr)?;
         self.values.insert(name.clone(), ValueEntry::Binding { constant: false, val });
@@ -372,7 +372,7 @@ impl<'a> State<'a> {
       Func::UserDefined { params, body, name } => {
 
         if params.len() != args.len() {
-          return Err(format!("Runtime error: calling a {}-argument function with {} args", params.len(), args.len()))
+          return Err(format!("calling a {}-argument function with {} args", params.len(), args.len()))
         }
         let mut func_state = State { values: self.values.new_frame(name.map(|n| format!("{}", n))) };
         for (param, val) in params.into_iter().zip(args.into_iter()) {
@@ -402,7 +402,7 @@ impl<'a> State<'a> {
       ("*", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Nat(l * r)),
       ("/", &[Lit(Nat(l)), Lit(Nat(r))]) => Lit(Float((l as f64)/ (r as f64))),
       ("//", &[Lit(Nat(l)), Lit(Nat(r))]) => if r == 0 {
-        return Err(format!("Runtime error: divide by zero"));
+        return Err(format!("divide by zero"));
       } else {
         Lit(Nat(l / r))
       },
@@ -434,7 +434,7 @@ impl<'a> State<'a> {
         io::stdin().read_line(&mut buf).expect("Error readling line in 'getline'");
         Lit(StringLit(Rc::new(buf)))
       },
-      (x, args) => return Err(format!("Runtime error: bad or unimplemented builtin {:?} | {:?}", x, args)),
+      (x, args) => return Err(format!("bad or unimplemented builtin {:?} | {:?}", x, args)),
     })
   }
 
