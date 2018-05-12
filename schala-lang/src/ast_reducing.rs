@@ -20,6 +20,7 @@ pub enum Stmt {
 pub enum Expr {
   Unit,
   Lit(Lit),
+  Tuple(Vec<Expr>),
   Func(Func),
   Val(Rc<String>),
   Call {
@@ -88,7 +89,8 @@ impl Expression {
         f: Box::new(f.reduce()),
         args: arguments.iter().map(|arg| arg.reduce()).collect(),
       },
-      e => Expr::UnimplementedSigilValue,
+      TupleLiteral(exprs) => Expr::Tuple(exprs.iter().map(|e| e.reduce()).collect()),
+      _ => Expr::UnimplementedSigilValue,
     }
   }
 }

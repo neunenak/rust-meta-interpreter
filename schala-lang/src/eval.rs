@@ -298,6 +298,18 @@ impl Expr {
         UserDefined { name: None, .. } => format!("<function>"),
         UserDefined { name: Some(name), .. } => format!("<function {}>", name),
       },
+      Expr::Tuple(exprs) => {
+        let mut buf = String::new();
+        write!(buf, "(").unwrap();
+        for term in exprs.iter().map(|e| Some(e)).intersperse(None) {
+          match term {
+            Some(e) => write!(buf, "{}", e.to_repl()).unwrap(),
+            None => write!(buf, ", ").unwrap(),
+          };
+        }
+        write!(buf, ")").unwrap();
+        buf
+      },
       _ => format!("{:?}", self),
     }
   }
@@ -343,6 +355,7 @@ impl<'a> State<'a> {
       },
       Val(v) => self.value(v),
       func @ Func(_) => Ok(func),
+      Tuple(exprs) => Ok(Tuple(exprs.into_iter().map(|expr| self.expression(expr)).collect::<Result<Vec<Expr>,_>>()?)),
       Assign { box val, box expr } => {
         let name = match val  {
           Expr::Val(name) => name,
