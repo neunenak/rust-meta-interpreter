@@ -430,3 +430,24 @@ impl<'a> State<'a> {
     }
   }
 }
+
+#[cfg(test)]
+mod eval_tests {
+  use tokenizing::tokenize;
+  use parsing::parse;
+  use eval::State;
+
+  macro_rules! fresh_env {
+    ($string:expr, $correct:expr) => {
+      let mut state = State::new();
+      let all_output = state.evaluate_new(parse(tokenize($string)).0.unwrap().reduce(), true);
+      let ref output = all_output[0];
+      assert_eq!(*output, Ok($correct.to_string()));
+    }
+  }
+
+  #[test]
+  fn test_basic_eval() {
+    fresh_env!("1 + 2", "3");
+  }
+}
