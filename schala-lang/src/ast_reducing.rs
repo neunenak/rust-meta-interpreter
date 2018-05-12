@@ -100,7 +100,7 @@ impl Declaration {
     use self::Declaration::*;
     match self {
       Binding {name, constant, expr } => Stmt::Binding { name: name.clone(), constant: *constant, expr: expr.reduce() },
-      FuncDecl(::parsing::Signature { name, params, type_anno }, statements) => Stmt::Binding {
+      FuncDecl(::parsing::Signature { name, params, .. }, statements) => Stmt::Binding {
         name: name.clone(),
         constant: true,
         expr: Expr::Func(Func::UserDefined {
