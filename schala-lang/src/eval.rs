@@ -10,9 +10,18 @@ pub struct State<'a> {
   values: StateStack<'a, Rc<String>, ValueEntry>
 }
 
+macro_rules! builtin_binding {
+  ($name:expr, $values:expr) => {
+    $values.insert(Rc::new(format!($name)), ValueEntry::Binding { constant: true, val: Expr::Func(Func::BuiltIn(Rc::new(format!($name)))) });
+  }
+}
+
 impl<'a> State<'a> {
   pub fn new() -> State<'a> {
-    State { values: StateStack::new(Some(format!("global"))) }
+    let mut values = StateStack::new(Some(format!("global")));
+    builtin_binding!("print", values);
+    builtin_binding!("println", values);
+    State { values }
   }
 
   pub fn debug_print(&self) -> String {
@@ -391,6 +400,16 @@ impl<'a> State<'a> {
       ("+", &[Lit(Int(n))]) => Lit(Int(n)),
       ("+", &[Lit(Nat(n))]) => Lit(Nat(n)),
 
+      /* builtin functions */
+
+      ("print", &[ref anything]) => {
+        print!("{}", anything.to_repl());
+        Expr::Unit
+      },
+      ("println", &[ref anything]) => {
+        println!("{}", anything.to_repl());
+        Expr::Unit
+      },
       _ => return Err(format!("Runtime error: bad or unimplemented builtin")),
     })
   }
