@@ -72,13 +72,13 @@ impl Expression {
     use parsing::ExpressionType::*;
     let ref input = self.0;
     match input {
-      &IntLiteral(ref n) => Expr::Lit(Lit::Nat(*n)), //TODO I should rename IntLiteral if I want the Nat/Int distinction, which I do
-      &FloatLiteral(ref f) => Expr::Lit(Lit::Float(*f)),
-      &StringLiteral(ref s) => Expr::Lit(Lit::StringLit(s.clone())),
-      &BoolLiteral(ref b) => Expr::Lit(Lit::Bool(*b)),
-      &BinExp(ref binop, ref lhs, ref rhs) => binop.reduce(lhs, rhs),
-      &PrefixExp(ref op, ref arg) => op.reduce(arg),
-      &Value(ref name) => Expr::Val(name.clone()),
+      IntLiteral(n) => Expr::Lit(Lit::Nat(*n)), //TODO I should rename IntLiteral if I want the Nat/Int distinction, which I do
+      FloatLiteral(f) => Expr::Lit(Lit::Float(*f)),
+      StringLiteral(s) => Expr::Lit(Lit::StringLit(s.clone())),
+      BoolLiteral(b) => Expr::Lit(Lit::Bool(*b)),
+      BinExp(binop, lhs, rhs) => binop.reduce(lhs, rhs),
+      PrefixExp(op, arg) => op.reduce(arg),
+      Value(name) => Expr::Val(name.clone()),
       /*
       &Call { ref f, ref arguments } => Expr::Call {
         f: Box<Expression>,
