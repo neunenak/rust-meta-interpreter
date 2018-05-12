@@ -1,0 +1,8 @@
+
+const a = getline()
+
+if a == "true" {
+  println("You typed true")
+} else {
+  println("You typed something else")
+}
