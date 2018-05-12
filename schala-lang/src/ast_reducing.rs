@@ -18,6 +18,7 @@ pub enum Stmt {
 
 #[derive(Debug, Clone)]
 pub enum Expr {
+  Unit,
   Lit(Lit),
   Func(Func),
   Val(Rc<String>),

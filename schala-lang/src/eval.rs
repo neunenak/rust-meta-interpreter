@@ -404,8 +404,21 @@ impl<'a> State<'a> {
   fn apply_function(&mut self, f: Func, args: Vec<Expr>) -> EvalResult<Expr> {
     match f {
       Func::BuiltIn(sigil) => self.apply_builtin(sigil, args),
-      Func::UserDefined { params, body, .. } => {
-        Err(format!("Function application not done yet"))
+      Func::UserDefined { params, body, name } => {
+
+        if params.len() != args.len() {
+          return Err(format!("Runtime error: calling a {}-argument function with {} args", params.len(), args.len()))
+        }
+        let mut func_state = State { values: self.values.new_frame(name.map(|n| format!("{}", n))) };
+        for (param, val) in params.into_iter().zip(args.into_iter()) {
+          func_state.values.insert(param, ValueEntry::Binding { constant: true, val });
+        }
+        // TODO figure out function return semantics
+        let mut ret = None;
+        for stmt in body {
+          ret = func_state.statement(stmt)?;
+        }
+        Ok(ret.unwrap_or(Expr::Unit))
       }
     }
   }
