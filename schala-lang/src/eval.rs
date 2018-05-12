@@ -305,8 +305,6 @@ impl Expr {
 
 impl<'a> State<'a> {
   pub fn evaluate(&mut self, ast: ReducedAST, repl: bool) -> Vec<Result<String, String>> {
-    use ast_reducing::*;
-
     let mut acc = vec![];
     for statement in ast.0 {
       match self.statement(statement) {
