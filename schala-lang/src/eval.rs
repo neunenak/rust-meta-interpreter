@@ -342,6 +342,14 @@ impl<'a> State<'a> {
     }
   }
 
+  fn block(&mut self, stmts: Vec<Stmt>) -> EvalResult<Expr> {
+    let mut ret = None;
+    for stmt in stmts {
+      ret = self.statement(stmt)?;
+    }
+    Ok(ret.unwrap_or(Expr::Unit))
+  }
+
   fn expression(&mut self, expr: Expr) -> EvalResult<Expr> {
     use self::Expr::*;
     match expr {
@@ -356,6 +364,7 @@ impl<'a> State<'a> {
       Val(v) => self.value(v),
       func @ Func(_) => Ok(func),
       Tuple(exprs) => Ok(Tuple(exprs.into_iter().map(|expr| self.expression(expr)).collect::<Result<Vec<Expr>,_>>()?)),
+      Conditional { box cond, then_clause, else_clause } => self.conditional(cond, then_clause, else_clause),
       Assign { box val, box expr } => {
         let name = match val  {
           Expr::Val(name) => name,
@@ -390,11 +399,7 @@ impl<'a> State<'a> {
           func_state.values.insert(param, ValueEntry::Binding { constant: true, val });
         }
         // TODO figure out function return semantics
-        let mut ret = None;
-        for stmt in body {
-          ret = func_state.statement(stmt)?;
-        }
-        Ok(ret.unwrap_or(Expr::Unit))
+        func_state.block(body)
       }
     }
   }
@@ -446,6 +451,15 @@ impl<'a> State<'a> {
         Lit(StringLit(Rc::new(buf)))
       },
       (x, args) => return Err(format!("bad or unimplemented builtin {:?} | {:?}", x, args)),
+    })
+  }
+
+  fn conditional(&mut self, cond: Expr, then_clause: Vec<Stmt>, else_clause: Vec<Stmt>) -> EvalResult<Expr> {
+    let cond = self.expression(cond)?;
+    Ok(match cond {
+      Expr::Lit(Lit::Bool(true)) =>  self.block(then_clause)?,
+      Expr::Lit(Lit::Bool(false)) => self.block(else_clause)?,
+      _ => return Err(format!("Conditional with non-boolean condition"))
     })
   }
 

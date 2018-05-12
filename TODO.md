@@ -1,6 +1,8 @@
 
 # TODO Items
 
+- Next priorities: - get ADTs working, get matches working
+
 - inclusive/exclusive range syntax like .. vs ..=
 
 - sketch of an idea for the REPL:

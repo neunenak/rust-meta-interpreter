@@ -31,6 +31,11 @@ pub enum Expr {
     val: Box<Expr>,
     expr: Box<Expr>,
   },
+  Conditional {
+    cond: Box<Expr>,
+    then_clause: Vec<Stmt>,
+    else_clause: Vec<Stmt>,
+  },
   UnimplementedSigilValue
 }
 
@@ -90,6 +95,14 @@ impl Expression {
         args: arguments.iter().map(|arg| arg.reduce()).collect(),
       },
       TupleLiteral(exprs) => Expr::Tuple(exprs.iter().map(|e| e.reduce()).collect()),
+      IfExpression(cond, then_clause, else_clause) => Expr::Conditional {
+        cond: Box::new((**cond).reduce()),
+        then_clause: then_clause.iter().map(|expr| expr.reduce()).collect(),
+        else_clause: match else_clause {
+          None => vec![],
+          Some(stmts) => stmts.iter().map(|expr| expr.reduce()).collect(),
+        }
+      },
       _ => Expr::UnimplementedSigilValue,
     }
   }
