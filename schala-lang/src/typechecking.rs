@@ -71,6 +71,7 @@ impl UVarGenerator {
 #[derive(Debug, PartialEq, Clone)]
 pub enum TConst {
   Unit,
+  Nat,
   Int,
   Float,
   StringT,
@@ -87,6 +88,7 @@ impl parsing::TypeName {
       &Tuple(_) => return Err(format!("Tuples not yet implemented")),
       &Singleton(ref name) => match name {
         &TypeSingletonName { ref name, .. } => match &name[..] {
+          "Nat" => Const(Nat),
           "Int" => Const(Int),
           "Float" => Const(Float),
           "Bool" => Const(Bool),
@@ -186,7 +188,7 @@ impl TypeContext {
     use self::parsing::ExpressionType::*;
     use self::Type::*; use self::TConst::*;
     match expr {
-      &IntLiteral(_) => Ok(Const(Int)),
+      &NatLiteral(_) => Ok(Const(Nat)),
       &FloatLiteral(_) => Ok(Const(Float)),
       &StringLiteral(_) => Ok(Const(StringT)),
       &BoolLiteral(_) => Ok(Const(Bool)),

@@ -231,7 +231,7 @@ pub struct TypeSingletonName {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ExpressionType {
-  IntLiteral(u64),
+  NatLiteral(u64),
   FloatLiteral(f64),
   StringLiteral(Rc<String>),
   BoolLiteral(bool),
@@ -789,12 +789,12 @@ impl Parser {
       BinNumberSigil => {
         let digits = self.digits()?;
         let n = parse_binary(digits)?;
-        Ok(Expression(IntLiteral(n), None))
+        Ok(Expression(NatLiteral(n), None))
       },
       HexLiteral(text) => {
         let digits: String = text.chars().filter(|c| c.is_digit(16)).collect();
         let n = parse_hex(digits)?;
-        Ok(Expression(IntLiteral(n), None))
+        Ok(Expression(NatLiteral(n), None))
       },
       _ => return ParseError::new("Expected '0x' or '0b'"),
     }
@@ -814,7 +814,7 @@ impl Parser {
       }
     } else {
       match digits.parse::<u64>() {
-        Ok(d) => Ok(Expression(IntLiteral(d), None)),
+        Ok(d) => Ok(Expression(NatLiteral(d), None)),
         Err(e) => ParseError::new(&format!("Integer failed to parse with error: {}", e)),
       }
     }
@@ -942,41 +942,41 @@ mod parse_tests {
     parse_test! { ".2", single_expr!(FloatLiteral(0.2)) };
     parse_test! { "8.1", single_expr!(FloatLiteral(8.1)) };
 
-    parse_test! { "0b010", single_expr!(IntLiteral(2)) };
-    parse_test! { "0b0_1_0_", single_expr!(IntLiteral(2)) }
+    parse_test! { "0b010", single_expr!(NatLiteral(2)) };
+    parse_test! { "0b0_1_0_", single_expr!(NatLiteral(2)) }
 
-    parse_test! {"0xff", single_expr!(IntLiteral(255)) };
-    parse_test! {"0xf_f_", single_expr!(IntLiteral(255)) };
+    parse_test! {"0xff", single_expr!(NatLiteral(255)) };
+    parse_test! {"0xf_f_", single_expr!(NatLiteral(255)) };
 
-    parse_test!("0xf_f_+1", AST(vec![exprstatement!(binexp!("+", IntLiteral(255), IntLiteral(1)))]));
+    parse_test!("0xf_f_+1", AST(vec![exprstatement!(binexp!("+", NatLiteral(255), NatLiteral(1)))]));
 
     parse_test! {"3; 4; 4.3", AST(
-      vec![exprstatement!(IntLiteral(3)), exprstatement!(IntLiteral(4)),
+      vec![exprstatement!(NatLiteral(3)), exprstatement!(NatLiteral(4)),
         exprstatement!(FloatLiteral(4.3))])
     };
 
     parse_test!("1 + 2 * 3", AST(vec!
       [
-        exprstatement!(binexp!("+", IntLiteral(1), binexp!("*", IntLiteral(2), IntLiteral(3))))
+        exprstatement!(binexp!("+", NatLiteral(1), binexp!("*", NatLiteral(2), NatLiteral(3))))
       ]));
 
     parse_test!("1 * 2 + 3", AST(vec!
       [
-        exprstatement!(binexp!("+", binexp!("*", IntLiteral(1), IntLiteral(2)), IntLiteral(3)))
+        exprstatement!(binexp!("+", binexp!("*", NatLiteral(1), NatLiteral(2)), NatLiteral(3)))
       ]));
 
-    parse_test!("1 && 2", AST(vec![exprstatement!(binexp!("&&", IntLiteral(1), IntLiteral(2)))]));
+    parse_test!("1 && 2", AST(vec![exprstatement!(binexp!("&&", NatLiteral(1), NatLiteral(2)))]));
 
     parse_test!("1 + 2 * 3 + 4", AST(vec![exprstatement!(
       binexp!("+",
-        binexp!("+", IntLiteral(1), binexp!("*", IntLiteral(2), IntLiteral(3))),
-        IntLiteral(4)))]));
+        binexp!("+", NatLiteral(1), binexp!("*", NatLiteral(2), NatLiteral(3))),
+        NatLiteral(4)))]));
 
     parse_test!("(1 + 2) * 3", AST(vec!
-      [exprstatement!(binexp!("*", binexp!("+", IntLiteral(1), IntLiteral(2)), IntLiteral(3)))]));
+      [exprstatement!(binexp!("*", binexp!("+", NatLiteral(1), NatLiteral(2)), NatLiteral(3)))]));
 
     parse_test!(".1 + .2", AST(vec![exprstatement!(binexp!("+", FloatLiteral(0.1), FloatLiteral(0.2)))]));
-    parse_test!("1 / 2", AST(vec![exprstatement!(binexp!("/", IntLiteral(1), IntLiteral(2)))]));
+    parse_test!("1 / 2", AST(vec![exprstatement!(binexp!("/", NatLiteral(1), NatLiteral(2)))]));
   }
 
   #[test]
@@ -984,11 +984,11 @@ mod parse_tests {
     parse_test!("()", AST(vec![exprstatement!(TupleLiteral(vec![]))]));
     parse_test!("(\"hella\", 34)", AST(vec![exprstatement!(
       TupleLiteral(
-        vec![ex!(StringLiteral(rc!(hella))), ex!(IntLiteral(34))]
+        vec![ex!(StringLiteral(rc!(hella))), ex!(NatLiteral(34))]
       )
     )]));
     parse_test!("((1+2), \"slough\")", AST(vec![exprstatement!(TupleLiteral(vec![
-      ex!(binexp!("+", IntLiteral(1), IntLiteral(2))),
+      ex!(binexp!("+", NatLiteral(1), NatLiteral(2))),
       ex!(StringLiteral(rc!(slough))),
     ]))]))
   }
@@ -1018,9 +1018,9 @@ mod parse_tests {
                                                   binexp!(".", val!("a"), val!("b")),
                                                 val!("c")),
                                                val!("d")))]));
-    parse_test!("-3", AST(vec![exprstatement!(prefexp!("-", IntLiteral(3)))]));
+    parse_test!("-3", AST(vec![exprstatement!(prefexp!("-", NatLiteral(3)))]));
     parse_test!("-0.2", AST(vec![exprstatement!(prefexp!("-", FloatLiteral(0.2)))]));
-    parse_test!("!3", AST(vec![exprstatement!(prefexp!("!", IntLiteral(3)))]));
+    parse_test!("!3", AST(vec![exprstatement!(prefexp!("!", NatLiteral(3)))]));
     parse_test!("a <- -b", AST(vec![exprstatement!(binexp!("<-", val!("a"), prefexp!("-", val!("b"))))]));
     parse_test!("a <--b", AST(vec![exprstatement!(binexp!("<--", val!("a"), val!("b")))]));
   }
@@ -1031,7 +1031,7 @@ mod parse_tests {
     parse_test!("oi()", AST(vec![exprstatement!(Call { f: bx!(ex!(val!("oi"))), arguments: vec![] })]));
     parse_test!("oi(a, 2 + 2)", AST(vec![exprstatement!(Call
     { f: bx!(ex!(val!("oi"))),
-      arguments: vec![ex!(val!("a")), ex!(binexp!("+", IntLiteral(2), IntLiteral(2)))]
+      arguments: vec![ex!(val!("a")), ex!(binexp!("+", NatLiteral(2), NatLiteral(2)))]
     })]));
     parse_error!("a(b,,c)");
 
@@ -1105,8 +1105,8 @@ fn a(x) {
 
   #[test]
   fn parsing_bindings() {
-    parse_test!("var a = 10", AST(vec![Declaration(Binding { name: rc!(a), constant: false, expr: ex!(IntLiteral(10)) } )]));
-    parse_test!("const a = 2 + 2", AST(vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(binexp!("+", IntLiteral(2), IntLiteral(2))) }) ]));
+    parse_test!("var a = 10", AST(vec![Declaration(Binding { name: rc!(a), constant: false, expr: ex!(NatLiteral(10)) } )]));
+    parse_test!("const a = 2 + 2", AST(vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(binexp!("+", NatLiteral(2), NatLiteral(2))) }) ]));
   }
 
   #[test]
@@ -1124,7 +1124,7 @@ fn a(x) {
       c
     }"#,
     AST(vec![exprstatement!(IfExpression(bx!(ex!(BoolLiteral(true))),
-      vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(IntLiteral(10)) }),
+      vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(NatLiteral(10)) }),
            exprstatement!(val!(rc!(b)))],
       Some(vec![exprstatement!(val!(rc!(c)))])))])
     );
@@ -1135,7 +1135,7 @@ fn a(x) {
             Some(vec![exprstatement!(val!("c"))])))]));
 
     parse_test!("if (A {a: 1}) { b } else { c }", AST(vec![exprstatement!(
-          IfExpression(bx!(ex!(NamedStruct { name: rc!(A), fields: vec![(rc!(a), ex!(IntLiteral(1)))]})),
+          IfExpression(bx!(ex!(NamedStruct { name: rc!(A), fields: vec![(rc!(a), ex!(NatLiteral(1)))]})),
             vec![exprstatement!(val!("b"))],
             Some(vec![exprstatement!(val!("c"))])))]));
 
@@ -1213,7 +1213,7 @@ fn a(x) {
   #[test]
   fn parsing_lambdas() {
     parse_test! { "{|x| x + 1}", single_expr!(
-      Lambda { params: vec![(rc!(x), None)], body: vec![exst!("+", val!("x"), IntLiteral(1))] }
+      Lambda { params: vec![(rc!(x), None)], body: vec![exst!("+", val!("x"), NatLiteral(1))] }
     ) }
 
     parse_test!("{      |x: Int, y| a;b;c;}", AST(vec![
@@ -1226,14 +1226,14 @@ fn a(x) {
     parse_test!("{|x| y}(1)", AST(vec![
       exprstatement!(Call { f: bx!(ex!(
         Lambda { params: vec![(rc!(x), None)], body: vec![exprstatement!(val!("y"))] })),
-        arguments: vec![ex!(IntLiteral(1))] })]));
+        arguments: vec![ex!(NatLiteral(1))] })]));
   }
 
   #[test]
    fn list_literals() {
      parse_test! {
        "[1,2]", AST(vec![
-         exprstatement!(ListLiteral(vec![ex!(IntLiteral(1)), ex!(IntLiteral(2))]))])
+         exprstatement!(ListLiteral(vec![ex!(NatLiteral(1)), ex!(NatLiteral(2))]))])
      };
    }
 }

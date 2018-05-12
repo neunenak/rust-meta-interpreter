@@ -73,7 +73,7 @@ impl Expression {
     use parsing::ExpressionType::*;
     let ref input = self.0;
     match input {
-      IntLiteral(n) => Expr::Lit(Lit::Nat(*n)), //TODO I should rename IntLiteral if I want the Nat/Int distinction, which I do
+      NatLiteral(n) => Expr::Lit(Lit::Nat(*n)),
       FloatLiteral(f) => Expr::Lit(Lit::Float(*f)),
       StringLiteral(s) => Expr::Lit(Lit::StringLit(s.clone())),
       BoolLiteral(b) => Expr::Lit(Lit::Bool(*b)),
