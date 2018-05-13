@@ -58,7 +58,7 @@ fn tokenizing(_handle: &mut Schala, input: &str, comp: Option<&mut UnfinishedCom
   }
 }
 
-fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, parsing::ParseError> {
+fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
 
   let (ast, trace) = parsing::parse(input);
   comp.map(|comp| {
@@ -66,7 +66,7 @@ fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mu
     comp.add_artifact(TraceArtifact::new_parse_trace(trace));
     comp.add_artifact(TraceArtifact::new("ast", format!("{:#?}", ast)));
   });
-  ast
+  ast.map_err(|err| err.msg)
 }
 
 fn symbol_table(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
