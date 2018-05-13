@@ -11,12 +11,23 @@ use parsing;
 pub struct TypeContext {
   type_var_count: u64,
   bindings: HashMap<Rc<String>, Type>,
-  //symbol_table: SymbolTable
+  symbol_table: SymbolTable
 }
 
 //cf. p. 150 or so of Language Implementation Patterns
 struct SymbolTable {
+  pub values: HashMap<Rc<String>, Symbol> //TODO this will eventually have real type information
+}
 
+impl SymbolTable {
+  fn new() -> SymbolTable {
+    SymbolTable { values: HashMap::new() }
+  }
+}
+
+struct Symbol {
+  name: Rc<String>,
+  ty: Type
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -104,7 +115,7 @@ pub type TypeResult<T> = Result<T, String>;
 
 impl TypeContext {
   pub fn new() -> TypeContext {
-    TypeContext { bindings: HashMap::new(), type_var_count: 0 }
+    TypeContext { bindings: HashMap::new(), type_var_count: 0, symbol_table: SymbolTable::new() }
   }
   pub fn fresh(&mut self) -> Type {
     let ret = self.type_var_count;
