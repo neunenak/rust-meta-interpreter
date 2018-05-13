@@ -686,14 +686,14 @@ impl Parser {
     use self::ExpressionType::*;
     let old_struct_value = self.restrictions.no_struct_literal;
     self.restrictions.no_struct_literal = false;
-    let output = (|| {
+    let output = {
       let mut inner = delimited!(self, LParen, '(', expression, Comma, RParen, ')');
       match inner.len() {
         0 => Ok(Expression(TupleLiteral(vec![]), None)),
         1 => Ok(inner.pop().unwrap()),
         _ => Ok(Expression(TupleLiteral(inner), None)),
       }
-    })();
+    };
     self.restrictions.no_struct_literal = old_struct_value;
     output
   });
