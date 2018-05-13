@@ -27,8 +27,8 @@ impl SymbolTable {
 
 #[derive(Debug)]
 struct Symbol {
-  name: Rc<String>,
-  ty: Type
+  pub name: Rc<String>,
+  pub ty: Type
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -142,7 +142,10 @@ impl TypeContext {
             }
             self.bindings.insert(signature.name.clone(), ty);
 
-            //self.symbol_table.values.insert();
+            self.symbol_table.values.insert(
+              signature.name.clone(),
+              Symbol { name: signature.name.clone(), ty: Func(Box::new(Void), Box::new(Void)) }
+            );
           },
           TypeDecl(TypeSingletonName { name, ..}, TypeBody(variants)) => {
             for var in variants {
