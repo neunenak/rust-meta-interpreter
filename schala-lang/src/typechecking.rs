@@ -25,6 +25,7 @@ impl SymbolTable {
   }
 }
 
+#[derive(Debug)]
 struct Symbol {
   name: Rc<String>,
   ty: Type
@@ -126,13 +127,13 @@ impl TypeContext {
 
 impl TypeContext {
   pub fn add_top_level_types(&mut self, ast: &parsing::AST) -> TypeResult<()> {
-    use self::parsing::TypeName;
+    use self::parsing::{Statement, TypeName, Variant, TypeSingletonName, TypeBody};
     use self::parsing::Declaration::*;
     use self::Type::*;
     for statement in ast.0.iter() {
-      if let &self::parsing::Statement::Declaration(ref decl) = statement {
+      if let Statement::Declaration(decl) = statement {
         match decl {
-          &FuncSig(ref signature) | &FuncDecl(ref signature, _) => {
+          FuncSig(signature) | FuncDecl(signature, _) => {
             let mut uvar_gen = UVarGenerator::new();
             let mut ty: Type = signature.type_anno.as_ref().map(|name: &TypeName| name.to_type()).unwrap_or_else(|| {Ok(uvar_gen.next())} )?;
             for &(_, ref type_name) in signature.params.iter().rev() {
@@ -140,6 +141,20 @@ impl TypeContext {
               ty = Func(bx!(arg_type), bx!(ty));
             }
             self.bindings.insert(signature.name.clone(), ty);
+
+            //self.symbol_table.values.insert();
+          },
+          TypeDecl(TypeSingletonName { name, ..}, TypeBody(variants)) => {
+            for var in variants {
+              match var {
+                Variant::UnitStruct(variant_name) => {
+                  //TODO will have to make this a function to this type eventually
+                  let ty = Type::Const(TConst::Custom(format!("{}", name)));
+                  self.symbol_table.values.insert(variant_name.clone(), Symbol { name: variant_name.clone(), ty });
+                },
+                e => return Err(format!("{:?} not supported in typing yet", e)),
+              }
+            }
           },
           _ => ()
         }
@@ -148,9 +163,9 @@ impl TypeContext {
     Ok(())
   }
   pub fn debug_symbol_table(&self) -> String {
-    let mut output = format!("Symbols\n");
-    for (sym, ty) in &self.bindings {
-      write!(output, "{} : {}\n", sym, ty).unwrap();
+    let mut output = format!("Symbol table\n");
+    for (sym, ty) in &self.symbol_table.values {
+      write!(output, "{} -> {:?}\n", sym, ty).unwrap();
     }
     output
   }
