@@ -324,13 +324,13 @@ macro_rules! parse_method {
 }
 
 macro_rules! delimited {
-  ($self:expr, $start:pat, $start_str:expr, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $end_str:expr, nonstrict) => {
-    delimited!($self, $start, $start_str, $parse_fn, $( $delim )|*, $end, $end_str, false)
+  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat, nonstrict) => {
+    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, false)
   };
-  ($self:expr, $start:pat, $start_str:expr, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $end_str:expr) => {
-    delimited!($self, $start, $start_str, $parse_fn, $( $delim )|*, $end, $end_str, true)
+  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat) => {
+    delimited!($self, $start, $parse_fn, $( $delim )|*, $end, true)
   };
-  ($self:expr, $start:pat, $start_str:expr, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $end_str:expr, $strictness:expr) => {
+  ($self:expr, $start:pat, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $strictness:expr) => {
     {
       expect!($self, $start);
       let mut acc = vec![];
@@ -431,11 +431,11 @@ impl Parser {
     let name = self.identifier()?;
     match self.peek() {
       LParen => {
-        let tuple_members = delimited!(self, LParen, '(', type_name, Comma, RParen, ')');
+        let tuple_members = delimited!(self, LParen, type_name, Comma, RParen);
         Ok(TupleStruct(name, tuple_members))
       },
       LCurlyBrace => {
-        let typed_identifier_list = delimited!(self, LCurlyBrace, '{', typed_identifier, Comma, RCurlyBrace, '}');
+        let typed_identifier_list = delimited!(self, LCurlyBrace, typed_identifier, Comma, RCurlyBrace);
         Ok(Record(name, typed_identifier_list))
       },
       _ => Ok(UnitStruct(name))
@@ -452,7 +452,7 @@ impl Parser {
   parse_method!(func_declaration(&mut self) -> ParseResult<Declaration> {
     let signature = self.signature()?;
     if let LCurlyBrace = self.peek() {
-      let statements = delimited!(self, LCurlyBrace, '{', statement, Newline | Semicolon, RCurlyBrace, '}', nonstrict);
+      let statements = delimited!(self, LCurlyBrace, statement, Newline | Semicolon, RCurlyBrace, nonstrict);
       Ok(Declaration::FuncDecl(signature, statements))
     } else {
       Ok(Declaration::FuncSig(signature))
@@ -462,7 +462,7 @@ impl Parser {
   parse_method!(signature(&mut self) -> ParseResult<Signature> {
     expect!(self, Keyword(Func));
     let name = self.identifier()?;
-    let params = delimited!(self, LParen, '(', formal_param, Comma, RParen, ')');
+    let params = delimited!(self, LParen, formal_param, Comma, RParen);
     let type_anno = match self.peek() {
       Colon => Some(self.type_anno()?),
       _ => None,
@@ -500,7 +500,7 @@ impl Parser {
   });
 
   parse_method!(signature_block(&mut self) -> ParseResult<Vec<Signature>> {
-    Ok(delimited!(self, LCurlyBrace, '{', signature, Newline | Semicolon, RCurlyBrace, '}', nonstrict))
+    Ok(delimited!(self, LCurlyBrace, signature, Newline | Semicolon, RCurlyBrace, nonstrict))
   });
 
   parse_method!(impl_declaration(&mut self) -> ParseResult<Declaration> {
@@ -529,7 +529,7 @@ impl Parser {
   });
 
   parse_method!(decl_block(&mut self) -> ParseResult<Vec<Declaration>> {
-    Ok(delimited!(self, LCurlyBrace, '{', func_declaration, Newline | Semicolon, RCurlyBrace, '}', nonstrict))
+    Ok(delimited!(self, LCurlyBrace, func_declaration, Newline | Semicolon, RCurlyBrace, nonstrict))
   });
 
   parse_method!(expression(&mut self) -> ParseResult<Expression> {
@@ -553,7 +553,7 @@ impl Parser {
   parse_method!(type_name(&mut self) -> ParseResult<TypeName> {
     use self::TypeName::*;
     Ok(match self.peek() {
-      LParen => Tuple(delimited!(self, LParen, '(', type_name, Comma, RParen, ')')),
+      LParen => Tuple(delimited!(self, LParen, type_name, Comma, RParen)),
       _ => Singleton(self.type_singleton_name()?),
     })
   });
@@ -562,7 +562,7 @@ impl Parser {
     Ok(TypeSingletonName {
       name: self.identifier()?,
       params: match self.peek() {
-        LAngleBracket => delimited!(self, LAngleBracket, '<', type_name, Comma, RAngleBracket, '>'),
+        LAngleBracket => delimited!(self, LAngleBracket, type_name, Comma, RAngleBracket),
         _ => vec![],
       }
     })
@@ -625,7 +625,7 @@ impl Parser {
   parse_method!(call_expr(&mut self) -> ParseResult<Expression> {
     let index  = self.index_expr()?;
     Ok(if let LParen = self.peek() {
-      let arguments = delimited!(self, LParen, ')', expression, Comma, RParen, '(');
+      let arguments = delimited!(self, LParen, expression, Comma, RParen);
       Expression(ExpressionType::Call { f: bx!(index), arguments }, None) //TODO fix this none
     } else {
       index
@@ -635,7 +635,7 @@ impl Parser {
   parse_method!(index_expr(&mut self) -> ParseResult<Expression> {
     let primary = self.primary()?;
     Ok(if let LSquareBracket = self.peek() {
-      let indexers = delimited!(self, LSquareBracket, '[', expression, Comma, RSquareBracket, ']');
+      let indexers = delimited!(self, LSquareBracket, expression, Comma, RSquareBracket);
       Expression(ExpressionType::Index {
         indexee: bx!(Expression(primary.0, None)),
         indexers,
@@ -660,7 +660,7 @@ impl Parser {
   });
 
   parse_method!(list_expr(&mut self) -> ParseResult<Expression> {
-    let exprs = delimited!(self, LSquareBracket, '[', expression, Comma, RSquareBracket, ']');
+    let exprs = delimited!(self, LSquareBracket, expression, Comma, RSquareBracket);
     Ok(Expression(ExpressionType::ListLiteral(exprs), None))
   });
 
@@ -670,7 +670,7 @@ impl Parser {
 
   parse_method!(lambda_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, LCurlyBrace);
-    let params = delimited!(self, Pipe, '|', formal_param, Comma, Pipe, '|');
+    let params = delimited!(self, Pipe, formal_param, Comma, Pipe);
     let mut body = Vec::new();
     loop {
       match self.peek() {
@@ -691,7 +691,7 @@ impl Parser {
     let old_struct_value = self.restrictions.no_struct_literal;
     self.restrictions.no_struct_literal = false;
     let output = {
-      let mut inner = delimited!(self, LParen, '(', expression, Comma, RParen, ')');
+      let mut inner = delimited!(self, LParen, expression, Comma, RParen);
       match inner.len() {
         0 => Ok(Expression(TupleLiteral(vec![]), None)),
         1 => Ok(inner.pop().unwrap()),
@@ -715,7 +715,7 @@ impl Parser {
   });
 
   parse_method!(record_block(&mut self) -> ParseResult<Vec<(Rc<String>, Expression)>> {
-    Ok(delimited!(self, LCurlyBrace, '{', record_entry, Comma, RCurlyBrace, '}'))
+    Ok(delimited!(self, LCurlyBrace, record_entry, Comma, RCurlyBrace))
   });
 
   parse_method!(record_entry(&mut self) -> ParseResult<(Rc<String>, Expression)> {
@@ -748,7 +748,7 @@ impl Parser {
   });
 
   parse_method!(block(&mut self) -> ParseResult<Block> {
-    Ok(delimited!(self, LCurlyBrace, '{', statement, Newline | Semicolon, RCurlyBrace, '}', nonstrict))
+    Ok(delimited!(self, LCurlyBrace, statement, Newline | Semicolon, RCurlyBrace, nonstrict))
   });
 
   parse_method!(match_expr(&mut self) -> ParseResult<Expression> {
@@ -762,7 +762,7 @@ impl Parser {
   });
 
   parse_method!(match_body(&mut self) -> ParseResult<Vec<MatchArm>> {
-    Ok(delimited!(self, LCurlyBrace, '{', match_arm, Comma, RCurlyBrace, '}'))
+    Ok(delimited!(self, LCurlyBrace, match_arm, Comma, RCurlyBrace))
   });
 
   parse_method!(match_arm(&mut self) -> ParseResult<MatchArm> {
@@ -800,7 +800,7 @@ impl Parser {
   parse_method!(for_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, Keyword(Kw::For));
     let enumerators = if let LCurlyBrace = self.peek() {
-      delimited!(self, LCurlyBrace, '{', enumerator, Comma | Newline, RCurlyBrace, '}')
+      delimited!(self, LCurlyBrace, enumerator, Comma | Newline, RCurlyBrace)
     } else {
       let single_enum = {
         self.restrictions.no_struct_literal = true;
@@ -825,7 +825,7 @@ impl Parser {
     use self::ForBody::*;
     Ok(match self.peek() {
       LCurlyBrace => {
-        let statements = delimited!(self, LCurlyBrace, '{', statement, Newline | Semicolon, RCurlyBrace, '}', nonstrict);
+        let statements = delimited!(self, LCurlyBrace, statement, Newline | Semicolon, RCurlyBrace, nonstrict);
         StatementBlock(statements)
       },
       Keyword(Kw::Return) => {
