@@ -59,7 +59,7 @@ index_expr := primary ( '[' (expression (',' (expression)* | ε) ']' )*
 primary := literal | paren_expr | if_expr | match_expr | for_expr | while_expr | identifier_expr | curly_brace_expr | list_expr
 curly_brace_expr := lambda_expr | anonymous_struct //TODO
 list_expr := '[' (expression, ',')* ']'
-lambda_expr := '{' '|' (formal_param ',')* '|' (type_anno)* (statement)* '}'
+lambda_expr := '{' '|' (formal_param ',')* '|' (type_anno)* (statement delimiter)* '}'
 paren_expr := LParen paren_inner RParen
 paren_inner := (expression ',')*
 identifier_expr := named_struct | IDENTIFIER
@@ -79,17 +79,19 @@ match_body := '{' (match_arm)* '}'
 match_arm := pattern '=>' expression
 pattern := identifier //TODO NOT DONE
 
-block := '{' (statement)* '}'
+block := '{' (statement delimiter)* '}'
 
 expr_list := expression (',' expression)* | ε
 
-while_expr := 'while' while_cond '{' (statement)* '}'
+while_expr := 'while' while_cond '{' (statement delimiter)* '}'
 while_cond := ε | expression | expression 'is'  pattern //TODO maybe is-expresions should be primary
 
+//TODO this implies there must be at least one enumerator, which the parser doesn't support right
+//this second, and maybe should fail later anyway
 for_expr := 'for' (enumerator | '{' enumerators '}') for_expr_body
-for_expr_body := expression | 'return' expression |  '{' (expression)* '}
+for_expr_body := 'return' expression |  '{' (statement delimiter)* '}
 enumerators := enumerator (',' enumerators)*
-enumerator := ??? //TODO flesh this out
+enumerator :=  identifier '<-' expression | identifier '=' expression //TODO add guards, etc.
 
 
 // a float_literal can still be assigned to an int in type-checking
@@ -265,13 +267,26 @@ pub enum ExpressionType {
     body: Block,
   },
   ForExpression {
-
+    enumerators: Vec<Enumerator>,
+    body: Box<ForBody>,
   },
   Lambda {
     params: Vec<FormalParam>,
     body: Block,
   },
   ListLiteral(Vec<Expression>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Enumerator {
+  id: Rc<String>,
+  generator: Expression,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum ForBody {
+  MonadicReturn(Expression),
+  StatementBlock(Block),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -780,7 +795,41 @@ impl Parser {
 
   parse_method!(for_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, Keyword(Kw::For), "'for'");
-    Ok(Expression(ExpressionType::ForExpression { }, None))
+    let enumerators = if let LCurlyBrace = self.peek() {
+      delimited!(self, LCurlyBrace, '{', enumerator, Comma | Newline, RCurlyBrace, '}')
+    } else {
+      let single_enum = {
+        self.restrictions.no_struct_literal = true;
+        let s = self.enumerator();
+        self.restrictions.no_struct_literal = false;
+        s?
+      };
+      vec![single_enum]
+    };
+    let body = Box::new(self.for_expr_body()?);
+    Ok(Expression(ExpressionType::ForExpression { enumerators, body }, None))
+  });
+
+  parse_method!(enumerator(&mut self) -> ParseResult<Enumerator> {
+    let id = self.identifier()?;
+    expect!(self, Operator(ref c) if **c == "<-", "'<-'");
+    let generator = self.expression()?;
+    Ok(Enumerator { id, generator })
+  });
+
+  parse_method!(for_expr_body(&mut self) -> ParseResult<ForBody> {
+    use self::ForBody::*;
+    Ok(match self.peek() {
+      LCurlyBrace => {
+        let statements = delimited!(self, LCurlyBrace, '{', statement, Newline | Semicolon, RCurlyBrace, '}', nonstrict);
+        StatementBlock(statements)
+      },
+      Keyword(Kw::Return) => {
+        self.next();
+        MonadicReturn(self.expression()?)
+      },
+      _ => return ParseError::new("for expressions must end in a block or 'return'"),
+    })
   });
 
   parse_method!(identifier(&mut self) -> ParseResult<Rc<String>> {
@@ -917,7 +966,7 @@ pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, Vec<String>) {
 #[cfg(test)]
 mod parse_tests {
   use ::std::rc::Rc;
-  use super::{AST, Expression, Statement, PrefixOp, BinOp, TypeBody, Variant, parse, tokenize};
+  use super::{AST, Expression, Statement, PrefixOp, BinOp, TypeBody, Variant, Enumerator, ForBody, parse, tokenize};
   use super::Statement::*;
   use super::Declaration::*;
   use super::Signature;
@@ -925,6 +974,7 @@ mod parse_tests {
   use super::TypeSingletonName;
   use super::ExpressionType::*;
   use super::Variant::*;
+  use super::ForBody::*;
 
   macro_rules! rc {
     ($string:tt) => { Rc::new(stringify!($string).to_string()) }
@@ -1272,15 +1322,33 @@ fn a(x) {
    }
 
   #[test]
-   fn while_expr() {
-     parse_test! {
-       "while { }", AST(vec![
-        exprstatement!(WhileExpression { condition: None, body: vec![] })])
-     }
+  fn while_expr() {
+    parse_test! {
+      "while { }", AST(vec![
+      exprstatement!(WhileExpression { condition: None, body: vec![] })])
+    }
 
-     parse_test! {
-       "while a == b { }", AST(vec![
-        exprstatement!(WhileExpression { condition: Some(bx![ex![binexp!("==", val!("a"), val!("b"))]]), body: vec![] })])
-     }
-   }
+    parse_test! {
+      "while a == b { }", AST(vec![
+      exprstatement!(WhileExpression { condition: Some(bx![ex![binexp!("==", val!("a"), val!("b"))]]), body: vec![] })])
+    }
+  }
+
+  #[test]
+  fn for_expr() {
+    parse_test! {
+      "for { a <- maybeValue } return 1", AST(vec![
+      exprstatement!(ForExpression {
+        enumerators: vec![Enumerator { id: rc!(a), generator: ex!(val!("maybeValue")) }],
+        body: bx!(MonadicReturn(ex!(NatLiteral(1))))
+      })])
+    }
+
+    parse_test! {
+      "for n <- someRange { f(n); }", AST(vec![
+      exprstatement!(ForExpression { enumerators: vec![Enumerator { id: rc!(n), generator: ex!(val!("someRange"))}],
+        body: bx!(ForBody::StatementBlock(vec![exprstatement!(Call { f: bx![ex!(val!("f"))], arguments: vec![ex!(val!("n"))] })]))
+      })])
+    }
+  }
 }
