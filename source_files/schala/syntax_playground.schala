@@ -35,19 +35,26 @@ fn main() {
   }
 
 
-  for {
-  //infinite loop
-  }
+/* for/while loop topics */
+
+   //infinite loop
+   while {
+     if x() { break }
+     ...
+   }
+
+
+   //conditional loop
+   while conditionHolds() {
+      ...
+   }
+
 
   //iteration over a variable
   for i <- [1..1000]  {
 
   } //return type is return type of block
 
-  //while loop
-  for a != 3 || fuckTard() {
-    break
-  } //return type is return type of block
 
   //monadic decomposition
   for {
@@ -57,22 +64,24 @@ fn main() {
     a + s
   } //return type is Monad<return type of block>
 
-  // let statements too!!
-  for (a = 20
-  b = fuck) {
-    a + b
+/* end of for loops */
+
+
+
+/* conditionals/pattern matching */
+
+// "is" operator for "does this pattern match"
+
+x is Some(t) // type bool
+
+if x {
+  is Some(t) => {
+  },
+  is None => {
+
   }
+}
 
-
-  // pattern-matching
-  match <expr> {
-    Some(a) => {
-
-    },
-    None => {
-
-    },
-  }
 
  //syntax is, I guess, for <expr> <brace-block>, where <expr> is a bool, or a <arrow-expr>
 

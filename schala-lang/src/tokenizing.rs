@@ -47,7 +47,7 @@ impl fmt::Display for TokenType {
 pub enum Kw {
   If, Else,
   Func,
-  For,
+  For, While,
   Match,
   Var, Const, Let, In,
   Return,
@@ -64,6 +64,7 @@ lazy_static! {
       "else" => Kw::Else,
       "fn" => Kw::Func,
       "for" => Kw::For,
+      "while" => Kw::While,
       "match" => Kw::Match,
       "var" => Kw::Var,
       "const" => Kw::Const,

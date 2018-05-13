@@ -56,7 +56,7 @@ prefix_expr := prefix_op call_expr
 prefix_op := '+' | '-' | '!' | '~'
 call_expr := index_expr ( '(' expr_list ')' )*
 index_expr := primary ( '[' (expression (',' (expression)* | ε) ']' )*
-primary := literal | paren_expr | if_expr | match_expr | for_expr | identifier_expr | curly_brace_expr | list_expr
+primary := literal | paren_expr | if_expr | match_expr | for_expr | while_expr | identifier_expr | curly_brace_expr | list_expr
 curly_brace_expr := lambda_expr | anonymous_struct //TODO
 list_expr := '[' (expression, ',')* ']'
 lambda_expr := '{' '|' (formal_param ',')* '|' (type_anno)* (statement)* '}'
@@ -83,7 +83,14 @@ block := '{' (statement)* '}'
 
 expr_list := expression (',' expression)* | ε
 
-for_expr := 'for' ... ????
+while_expr := 'while' while_cond '{' (statement)* '}'
+while_cond := ε | expression | expression 'is'  pattern //TODO maybe is-expresions should be primary
+
+for_expr := 'for' (enumerator | '{' enumerators '}') for_expr_body
+for_expr_body := expression | 'return' expression |  '{' (expression)* '}
+enumerators := enumerator (',' enumerators)*
+enumerator := ??? //TODO flesh this out
+
 
 // a float_literal can still be assigned to an int in type-checking
 number_literal := int_literal | float_literal
@@ -253,7 +260,13 @@ pub enum ExpressionType {
   },
   IfExpression(Box<Expression>, Block, Option<Block>),
   MatchExpression(Box<Expression>, Vec<MatchArm>),
-  ForExpression,
+  WhileExpression {
+    condition: Option<Box<Expression>>,
+    body: Block,
+  },
+  ForExpression {
+
+  },
   Lambda {
     params: Vec<FormalParam>,
     body: Block,
@@ -621,6 +634,7 @@ impl Parser {
       Keyword(Kw::If) => self.if_expr(),
       Keyword(Kw::Match) => self.match_expr(),
       Keyword(Kw::For) => self.for_expr(),
+      Keyword(Kw::While) => self.while_expr(),
       Identifier(_) => self.identifier_expr(),
       _ => self.literal(),
     }
@@ -744,9 +758,29 @@ impl Parser {
     Ok(Pattern(identifier))
   });
 
+  parse_method!(while_expr(&mut self) -> ParseResult<Expression> {
+    use self::ExpressionType::*;
+    expect!(self, Keyword(Kw::While), "'while'");
+    let condition =  {
+      self.restrictions.no_struct_literal = true;
+      let x = self.while_cond();
+      self.restrictions.no_struct_literal = false;
+      x?.map(|expr| bx!(expr))
+    };
+    let body = self.block()?;
+    Ok(Expression(WhileExpression {condition, body}, None))
+  });
+
+  parse_method!(while_cond(&mut self) -> ParseResult<Option<Expression>> {
+    Ok(match self.peek() {
+      LCurlyBrace => None,
+      _ => Some(self.expression()?),
+    })
+  });
+
   parse_method!(for_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, Keyword(Kw::For), "'for'");
-    Ok(Expression(ExpressionType::ForExpression, None))
+    Ok(Expression(ExpressionType::ForExpression { }, None))
   });
 
   parse_method!(identifier(&mut self) -> ParseResult<Rc<String>> {
@@ -1235,5 +1269,18 @@ fn a(x) {
        "[1,2]", AST(vec![
          exprstatement!(ListLiteral(vec![ex!(NatLiteral(1)), ex!(NatLiteral(2))]))])
      };
+   }
+
+  #[test]
+   fn while_expr() {
+     parse_test! {
+       "while { }", AST(vec![
+        exprstatement!(WhileExpression { condition: None, body: vec![] })])
+     }
+
+     parse_test! {
+       "while a == b { }", AST(vec![
+        exprstatement!(WhileExpression { condition: Some(bx![ex![binexp!("==", val!("a"), val!("b"))]]), body: vec![] })])
+     }
    }
 }
