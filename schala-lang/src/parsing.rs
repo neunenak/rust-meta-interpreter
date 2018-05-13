@@ -156,13 +156,17 @@ impl Parser {
   }
 }
 
+macro_rules! print_token_pattern {
+  ($tokenpattern:pat) => { stringify!($tokenpattern) }
+}
+
 macro_rules! expect {
-  ($self:expr, $token_type:pat, $expected_item:expr) => { expect!($self, $token_type if true, $expected_item) };
-  ($self:expr, $token_type:pat if $cond:expr, $expected_item:expr) => {
+  ($self:expr, $token_type:pat) => { expect!($self, $token_type if true) };
+  ($self:expr, $token_type:pat if $cond:expr) => {
     match $self.peek() {
       $token_type if $cond => $self.next(),
       tok => {
-        let msg = format!("Expected {}, got {:?}", $expected_item, tok);
+        let msg = format!("Expected {}, got {:?}", print_token_pattern!($token_type), tok);
         return Err(ParseError { msg })
       }
     }
@@ -328,7 +332,7 @@ macro_rules! delimited {
   };
   ($self:expr, $start:pat, $start_str:expr, $parse_fn:ident, $( $delim:pat )|+, $end:pat, $end_str:expr, $strictness:expr) => {
     {
-      expect!($self, $start, $start_str);
+      expect!($self, $start);
       let mut acc = vec![];
       loop {
         let peek = $self.peek();
@@ -349,7 +353,7 @@ macro_rules! delimited {
           _ => continue,
         };
       }
-      expect!($self, $end, $end_str);
+      expect!($self, $end);
       acc
     }
   };
@@ -384,7 +388,7 @@ impl Parser {
   });
 
   parse_method!(type_declaration(&mut self) -> ParseResult<Declaration> {
-    expect!(self, Keyword(Type), "'type'");
+    expect!(self, Keyword(Type));
     self.type_declaration_body()
   });
 
@@ -393,16 +397,16 @@ impl Parser {
       self.type_alias()
     } else {
       let name = self.type_singleton_name()?;
-      expect!(self, Operator(ref c) if **c == "=", "'='");
+      expect!(self, Operator(ref c) if **c == "=");
       let body = self.type_body()?;
       Ok(Declaration::TypeDecl(name, body))
     }
   });
 
   parse_method!(type_alias(&mut self) -> ParseResult<Declaration> {
-    expect!(self, Keyword(Alias), "'alias'");
+    expect!(self, Keyword(Alias));
     let alias = self.identifier()?;
-    expect!(self, Operator(ref c) if **c == "=", "'='");
+    expect!(self, Operator(ref c) if **c == "=");
     let original = self.identifier()?;
     Ok(Declaration::TypeAlias(alias, original))
   });
@@ -440,7 +444,7 @@ impl Parser {
 
   parse_method!(typed_identifier(&mut self) -> ParseResult<(Rc<String>, TypeName)> {
     let identifier = self.identifier()?;
-    expect!(self, Colon, "':'");
+    expect!(self, Colon);
     let type_name = self.type_name()?;
     Ok((identifier, type_name))
   });
@@ -456,7 +460,7 @@ impl Parser {
   });
 
   parse_method!(signature(&mut self) -> ParseResult<Signature> {
-    expect!(self, Keyword(Func), "'fn'");
+    expect!(self, Keyword(Func));
     let name = self.identifier()?;
     let params = delimited!(self, LParen, '(', formal_param, Comma, RParen, ')');
     let type_anno = match self.peek() {
@@ -482,14 +486,14 @@ impl Parser {
       _ => return ParseError::new("Expected 'var' or 'const'"),
     };
     let name = self.identifier()?;
-    expect!(self, Operator(ref o) if **o == "=", "'='");
+    expect!(self, Operator(ref o) if **o == "=");
     let expr = self.expression()?;
 
     Ok(Declaration::Binding { name, constant, expr })
   });
 
   parse_method!(interface_declaration(&mut self) -> ParseResult<Declaration> {
-    expect!(self, Keyword(Interface), "'interface'");
+    expect!(self, Keyword(Interface));
     let name = self.identifier()?;
     let signatures = self.signature_block()?;
     Ok(Declaration::Interface { name, signatures })
@@ -500,7 +504,7 @@ impl Parser {
   });
 
   parse_method!(impl_declaration(&mut self) -> ParseResult<Declaration> {
-    expect!(self, Keyword(Impl), "'impl'");
+    expect!(self, Keyword(Impl));
     let first = self.type_name()?;
     let second = if let Keyword(For) = self.peek() {
       self.next();
@@ -542,7 +546,7 @@ impl Parser {
   });
 
   parse_method!(type_anno(&mut self) -> ParseResult<TypeName> {
-    expect!(self, Colon, "':'");
+    expect!(self, Colon);
     self.type_name()
   });
 
@@ -665,7 +669,7 @@ impl Parser {
   });
 
   parse_method!(lambda_expr(&mut self) -> ParseResult<Expression> {
-    expect!(self, LCurlyBrace, "{");
+    expect!(self, LCurlyBrace);
     let params = delimited!(self, Pipe, '|', formal_param, Comma, Pipe, '|');
     let mut body = Vec::new();
     loop {
@@ -678,7 +682,7 @@ impl Parser {
         _ => body.push(self.statement()?),
       }
     }
-    expect!(self, RCurlyBrace, "}");
+    expect!(self, RCurlyBrace);
     Ok(Expression(ExpressionType::Lambda { params, body }, None)) //TODO need to handle types somehow
   });
 
@@ -716,13 +720,13 @@ impl Parser {
 
   parse_method!(record_entry(&mut self) -> ParseResult<(Rc<String>, Expression)> {
     let field_name = self.identifier()?;
-    expect!(self, Colon, ":");
+    expect!(self, Colon);
     let value = self.expression()?;
     Ok((field_name, value))
   });
 
   parse_method!(if_expr(&mut self) -> ParseResult<Expression> {
-    expect!(self, Keyword(Kw::If), "'if'");
+    expect!(self, Keyword(Kw::If));
     let condition = {
       self.restrictions.no_struct_literal = true;
       let x = self.expression();
@@ -748,7 +752,7 @@ impl Parser {
   });
 
   parse_method!(match_expr(&mut self) -> ParseResult<Expression> {
-    expect!(self, Keyword(Kw::Match), "'match'");
+    expect!(self, Keyword(Kw::Match));
     let expr = self.expression()?;
     //TODO abstract these errors into the delimited macro
     //expect!(self, LCurlyBrace, "Expected '{'");
@@ -763,7 +767,7 @@ impl Parser {
 
   parse_method!(match_arm(&mut self) -> ParseResult<MatchArm> {
     let pat = self.pattern()?;
-    expect!(self, Operator(ref c) if **c == "=>", "'=>'");
+    expect!(self, Operator(ref c) if **c == "=>");
     let expr = self.expression()?;
     Ok(MatchArm { pat, expr })
   });
@@ -775,7 +779,7 @@ impl Parser {
 
   parse_method!(while_expr(&mut self) -> ParseResult<Expression> {
     use self::ExpressionType::*;
-    expect!(self, Keyword(Kw::While), "'while'");
+    expect!(self, Keyword(Kw::While));
     let condition =  {
       self.restrictions.no_struct_literal = true;
       let x = self.while_cond();
@@ -794,7 +798,7 @@ impl Parser {
   });
 
   parse_method!(for_expr(&mut self) -> ParseResult<Expression> {
-    expect!(self, Keyword(Kw::For), "'for'");
+    expect!(self, Keyword(Kw::For));
     let enumerators = if let LCurlyBrace = self.peek() {
       delimited!(self, LCurlyBrace, '{', enumerator, Comma | Newline, RCurlyBrace, '}')
     } else {
@@ -812,7 +816,7 @@ impl Parser {
 
   parse_method!(enumerator(&mut self) -> ParseResult<Enumerator> {
     let id = self.identifier()?;
-    expect!(self, Operator(ref c) if **c == "<-", "'<-'");
+    expect!(self, Operator(ref c) if **c == "<-");
     let generator = self.expression()?;
     Ok(Enumerator { id, generator })
   });
