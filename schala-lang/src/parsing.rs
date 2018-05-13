@@ -694,12 +694,12 @@ impl Parser {
 
   parse_method!(if_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, Keyword(Kw::If), "'if'");
-    let condition = (|| {
+    let condition = {
       self.restrictions.no_struct_literal = true;
       let x = self.expression();
       self.restrictions.no_struct_literal = false;
-      x
-    })()?;
+      x?
+    };
     let then_clause = self.block()?;
     let else_clause = self.else_clause()?;
     Ok(Expression(ExpressionType::IfExpression(bx!(condition), then_clause, else_clause), None))
