@@ -263,7 +263,7 @@ impl<'a> State<'a> {
     //in the values table
 
     let type_context = self.type_context_handle.borrow();
-    type_context.symbol_table
+    //type_context.symbol_table
 
     match self.values.lookup(&name) {
       None => return Err(format!("Value {} not found", *name)),

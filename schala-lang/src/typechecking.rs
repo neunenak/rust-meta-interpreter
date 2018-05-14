@@ -15,7 +15,7 @@ pub struct TypeContext {
 }
 
 //cf. p. 150 or so of Language Implementation Patterns
-struct SymbolTable {
+pub struct SymbolTable {
   pub values: HashMap<Rc<String>, Symbol> //TODO this will eventually have real type information
 }
 
@@ -26,7 +26,7 @@ impl SymbolTable {
 }
 
 #[derive(Debug)]
-struct Symbol {
+pub struct Symbol {
   pub name: Rc<String>,
   pub ty: Type
 }
