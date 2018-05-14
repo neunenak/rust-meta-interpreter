@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::fmt::Write;
 use std::io;
@@ -6,9 +7,11 @@ use itertools::Itertools;
 
 use util::StateStack;
 use ast_reducing::{ReducedAST, Stmt, Expr, Lit, Func};
+use typechecking::TypeContext;
 
 pub struct State<'a> {
-  values: StateStack<'a, Rc<String>, ValueEntry>
+  values: StateStack<'a, Rc<String>, ValueEntry>,
+  type_context_handle: Option<Rc<RefCell<TypeContext>>>,
 }
 
 macro_rules! builtin_binding {
@@ -18,12 +21,12 @@ macro_rules! builtin_binding {
 }
 
 impl<'a> State<'a> {
-  pub fn new() -> State<'a> {
+  pub fn new(type_context_handle: Option<Rc<RefCell<TypeContext>>>) -> State<'a> {
     let mut values = StateStack::new(Some(format!("global")));
     builtin_binding!("print", values);
     builtin_binding!("println", values);
     builtin_binding!("getline", values);
-    State { values }
+    State { values, type_context_handle }
   }
 
   pub fn debug_print(&self) -> String {
@@ -415,7 +418,10 @@ impl<'a> State<'a> {
         if params.len() != args.len() {
           return Err(format!("calling a {}-argument function with {} args", params.len(), args.len()))
         }
-        let mut func_state = State { values: self.values.new_frame(name.map(|n| format!("{}", n))) };
+        let mut func_state = State {
+          values: self.values.new_frame(name.map(|n| format!("{}", n))),
+          type_context_handle: self.type_context_handle.clone(),
+        };
         for (param, val) in params.into_iter().zip(args.into_iter()) {
           let val = func_state.expression(val)?;
           func_state.values.insert(param, ValueEntry::Binding { constant: true, val });
@@ -518,7 +524,7 @@ mod eval_tests {
 
   macro_rules! fresh_env {
     ($string:expr, $correct:expr) => {
-      let mut state = State::new();
+      let mut state = State::new(None);
       let all_output = state.evaluate(parse(tokenize($string)).0.unwrap().reduce(), true);
       let ref output = all_output.last().unwrap();
       assert_eq!(**output, Ok($correct.to_string()));
