@@ -1,5 +1,5 @@
 
-println(a(4))
+println(sua(4))
 
 fn sua(x): Int {
   x + 10

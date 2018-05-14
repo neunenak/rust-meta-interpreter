@@ -8,12 +8,17 @@ pub struct ReducedAST(pub Vec<Stmt>);
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
+  PreBinding {
+    name: Rc<String>,
+    func: Func,
+  },
   Binding {
     name: Rc<String>,
     constant: bool,
     expr: Expr,
   },
   Expr(Expr),
+  Noop,
 }
 
 #[derive(Debug, Clone)]
@@ -111,17 +116,18 @@ impl Expression {
 impl Declaration {
   fn reduce(&self) -> Stmt {
     use self::Declaration::*;
+    use ::parsing::Signature;
     match self {
       Binding {name, constant, expr } => Stmt::Binding { name: name.clone(), constant: *constant, expr: expr.reduce() },
-      FuncDecl(::parsing::Signature { name, params, .. }, statements) => Stmt::Binding {
+      FuncDecl(Signature { name, params, .. }, statements) => Stmt::PreBinding {
         name: name.clone(),
-        constant: true,
-        expr: Expr::Func(Func::UserDefined {
-          name: None,
+        func: Func::UserDefined {
+          name: Some(name.clone()),
           params: params.iter().map(|param| param.0.clone()).collect(),
           body: statements.iter().map(|stmt| stmt.reduce()).collect(),
-        })
+        }
       },
+      TypeDecl(_,_) => Stmt::Noop,
       _ => Stmt::Expr(Expr::UnimplementedSigilValue)
     }
   }

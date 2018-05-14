@@ -318,6 +318,12 @@ impl Expr {
 impl<'a> State<'a> {
   pub fn evaluate(&mut self, ast: ReducedAST, repl: bool) -> Vec<Result<String, String>> {
     let mut acc = vec![];
+
+    // handle prebindings
+    for statement in ast.0.iter() {
+      self.prebinding(statement);
+    }
+
     for statement in ast.0 {
       match self.statement(statement) {
         Ok(Some(ref output)) if repl => acc.push(Ok(output.to_repl())),
@@ -331,6 +337,20 @@ impl<'a> State<'a> {
     acc
   }
 
+  fn prebinding(&mut self, stmt: &Stmt) {
+    match stmt {
+      Stmt::PreBinding { name, func } => {
+        let v_entry = ValueEntry::Binding { constant: true, val: Expr::Func(func.clone()) };
+        self.values.insert(name.clone(), v_entry);
+      },
+      Stmt::Expr(_expr) => {
+        //TODO have this support things like nested function defs
+
+      },
+      _ => ()
+    }
+  }
+
   fn statement(&mut self, stmt: Stmt) -> EvalResult<Option<Expr>> {
     match stmt {
       Stmt::Binding { name, constant, expr } => {
@@ -339,6 +359,7 @@ impl<'a> State<'a> {
         Ok(None)
       },
       Stmt::Expr(expr) => Ok(Some(self.expression(expr)?)),
+      Stmt::PreBinding {..} | Stmt::Noop => Ok(None),
     }
   }
 
@@ -471,6 +492,8 @@ impl<'a> State<'a> {
 
   fn value(&mut self, name: Rc<String>) -> EvalResult<Expr> {
     use self::ValueEntry::*;
+    //TODO add a layer of indirection here to talk to the symbol table first, and only then look up
+    //in the values table
     match self.values.lookup(&name) {
       None => return Err(format!("Value {} not found", *name)),
       Some(lookup) => match lookup {
