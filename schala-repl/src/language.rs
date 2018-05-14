@@ -22,18 +22,18 @@ impl Default for ExecutionMethod {
 
 #[derive(Debug, Default)]
 pub struct UnfinishedComputation {
-  artifacts: HashMap<String, TraceArtifact>,
+  artifacts: Vec<(String, TraceArtifact)>,
 }
 
 #[derive(Debug)]
 pub struct FinishedComputation {
-  artifacts: HashMap<String, TraceArtifact>,
+  artifacts: Vec<(String, TraceArtifact)>,
   text_output: Result<String, String>,
 }
 
 impl UnfinishedComputation {
   pub fn add_artifact(&mut self, artifact: TraceArtifact) {
-    self.artifacts.insert(artifact.stage_name.clone(), artifact);
+    self.artifacts.push((artifact.stage_name.clone(), artifact));
   }
   pub fn finish(self, text_output: Result<String, String>) -> FinishedComputation {
     FinishedComputation {
@@ -69,13 +69,11 @@ impl FinishedComputation {
     match self.text_output {
       Ok(_) => {
         let mut buf = String::new();
-        for stage in ["tokens", "parse_trace", "ast", "symbol_table", "type_check"].iter() {
-          if let Some(artifact) = self.artifacts.get(&stage.to_string()) {
-            let color = artifact.text_color;
-            let stage = stage.color(color).bold();
-            let output = artifact.debug_output.color(color);
-            write!(&mut buf, "{}: {}\n", stage, output).unwrap();
-          }
+        for (stage, artifact) in self.artifacts.iter() {
+          let color = artifact.text_color;
+          let stage = stage.color(color).bold();
+          let output = artifact.debug_output.color(color);
+          write!(&mut buf, "{}: {}\n", stage, output).unwrap();
         }
         if buf == "" { None } else { Some(buf) }
       },
@@ -117,7 +115,7 @@ impl TraceArtifact {
 
 pub trait ProgrammingLanguageInterface {
   fn execute_pipeline(&mut self, _input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
-    FinishedComputation { artifacts: HashMap::new(), text_output: Err(format!("Execution pipeline not done")) }
+    FinishedComputation { artifacts: vec![], text_output: Err(format!("Execution pipeline not done")) }
   }
 
   fn get_language_name(&self) -> String;
