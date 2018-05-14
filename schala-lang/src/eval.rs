@@ -11,7 +11,7 @@ use typechecking::TypeContext;
 
 pub struct State<'a> {
   values: StateStack<'a, Rc<String>, ValueEntry>,
-  type_context_handle: Option<Rc<RefCell<TypeContext>>>,
+  type_context_handle: Rc<RefCell<TypeContext>>,
 }
 
 macro_rules! builtin_binding {
@@ -21,7 +21,7 @@ macro_rules! builtin_binding {
 }
 
 impl<'a> State<'a> {
-  pub fn new(type_context_handle: Option<Rc<RefCell<TypeContext>>>) -> State<'a> {
+  pub fn new(type_context_handle: Rc<RefCell<TypeContext>>) -> State<'a> {
     let mut values = StateStack::new(Some(format!("global")));
     builtin_binding!("print", values);
     builtin_binding!("println", values);
@@ -261,6 +261,10 @@ impl<'a> State<'a> {
     use self::ValueEntry::*;
     //TODO add a layer of indirection here to talk to the symbol table first, and only then look up
     //in the values table
+
+    let type_context = self.type_context_handle.borrow();
+    type_context.symbol_table
+
     match self.values.lookup(&name) {
       None => return Err(format!("Value {} not found", *name)),
       Some(lookup) => match lookup {

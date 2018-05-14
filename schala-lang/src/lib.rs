@@ -42,7 +42,7 @@ impl Schala {
     let type_context = Rc::new(RefCell::new(typechecking::TypeContext::new()));
     Schala {
       type_context: type_context.clone(),
-      state: eval::State::new(Some(type_context)),
+      state: eval::State::new(type_context),
     }
   }
 }

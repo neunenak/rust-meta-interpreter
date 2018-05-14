@@ -11,7 +11,7 @@ use parsing;
 pub struct TypeContext {
   type_var_count: u64,
   bindings: HashMap<Rc<String>, Type>,
-  symbol_table: SymbolTable
+  pub symbol_table: SymbolTable
 }
 
 //cf. p. 150 or so of Language Implementation Patterns
