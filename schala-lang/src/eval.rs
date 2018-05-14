@@ -417,6 +417,7 @@ impl<'a> State<'a> {
         }
         let mut func_state = State { values: self.values.new_frame(name.map(|n| format!("{}", n))) };
         for (param, val) in params.into_iter().zip(args.into_iter()) {
+          let val = func_state.expression(val)?;
           func_state.values.insert(param, ValueEntry::Binding { constant: true, val });
         }
         // TODO figure out function return semantics
@@ -530,5 +531,10 @@ mod eval_tests {
     fresh_env!("var a = 1; a = 2", "Unit");
     fresh_env!("var a = 1; a = 2; a", "2");
     fresh_env!(r#"("a", 1 + 2)"#, r#"("a", 3)"#);
+  }
+
+  fn function_eval() {
+    fresh_env!("fn oi(x) { x + 1 }; oi(4)", "5");
+    fresh_env!("fn oi(x) { x + 1 }; oi(1+2)", "4");
   }
 }
