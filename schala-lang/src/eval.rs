@@ -289,13 +289,18 @@ impl<'a> State<'a> {
 
 #[cfg(test)]
 mod eval_tests {
+  use std::cell::RefCell;
+  use std::rc::Rc;
+  use typechecking::TypeContext;
   use tokenizing::tokenize;
   use parsing::parse;
   use eval::State;
 
   macro_rules! fresh_env {
     ($string:expr, $correct:expr) => {
-      let mut state = State::new(None);
+
+      let type_context = Rc::new(RefCell::new(TypeContext::new()));
+      let mut state = State::new(type_context);
       let all_output = state.evaluate(parse(tokenize($string)).0.unwrap().reduce(), true);
       let ref output = all_output.last().unwrap();
       assert_eq!(**output, Ok($correct.to_string()));
