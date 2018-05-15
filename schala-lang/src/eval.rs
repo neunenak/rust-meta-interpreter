@@ -284,20 +284,6 @@ impl<'a> State<'a> {
         None => return Err(format!("Couldn't find value {}", name)),
       }
     })
-
-      /*
-      None => match self.values.lookup(&name) {
-        None => return Err(format!("Value {} not found", *name)),
-        Some(lookup) => match lookup {
-          Binding { val, .. } => Ok(
-            if let Expr::Func(Func::UserDefined { name: None, params, body }) = val {
-              Expr::Func(Func::UserDefined { name: Some(name.clone()), params: params.clone(), body: body.clone() }) //TODO here is unnecessary cloning
-            } else {
-              val.clone()
-            })
-        }
-      }
-      */
   }
 }
 
