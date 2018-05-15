@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::collections::HashMap;
-use std::char;
+//use std::char;
 use std::fmt;
 use std::fmt::Write;
 
@@ -9,7 +9,7 @@ use itertools::Itertools;
 use parsing;
 
 pub struct TypeContext {
-  type_var_count: u64,
+  //type_var_count: u64,
   bindings: HashMap<Rc<String>, Type>,
   pub symbol_table: SymbolTable
 }
@@ -36,8 +36,8 @@ pub enum Type {
   Const(TConst),
   Sum(Vec<Type>),
   Func(Box<Type>, Box<Type>),
-  UVar(String),
-  EVar(u64),
+  //UVar(String),
+  //EVar(u64),
   Void
 }
 
@@ -57,13 +57,14 @@ impl fmt::Display for Type {
         write!(f, ")")
       },
       &Func(ref a, ref b) => write!(f, "{} -> {}", a, b),
-      &UVar(ref s) => write!(f, "{}_u", s),
-      &EVar(ref n) => write!(f, "{}_e", n),
+      //&UVar(ref s) => write!(f, "{}_u", s),
+      //&EVar(ref n) => write!(f, "{}_e", n),
       &Void => write!(f, "Void")
     }
   }
 }
 
+/*
 #[derive(Default)]
 struct UVarGenerator {
   n: u32,
@@ -79,6 +80,7 @@ impl UVarGenerator {
     Type::UVar(s)
   }
 }
+*/
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TConst {
@@ -91,6 +93,7 @@ pub enum TConst {
   Custom(String),
 }
 
+//TODO get rid of this, just instantiate builtin types to the environment
 impl parsing::TypeName {
   fn to_type(&self) -> TypeResult<Type> {
     use self::parsing::TypeSingletonName;
@@ -116,13 +119,15 @@ pub type TypeResult<T> = Result<T, String>;
 
 impl TypeContext {
   pub fn new() -> TypeContext {
-    TypeContext { bindings: HashMap::new(), type_var_count: 0, symbol_table: SymbolTable::new() }
+    TypeContext { bindings: HashMap::new(), /*type_var_count: 0*/ symbol_table: SymbolTable::new() }
   }
+  /*
   pub fn fresh(&mut self) -> Type {
     let ret = self.type_var_count;
     self.type_var_count += 1;
     Type::EVar(ret)
   }
+  */
 }
 
 impl TypeContext {
@@ -134,6 +139,7 @@ impl TypeContext {
       if let Statement::Declaration(decl) = statement {
         match decl {
           FuncSig(signature) | FuncDecl(signature, _) => {
+            /*
             let mut uvar_gen = UVarGenerator::new();
             let mut ty: Type = signature.type_anno.as_ref().map(|name: &TypeName| name.to_type()).unwrap_or_else(|| {Ok(uvar_gen.next())} )?;
             for &(_, ref type_name) in signature.params.iter().rev() {
@@ -141,7 +147,7 @@ impl TypeContext {
               ty = Func(bx!(arg_type), bx!(ty));
             }
             self.bindings.insert(signature.name.clone(), ty);
-
+            */
             self.symbol_table.values.insert(
               signature.name.clone(),
               Symbol { name: signature.name.clone(), ty: Func(Box::new(Void), Box::new(Void)) }
@@ -194,7 +200,7 @@ impl TypeContext {
     use self::parsing::Declaration::*;
     use self::Type::*;
     match decl {
-      &Binding { ref name, ref expr, .. } => {
+      Binding { name, expr, .. } => {
         let ty = self.infer(expr)?;
         self.bindings.insert(name.clone(), ty);
       },
@@ -287,5 +293,9 @@ impl TypeContext {
       (a, b) => Err(format!("Types {:?} and {:?} don't unify", a, b))
     }
   }
+
+  //fn bind(&mut self, var: TVar, ty: Type) -> `Infer Subst` {
+  //
+  //}
 }
 
