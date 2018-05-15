@@ -192,8 +192,8 @@ impl TypeContext {
   fn type_check_statement(&mut self, statement: &parsing::Statement) -> TypeResult<Type> {
     use self::parsing::Statement::*;
     match statement {
-      &ExpressionStatement(ref expr) => self.infer(expr),
-      &Declaration(ref decl) => self.add_declaration(decl),
+      ExpressionStatement(expr) => self.infer(expr),
+      Declaration(decl) => self.add_declaration(decl),
     }
   }
   fn add_declaration(&mut self, decl: &parsing::Declaration) -> TypeResult<Type> {
@@ -211,23 +211,23 @@ impl TypeContext {
   fn infer(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
     use self::parsing::Expression;
     match expr {
-      &Expression(ref e, Some(ref anno)) => {
+      Expression(e, Some(anno)) => {
         let anno_ty = anno.to_type()?;
         let ty = self.infer_exprtype(&e)?;
         self.unify(ty, anno_ty)
       },
-      &Expression(ref e, None) => self.infer_exprtype(e)
+      Expression(e, None) => self.infer_exprtype(e)
     }
   }
   fn infer_exprtype(&mut self, expr: &parsing::ExpressionType) -> TypeResult<Type> {
     use self::parsing::ExpressionType::*;
     use self::Type::*; use self::TConst::*;
     match expr {
-      &NatLiteral(_) => Ok(Const(Nat)),
-      &FloatLiteral(_) => Ok(Const(Float)),
-      &StringLiteral(_) => Ok(Const(StringT)),
-      &BoolLiteral(_) => Ok(Const(Bool)),
-      &BinExp(ref op, ref lhs, ref rhs) => { /* remember there are both the haskell convention talk and the write you a haskell ways to do this! */
+      NatLiteral(_) => Ok(Const(Nat)),
+      FloatLiteral(_) => Ok(Const(Float)),
+      StringLiteral(_) => Ok(Const(StringT)),
+      BoolLiteral(_) => Ok(Const(Bool)),
+      BinExp(op, lhs, rhs) => { /* remember there are both the haskell convention talk and the write you a haskell ways to do this! */
         match op.get_type()? {
           Func(box t1, box Func(box t2, box t3)) => {
             let lhs_ty = self.infer(lhs)?;
@@ -239,7 +239,7 @@ impl TypeContext {
           other => Err(format!("{:?} is not a binary function type", other))
         }
       },
-      &PrefixExp(ref op, ref expr) => match op.get_type()? {
+      PrefixExp(op, expr) => match op.get_type()? {
         Func(box t1, box t2) => {
           let expr_ty = self.infer(expr)?;
           self.unify(t1, expr_ty)?;
@@ -247,13 +247,13 @@ impl TypeContext {
         },
         other => Err(format!("{:?} is not a prefix op function type", other))
       },
-      &Value(ref name) => {
+      Value(name) => {
         match self.bindings.get(name) {
           Some(ty) => Ok(ty.clone()),
           None => Err(format!("No binding found for variable: {}", name)),
         }
       },
-      &Call { ref f, ref arguments } => {
+      Call { f, arguments } => {
         let mut tf = self.infer(f)?;
         for arg in arguments.iter() {
           match tf {
@@ -267,7 +267,7 @@ impl TypeContext {
         }
         Ok(tf)
       },
-      &TupleLiteral(ref expressions) => {
+      TupleLiteral(expressions) => {
         let mut types = vec![];
         for expr in expressions {
           types.push(self.infer(expr)?);
