@@ -298,7 +298,6 @@ mod eval_tests {
 
   macro_rules! fresh_env {
     ($string:expr, $correct:expr) => {
-
       let type_context = Rc::new(RefCell::new(TypeContext::new()));
       let mut state = State::new(type_context);
       let all_output = state.evaluate(parse(tokenize($string)).0.unwrap().reduce(), true);
@@ -315,8 +314,31 @@ mod eval_tests {
     fresh_env!(r#"("a", 1 + 2)"#, r#"("a", 3)"#);
   }
 
+  #[test]
   fn function_eval() {
     fresh_env!("fn oi(x) { x + 1 }; oi(4)", "5");
     fresh_env!("fn oi(x) { x + 1 }; oi(1+2)", "4");
+  }
+
+  #[test]
+  fn scopes() {
+    let scope_ok = r#"
+    const a = 20
+    fn haha() {
+      const a = 10
+      a
+    }
+    haha()
+    "#;
+    fresh_env!(scope_ok, "10");
+    let scope_ok = r#"
+    const a = 20
+    fn haha() {
+      const a = 10
+      a
+    }
+    a
+    "#;
+    fresh_env!(scope_ok, "20");
   }
 }
