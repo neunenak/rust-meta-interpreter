@@ -7,7 +7,7 @@ use itertools::Itertools;
 
 use util::StateStack;
 use ast_reducing::{ReducedAST, Stmt, Expr, Lit, Func};
-use typechecking::TypeContext;
+use typechecking::{TypeContext, Symbol, Type, TConst};
 
 pub struct State<'a> {
   values: StateStack<'a, Rc<String>, ValueEntry>,
@@ -55,6 +55,7 @@ impl Expr {
         Float(f) => format!("{}", f),
         Bool(b) => format!("{}", b),
         StringLit(s) => format!("\"{}\"", s),
+        Custom(s) => format!("{}", s),
       },
       Expr::Func(f) => match f {
         BuiltIn(name) => format!("<built-in function {}>", name),
@@ -259,24 +260,44 @@ impl<'a> State<'a> {
 
   fn value(&mut self, name: Rc<String>) -> EvalResult<Expr> {
     use self::ValueEntry::*;
+    use self::Func::*;
     //TODO add a layer of indirection here to talk to the symbol table first, and only then look up
     //in the values table
 
     let type_context = self.type_context_handle.borrow();
-    //type_context.symbol_table
-
-    match self.values.lookup(&name) {
-      None => return Err(format!("Value {} not found", *name)),
-      Some(lookup) => match lookup {
-        Binding { val, .. } => Ok(
-          if let Expr::Func(Func::UserDefined { name: None, params, body }) = val {
-            Expr::Func(Func::UserDefined { name: Some(name.clone()), params: params.clone(), body: body.clone() }) //TODO here is unnecessary cloning
-          } else {
-            val.clone()
-          }
-        )
+    Ok(match type_context.symbol_table.values.get(&name) {
+      Some(Symbol { name, ty }) => match ty {
+        Type::Const(TConst::Custom(typename)) => {
+          Expr::Lit(Lit::Custom(name.clone()))
+        },
+        Type::Func(_,_) => match self.values.lookup(&name) {
+          Some(Binding { val: Expr::Func(UserDefined { name, params, body }), .. }) => {
+            Expr::Func(UserDefined { name: name.clone(), params: params.clone(), body: body.clone() })
+          },
+          _ => unreachable!(),
+        },
+        e => return Err(format!("Bad type in symbol table {:?}", e))
+      },
+      /* see if it's an ordinary variable TODO make variables go in symbol table */
+      None => match self.values.lookup(&name) {
+        Some(Binding { val, .. }) => val.clone(),
+        None => return Err(format!("Couldn't find value {}", name)),
       }
-    }
+    })
+
+      /*
+      None => match self.values.lookup(&name) {
+        None => return Err(format!("Value {} not found", *name)),
+        Some(lookup) => match lookup {
+          Binding { val, .. } => Ok(
+            if let Expr::Func(Func::UserDefined { name: None, params, body }) = val {
+              Expr::Func(Func::UserDefined { name: Some(name.clone()), params: params.clone(), body: body.clone() }) //TODO here is unnecessary cloning
+            } else {
+              val.clone()
+            })
+        }
+      }
+      */
   }
 }
 

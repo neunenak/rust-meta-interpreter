@@ -51,6 +51,7 @@ pub enum Lit {
   Float(f64),
   Bool(bool),
   StringLit(Rc<String>),
+  Custom(Rc<String>),
 }
 
 #[derive(Debug, Clone)]
