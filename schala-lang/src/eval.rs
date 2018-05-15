@@ -267,7 +267,7 @@ impl<'a> State<'a> {
     let type_context = self.type_context_handle.borrow();
     Ok(match type_context.symbol_table.values.get(&name) {
       Some(Symbol { name, ty }) => match ty {
-        Type::Const(TConst::Custom(typename)) => {
+        Type::Const(TConst::Custom(_typename)) => {
           Expr::Lit(Lit::Custom(name.clone()))
         },
         Type::Func(_,_) => match self.values.lookup(&name) {
