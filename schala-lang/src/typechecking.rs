@@ -113,15 +113,6 @@ impl TypeContext {
       if let Statement::Declaration(decl) = statement {
         match decl {
           FuncSig(signature) | FuncDecl(signature, _) => {
-            /*
-            let mut uvar_gen = UVarGenerator::new();
-            let mut ty: Type = signature.type_anno.as_ref().map(|name: &TypeName| name.to_type()).unwrap_or_else(|| {Ok(uvar_gen.next())} )?;
-            for &(_, ref type_name) in signature.params.iter().rev() {
-              let arg_type = type_name.as_ref().map(|name| name.to_type()).unwrap_or_else(|| {Ok(uvar_gen.next())} )?;
-              ty = Func(bx!(arg_type), bx!(ty));
-            }
-            self.bindings.insert(signature.name.clone(), ty);
-            */
             self.symbol_table.values.insert(
               signature.name.clone(),
               Symbol { name: signature.name.clone(), spec: SymbolSpec::Func }
