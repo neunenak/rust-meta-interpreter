@@ -148,12 +148,14 @@ impl TypeContext {
     output
   }
 
-  pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<Type> {
+  pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
     let ref block = ast.0;
-    Ok(self.infer_block(block)?)
+    //Ok(self.infer_block(block)?)
+	Ok(format!("Nothin' b/c redoing typechecking"))
   }
 }
 
+/*
 impl TypeContext {
   fn infer_block(&mut self, statements: &Vec<parsing::Statement>) -> TypeResult<Type> {
     let mut ret_type = Type::Const(TConst::Unit);
@@ -259,4 +261,5 @@ impl TypeContext {
     }
   }
 }
+*/
 
