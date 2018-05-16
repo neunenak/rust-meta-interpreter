@@ -138,6 +138,8 @@ impl TypeContext {
 }
 
 impl TypeContext {
+  /* note: this adds names for *forward reference* but doesn't actually create any types. solve that problem
+   * later */
   pub fn add_top_level_types(&mut self, ast: &parsing::AST) -> TypeResult<()> {
     use self::parsing::{Statement, TypeName, Variant, TypeSingletonName, TypeBody};
     use self::parsing::Declaration::*;
@@ -188,21 +190,20 @@ impl TypeContext {
 
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<Type> {
     let ref block = ast.0;
-    Ok(self.type_check_block(block)?)
+    Ok(self.infer_block(block)?)
   }
 }
 
 impl TypeContext {
-
-  fn type_check_block(&mut self, statements: &Vec<parsing::Statement>) -> TypeResult<Type> {
+  fn infer_block(&mut self, statements: &Vec<parsing::Statement>) -> TypeResult<Type> {
     let mut ret_type = Type::Const(TConst::Unit);
     for statement in statements {
-      ret_type = self.type_check_statement(statement)?;
+      ret_type = self.infer_statement(statement)?;
     }
     Ok(ret_type)
   }
 
-  fn type_check_statement(&mut self, statement: &parsing::Statement) -> TypeResult<Type> {
+  fn infer_statement(&mut self, statement: &parsing::Statement) -> TypeResult<Type> {
     use self::parsing::Statement::*;
     match statement {
       ExpressionStatement(expr) => self.infer(expr),
