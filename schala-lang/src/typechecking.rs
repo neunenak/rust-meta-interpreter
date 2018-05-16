@@ -34,15 +34,33 @@ pub struct Symbol {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
   Const(TConst),
-  Sum(Vec<Type>),
+  Var(TVar),
   Func(Box<Type>, Box<Type>),
   //UVar(String),
   //EVar(u64),
+  Sum(Vec<Type>),
   Void
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct TVar(String);
+
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum TConst {
+  Unit,
+  Nat,
+  Int,
+  Float,
+  StringT,
+  Bool,
+  Custom(String),
 }
 
 impl fmt::Display for Type {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{:?}", self)
+    /*
     use self::Type::*;
     match self {
       &Const(ref c) => write!(f, "{:?}", c),
@@ -61,6 +79,7 @@ impl fmt::Display for Type {
       //&EVar(ref n) => write!(f, "{}_e", n),
       &Void => write!(f, "Void")
     }
+    */
   }
 }
 
@@ -81,17 +100,6 @@ impl UVarGenerator {
   }
 }
 */
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum TConst {
-  Unit,
-  Nat,
-  Int,
-  Float,
-  StringT,
-  Bool,
-  Custom(String),
-}
 
 //TODO get rid of this, just instantiate builtin types to the environment
 impl parsing::TypeName {
@@ -274,15 +282,6 @@ impl TypeContext {
         }
         Ok(Sum(types))
       },
-      /*
-  Index {
-    indexee: Box<Expression>,
-    indexers: Vec<Expression>,
-  },
-  IfExpression(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
-  MatchExpression(Box<Expression>, Vec<MatchArm>),
-  ForExpression
-      */
       _ => Err(format!("Type not yet implemented"))
     }
   }
