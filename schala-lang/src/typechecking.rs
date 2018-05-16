@@ -45,7 +45,6 @@ pub enum Type {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TVar(String);
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum TConst {
   Unit,
@@ -186,17 +185,23 @@ impl TypeContext {
     }
     output
   }
+
+  pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<Type> {
+    let ref block = ast.0;
+    Ok(self.type_check_block(block)?)
+  }
 }
 
 impl TypeContext {
-  pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<Type> {
-    use self::Type::*; use self::TConst::*;
-    let mut ret_type = Const(Unit);
-    for statement in ast.0.iter() {
+
+  fn type_check_block(&mut self, statements: &Vec<parsing::Statement>) -> TypeResult<Type> {
+    let mut ret_type = Type::Const(TConst::Unit);
+    for statement in statements {
       ret_type = self.type_check_statement(statement)?;
     }
     Ok(ret_type)
   }
+
   fn type_check_statement(&mut self, statement: &parsing::Statement) -> TypeResult<Type> {
     use self::parsing::Statement::*;
     match statement {
