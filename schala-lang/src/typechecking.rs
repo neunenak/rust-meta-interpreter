@@ -9,7 +9,6 @@ use itertools::Itertools;
 use parsing;
 
 pub struct TypeContext {
-  //type_var_count: u64,
   bindings: HashMap<Rc<String>, Type>,
   pub symbol_table: SymbolTable
 }
@@ -42,21 +41,12 @@ pub enum SymbolSpec {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
-  Const(TConst),
-  Var(TVar),
+  Const(TConstOld),
   Func(Box<Type>, Box<Type>),
-  //UVar(String),
-  //EVar(u64),
-  Sum(Vec<Type>),
-  Void
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TVar(String);
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum TConst {
-  Unit,
+pub enum TConstOld {
   Nat,
   Int,
   Float,
@@ -77,16 +67,18 @@ impl parsing::TypeName {
   fn to_type(&self) -> TypeResult<Type> {
 	use self::parsing::TypeSingletonName;
 	use self::parsing::TypeName::*;
-	use self::Type::*; use self::TConst::*;
+	use self::Type::*; use self::TConstOld::*;
     Ok(match self {
       Tuple(_) => return Err(format!("Tuples not yet implemented")),
       Singleton(name) => match name {
         TypeSingletonName { name, .. } => match &name[..] {
+          /*
           "Nat" => Const(Nat),
           "Int" => Const(Int),
           "Float" => Const(Float),
           "Bool" => Const(Bool),
           "String" => Const(StringT),
+          */
           n => Const(Custom(n.to_string()))
         }
       }

@@ -1,8 +1,8 @@
 use std::rc::Rc;
 use std::collections::HashMap;
 
-use typechecking::{Type, TypeResult, TConst};
-use self::Type::*; use self::TConst::*;
+use typechecking::{Type, TypeResult, TConstOld};
+use self::Type::*; use self::TConstOld::*;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct BinOp {
