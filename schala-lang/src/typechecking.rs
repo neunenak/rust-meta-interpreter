@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use std::collections::HashMap;
+use std::collections::{HashSet, HashMap};
 //use std::char;
 use std::fmt;
 use std::fmt::Write;
@@ -38,6 +38,26 @@ pub enum SymbolSpec {
 
 /* real meat of type stuff here */
 
+#[derive(Debug, PartialEq, Clone)]
+enum MonoType {
+  Const(TypeConst),
+  Var(Rc<String>),
+  Function(Box<MonoType>, Box<MonoType>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+enum TypeConst {
+  Unit,
+  Nat,
+  Int,
+  Float,
+  StringT,
+  Bool,
+  Tuple(Vec<MonoType>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+struct PolyType(HashSet<Rc<String>>, MonoType);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
