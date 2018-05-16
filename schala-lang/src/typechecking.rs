@@ -28,7 +28,12 @@ impl SymbolTable {
 #[derive(Debug)]
 pub struct Symbol {
   pub name: Rc<String>,
-  pub ty: Type
+  pub spec: SymbolSpec,
+}
+
+#[derive(Debug)]
+pub enum SymbolSpec {
+  Func, Custom(String)
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -159,7 +164,7 @@ impl TypeContext {
             */
             self.symbol_table.values.insert(
               signature.name.clone(),
-              Symbol { name: signature.name.clone(), ty: Func(Box::new(Void), Box::new(Void)) }
+              Symbol { name: signature.name.clone(), spec: SymbolSpec::Func }
             );
           },
           TypeDecl(TypeSingletonName { name, ..}, TypeBody(variants)) => {
@@ -167,8 +172,8 @@ impl TypeContext {
               match var {
                 Variant::UnitStruct(variant_name) => {
                   //TODO will have to make this a function to this type eventually
-                  let ty = Type::Const(TConst::Custom(format!("{}", name)));
-                  self.symbol_table.values.insert(variant_name.clone(), Symbol { name: variant_name.clone(), ty });
+                  let spec = SymbolSpec::Custom(format!("{}", name));
+                  self.symbol_table.values.insert(variant_name.clone(), Symbol { name: variant_name.clone(), spec });
                 },
                 e => return Err(format!("{:?} not supported in typing yet", e)),
               }

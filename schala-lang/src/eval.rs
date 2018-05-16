@@ -7,7 +7,7 @@ use itertools::Itertools;
 
 use util::StateStack;
 use ast_reducing::{ReducedAST, Stmt, Expr, Lit, Func};
-use typechecking::{TypeContext, Symbol, Type, TConst};
+use typechecking::{TypeContext, SymbolSpec, Symbol};
 
 pub struct State<'a> {
   values: StateStack<'a, Rc<String>, ValueEntry>,
@@ -266,17 +266,16 @@ impl<'a> State<'a> {
 
     let type_context = self.type_context_handle.borrow();
     Ok(match type_context.symbol_table.values.get(&name) {
-      Some(Symbol { name, ty }) => match ty {
-        Type::Const(TConst::Custom(_typename)) => {
+      Some(Symbol { name, spec }) => match spec {
+        SymbolSpec::Custom(_typename) => {
           Expr::Lit(Lit::Custom(name.clone()))
         },
-        Type::Func(_,_) => match self.values.lookup(&name) {
+        SymbolSpec::Func => match self.values.lookup(&name) {
           Some(Binding { val: Expr::Func(UserDefined { name, params, body }), .. }) => {
             Expr::Func(UserDefined { name: name.clone(), params: params.clone(), body: body.clone() })
           },
           _ => unreachable!(),
         },
-        e => return Err(format!("Bad type in symbol table {:?}", e))
       },
       /* see if it's an ordinary variable TODO make variables go in symbol table */
       None => match self.values.lookup(&name) {
