@@ -92,9 +92,7 @@ impl TypeContext {
   pub fn new() -> TypeContext {
     TypeContext { bindings: HashMap::new(), /*type_var_count: 0*/ symbol_table: SymbolTable::new() }
   }
-}
 
-impl TypeContext {
   /* note: this adds names for *forward reference* but doesn't actually create any types. solve that problem
    * later */
   pub fn add_top_level_types(&mut self, ast: &parsing::AST) -> TypeResult<()> {
