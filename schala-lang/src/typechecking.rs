@@ -185,6 +185,10 @@ impl TypeContext {
     for (sym, ty) in &self.symbol_table.values {
       write!(output, "{} -> {:?}\n", sym, ty).unwrap();
     }
+    write!(output, "\nBindings\n").unwrap();
+    for (sym, ty) in &self.bindings {
+      write!(output, "{} : {:?}\n", sym, ty).unwrap();
+    }
     output
   }
 
