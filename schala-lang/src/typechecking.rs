@@ -36,6 +36,10 @@ pub enum SymbolSpec {
   Func, Custom(String)
 }
 
+
+/* real meat of type stuff here */
+
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
   Const(TConst),
@@ -64,57 +68,20 @@ pub enum TConst {
 impl fmt::Display for Type {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     write!(f, "{:?}", self)
-    /*
-    use self::Type::*;
-    match self {
-      &Const(ref c) => write!(f, "{:?}", c),
-      &Sum(ref types) => {
-        write!(f, "(")?;
-        for item in types.iter().map(|ty| Some(ty)).intersperse(None) {
-          match item {
-            Some(ty) => write!(f, "{}", ty)?,
-            None => write!(f, ",")?,
-          };
-        }
-        write!(f, ")")
-      },
-      &Func(ref a, ref b) => write!(f, "{} -> {}", a, b),
-      //&UVar(ref s) => write!(f, "{}_u", s),
-      //&EVar(ref n) => write!(f, "{}_e", n),
-      &Void => write!(f, "Void")
-    }
-    */
   }
 }
 
-/*
-#[derive(Default)]
-struct UVarGenerator {
-  n: u32,
-}
-impl UVarGenerator {
-  fn new() -> UVarGenerator {
-    UVarGenerator::default()
-  }
-  fn next(&mut self) -> Type {
-    //TODO handle this in the case where someone wants to make a function with more than 26 variables
-    let s = format!("{}", unsafe { char::from_u32_unchecked(self.n + ('a' as u32)) });
-    self.n += 1;
-    Type::UVar(s)
-  }
-}
-*/
-
-//TODO get rid of this, just instantiate builtin types to the environment
+/* TODO this should just check the name against a map, and that map should be pre-populated with
+ * types */
 impl parsing::TypeName {
   fn to_type(&self) -> TypeResult<Type> {
-    use self::parsing::TypeSingletonName;
-    use self::parsing::TypeName::*;
-    use self::Type::*; use self::TConst::*;
+	use self::parsing::TypeSingletonName;
+	use self::parsing::TypeName::*;
+	use self::Type::*; use self::TConst::*;
     Ok(match self {
-      &Tuple(_) => return Err(format!("Tuples not yet implemented")),
-      &Singleton(ref name) => match name {
-        &TypeSingletonName { ref name, .. } => match &name[..] {
+      Tuple(_) => return Err(format!("Tuples not yet implemented")),
+      Singleton(name) => match name {
+        TypeSingletonName { name, .. } => match &name[..] {
           "Nat" => Const(Nat),
           "Int" => Const(Int),
           "Float" => Const(Float),
@@ -133,13 +100,6 @@ impl TypeContext {
   pub fn new() -> TypeContext {
     TypeContext { bindings: HashMap::new(), /*type_var_count: 0*/ symbol_table: SymbolTable::new() }
   }
-  /*
-  pub fn fresh(&mut self) -> Type {
-    let ret = self.type_var_count;
-    self.type_var_count += 1;
-    Type::EVar(ret)
-  }
-  */
 }
 
 impl TypeContext {
@@ -307,9 +267,5 @@ impl TypeContext {
       (a, b) => Err(format!("Types {:?} and {:?} don't unify", a, b))
     }
   }
-
-  //fn bind(&mut self, var: TVar, ty: Type) -> `Infer Subst` {
-  //
-  //}
 }
 
