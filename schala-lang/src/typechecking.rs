@@ -1,10 +1,16 @@
 use std::rc::Rc;
 use std::collections::{HashSet, HashMap};
+use std::collections::hash_set::Union;
+use std::iter::Iterator;
 //use std::char;
 use std::fmt;
 use std::fmt::Write;
 
 use itertools::Itertools;
+
+
+/* GIANT TODO - use the rust im crate, unless I make this code way less haskell-ish after it's done
+  */
 
 use parsing;
 
@@ -56,8 +62,36 @@ enum TypeConst {
   Tuple(Vec<MonoType>),
 }
 
+impl MonoType {
+  fn free_vars(&self) -> HashSet<Rc<String>> {
+    use self::MonoType::*;
+    match self {
+      Const(_) => HashSet::new(),
+      Var(a) => {
+        let mut h = HashSet::new();
+        h.insert(a.clone());
+        h
+      },
+      Function(a, b) => {
+        a.free_vars().union(&b.free_vars()).cloned().collect()
+      },
+    }
+  }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 struct PolyType(HashSet<Rc<String>>, MonoType);
+
+impl PolyType {
+  fn free_vars(&self) -> HashSet<Rc<String>> {
+    let mtype = self.1.free_vars();
+    self.0.difference(&mtype).cloned().collect()
+  }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+struct Substitution(HashMap<Rc<String>, MonoType>);
+
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
@@ -160,10 +194,31 @@ impl TypeContext {
 
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
     let ref block = ast.0;
-    //Ok(self.infer_block(block)?)
-	Ok(format!("Nothin' b/c redoing typechecking"))
+    let mut infer = Infer::new();
+    let output = infer.infer_block(block)?;
+
+	Ok(format!("{:?}", output))
   }
 }
+
+// this is the equivalent of the Haskell Infer monad
+#[derive(Debug)]
+struct Infer {
+
+}
+
+impl Infer {
+  fn new() -> Infer {
+    Infer { }
+  }
+
+  fn infer_block(&mut self, block: &Vec<parsing::Statement>) -> TypeResult<MonoType> {
+    Ok(MonoType::Const(TypeConst::Unit))
+  }
+}
+
+
+
 
 /*
 impl TypeContext {
