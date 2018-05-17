@@ -102,7 +102,15 @@ impl PolyType {
   }
 
   fn apply_substitution(&self, s: &Substitution) -> PolyType {
-    unimplemented!()
+    let mut map: HashMap<Rc<String>, MonoType> = HashMap::new();
+    for (name, monotype) in s.0.iter() {
+      if let None = self.0.get(name) {
+        map.insert(name.clone(), monotype.clone());
+      }
+    }
+    let newsub = Substitution(map);
+    let new = self.1.apply_substitution(&newsub);
+    PolyType(self.0.clone(), new)
   }
 }
 
