@@ -77,6 +77,19 @@ impl MonoType {
       },
     }
   }
+
+  //TODO maybe this should be type self, and consume?
+  fn apply_substitution(&self, s: &Substitution) -> MonoType {
+    use self::MonoType::*;
+    match self {
+      Const(t) => Const(t.clone()),
+      Var(a) => s.0.get(a).map(|x| x.clone()).unwrap_or(Var(a.clone())),
+      Function(a, b) => Function(
+        Box::new(a.apply_substitution(s)),
+        Box::new(b.apply_substitution(s))
+      )
+    }
+  }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -86,6 +99,10 @@ impl PolyType {
   fn free_vars(&self) -> HashSet<Rc<String>> {
     let mtype = self.1.free_vars();
     self.0.difference(&mtype).cloned().collect()
+  }
+
+  fn apply_substitution(&self, s: &Substitution) -> PolyType {
+    unimplemented!()
   }
 }
 
