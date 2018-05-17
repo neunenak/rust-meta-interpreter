@@ -118,6 +118,24 @@ impl PolyType {
 struct Substitution(HashMap<Rc<String>, MonoType>);
 
 
+#[derive(Debug)]
+struct TypeEnvironment {
+  map: HashMap<Rc<String>, PolyType>,
+}
+
+impl TypeEnvironment {
+  fn apply_substitution(&self, s: &Substitution) -> TypeEnvironment {
+    let mut map = HashMap::new();
+    for (name, polytype) in self.map.iter() {
+      map.insert(name.clone(), polytype.apply_substitution(s));
+    }
+    TypeEnvironment { map }
+  }
+}
+
+
+
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
   Const(TConstOld),
