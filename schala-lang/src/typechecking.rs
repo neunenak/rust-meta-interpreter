@@ -238,9 +238,11 @@ impl TypeContext {
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
     let ref block = ast.0;
     let mut infer = Infer::new();
-    let output = infer.infer_block(block)?;
-
-	Ok(format!("{:?}", output))
+    let output = infer.infer_block(block);
+    match output {
+      Ok(s) => Ok(format!("{:?}", s)),
+      Err(s) => Err(format!("Error: {:?}", s))
+    }
   }
 }
 
@@ -250,12 +252,19 @@ struct Infer {
 
 }
 
+#[derive(Debug)]
+enum InferError {
+  CannotUnify(MonoType, MonoType),
+  OccursCheckFailed(Rc<String>, MonoType),
+  UnknownIdentifier(Rc<String>)
+}
+
 impl Infer {
   fn new() -> Infer {
     Infer { }
   }
 
-  fn infer_block(&mut self, block: &Vec<parsing::Statement>) -> TypeResult<MonoType> {
+  fn infer_block(&mut self, block: &Vec<parsing::Statement>) -> Result<MonoType, InferError> {
     Ok(MonoType::Const(TypeConst::Unit))
   }
 }
