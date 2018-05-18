@@ -283,6 +283,8 @@ enum InferError {
   UnknownIdentifier(Rc<String>)
 }
 
+type InferResult<T> = Result<T, InferError>;
+
 impl Infer {
   fn fresh(&mut self) -> MonoType {
     let i = self._idents;
@@ -291,7 +293,7 @@ impl Infer {
     MonoType::Var(name)
   }
 
-  fn unify(&mut self, a: MonoType, b: MonoType) -> Result<Substitution, InferError> {
+  fn unify(&mut self, a: MonoType, b: MonoType) -> InferResult<Substitution> {
     use self::InferError::*; use self::MonoType::*;
     Ok(match (a, b) {
       (Const(ref a), Const(ref b)) if a == b => Substitution::new(),
@@ -306,7 +308,7 @@ impl Infer {
     })
   }
 
-  fn infer_block(&mut self, block: &Vec<parsing::Statement>, env: &TypeEnvironment) -> Result<MonoType, InferError> {
+  fn infer_block(&mut self, block: &Vec<parsing::Statement>, env: &TypeEnvironment) -> InferResult<MonoType> {
     use self::parsing::Statement;
     let mut ret = MonoType::Const(TypeConst::Unit);
     for statement in block.iter() {
@@ -323,7 +325,24 @@ impl Infer {
     Ok(ret)
   }
 
-  fn infer_expr(&mut self, expr: &parsing::Expression, env: &TypeEnvironment) -> Result<(Substitution, MonoType), InferError> {
+  fn infer_expr(&mut self, expr: &parsing::Expression, env: &TypeEnvironment) -> InferResult<(Substitution, MonoType)> {
+    use self::parsing::Expression;
+    match expr {
+      Expression(e, Some(anno)) => self.infer_annotated_expr(e, anno, env),
+      /*
+        let anno_ty = anno.to_type()?;
+        let ty = self.infer_exprtype(&e)?;
+        self.unify(ty, anno_ty)
+      },
+      */
+      Expression(e, None) => self.infer_exprtype(e, env)
+    }
+  }
+
+  fn infer_exprtype(&mut self, expr: &parsing::ExpressionType, env: &TypeEnvironment) -> InferResult<(Substitution, MonoType)> {
+    unimplemented!()
+  }
+  fn infer_annotated_expr(&mut self, expr: &parsing::ExpressionType, anno: &parsing::TypeName, env: &TypeEnvironment) -> InferResult<(Substitution, MonoType)> {
     unimplemented!()
   }
 }
