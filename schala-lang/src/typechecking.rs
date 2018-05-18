@@ -261,7 +261,8 @@ impl TypeContext {
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
     let ref block = ast.0;
     let mut infer = Infer::default();
-    let output = infer.infer_block(block);
+    let env = TypeEnvironment::default();
+    let output = infer.infer_block(block, &env);
     match output {
       Ok(s) => Ok(format!("{:?}", s)),
       Err(s) => Err(format!("Error: {:?}", s))
@@ -272,7 +273,6 @@ impl TypeContext {
 // this is the equivalent of the Haskell Infer monad
 #[derive(Debug, Default)]
 struct Infer {
-  env: TypeEnvironment,
   _idents: u32,
 }
 
@@ -291,10 +291,6 @@ impl Infer {
     MonoType::Var(name)
   }
 
-  fn infer_block(&mut self, block: &Vec<parsing::Statement>) -> Result<MonoType, InferError> {
-    Ok(MonoType::Const(TypeConst::Unit))
-  }
-
   fn unify(&mut self, a: MonoType, b: MonoType) -> Result<Substitution, InferError> {
     use self::InferError::*; use self::MonoType::*;
     Ok(match (a, b) {
@@ -309,8 +305,28 @@ impl Infer {
       (a, b) => return Err(CannotUnify(a, b))
     })
   }
-}
 
+  fn infer_block(&mut self, block: &Vec<parsing::Statement>, env: &TypeEnvironment) -> Result<MonoType, InferError> {
+    use self::parsing::Statement;
+    let mut ret = MonoType::Const(TypeConst::Unit);
+    for statement in block.iter() {
+      ret = match statement {
+        Statement::ExpressionStatement(expr) => {
+          let (sub, ty) = self.infer_expr(expr, env)?;
+          //TODO handle substitution monadically
+
+          ty
+        }
+        Statement::Declaration(decl) => MonoType::Const(TypeConst::Unit),
+      }
+    }
+    Ok(ret)
+  }
+
+  fn infer_expr(&mut self, expr: &parsing::Expression, env: &TypeEnvironment) -> Result<(Substitution, MonoType), InferError> {
+    unimplemented!()
+  }
+}
 
 
 
