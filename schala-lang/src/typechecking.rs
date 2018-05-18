@@ -260,7 +260,7 @@ impl TypeContext {
 
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
     let ref block = ast.0;
-    let mut infer = Infer::new();
+    let mut infer = Infer::default();
     let output = infer.infer_block(block);
     match output {
       Ok(s) => Ok(format!("{:?}", s)),
@@ -270,9 +270,9 @@ impl TypeContext {
 }
 
 // this is the equivalent of the Haskell Infer monad
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Infer {
-
+  _idents: u32,
 }
 
 #[derive(Debug)]
@@ -283,8 +283,11 @@ enum InferError {
 }
 
 impl Infer {
-  fn new() -> Infer {
-    Infer { }
+  fn fresh(&mut self) -> MonoType {
+    let i = self._idents;
+    self._idents += 1;
+    let name = Rc::new(format!("{}", ('a' as u8 + 1) as char));
+    MonoType::Var(name)
   }
 
   fn infer_block(&mut self, block: &Vec<parsing::Statement>) -> Result<MonoType, InferError> {
