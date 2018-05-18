@@ -141,7 +141,7 @@ impl Substitution {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct TypeEnvironment {
   map: HashMap<Rc<String>, PolyType>,
 }
@@ -272,6 +272,7 @@ impl TypeContext {
 // this is the equivalent of the Haskell Infer monad
 #[derive(Debug, Default)]
 struct Infer {
+  env: TypeEnvironment,
   _idents: u32,
 }
 
