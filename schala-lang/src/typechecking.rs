@@ -280,7 +280,8 @@ struct Infer {
 enum InferError {
   CannotUnify(MonoType, MonoType),
   OccursCheckFailed(Rc<String>, MonoType),
-  UnknownIdentifier(Rc<String>)
+  UnknownIdentifier(Rc<String>),
+  Custom(String),
 }
 
 type InferResult<T> = Result<T, InferError>;
@@ -339,11 +340,33 @@ impl Infer {
     }
   }
 
-  fn infer_exprtype(&mut self, expr: &parsing::ExpressionType, env: &TypeEnvironment) -> InferResult<(Substitution, MonoType)> {
-    unimplemented!()
-  }
   fn infer_annotated_expr(&mut self, expr: &parsing::ExpressionType, anno: &parsing::TypeName, env: &TypeEnvironment) -> InferResult<(Substitution, MonoType)> {
-    unimplemented!()
+    Err(InferError::Custom(format!("exprtype not done: {:?}", expr)))
+  }
+  fn infer_exprtype(&mut self, expr: &parsing::ExpressionType, env: &TypeEnvironment) -> InferResult<(Substitution, MonoType)> {
+    use self::parsing::ExpressionType::*;
+    use self::TypeConst::*;
+    Ok(match expr {
+      NatLiteral(_) => (Substitution::new(), MonoType::Const(Nat)),
+      FloatLiteral(_) => (Substitution::new(), MonoType::Const(Float)),
+      StringLiteral(_) => (Substitution::new(), MonoType::Const(StringT)),
+      BoolLiteral(_) => (Substitution::new(), MonoType::Const(Bool)),
+      /*
+      BinExp(op, lhs, rhs) => { /* remember there are both the haskell convention talk and the write you a haskell ways to do this! */
+        match op.get_type()? {
+          Func(box t1, box Func(box t2, box t3)) => {
+            let lhs_ty = self.infer(lhs)?;
+            let rhs_ty = self.infer(rhs)?;
+            self.unify(t1, lhs_ty)?;
+            self.unify(t2, rhs_ty)?;
+            Ok(t3)
+          },
+          other => return Err(format!("{:?} is not a binary function type", other))
+        }
+      },
+    */
+      e => return Err(InferError::Custom(format!("Type inference for {:?} not done", e)))
+    })
   }
 }
 
