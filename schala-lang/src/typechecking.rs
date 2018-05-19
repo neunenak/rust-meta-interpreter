@@ -154,6 +154,10 @@ impl TypeEnvironment {
     }
     TypeEnvironment { map }
   }
+
+  fn lookup(&self, name: &Rc<String>) -> Option<PolyType> {
+    self.map.get(name).map(|x| x.clone())
+  }
 }
 
 
@@ -351,6 +355,23 @@ impl Infer {
       FloatLiteral(_) => (Substitution::new(), MonoType::Const(Float)),
       StringLiteral(_) => (Substitution::new(), MonoType::Const(StringT)),
       BoolLiteral(_) => (Substitution::new(), MonoType::Const(Bool)),
+      Value(name) => match env.lookup(name) {
+        Some(sigma) => {
+          let tau = self.instantiate(&sigma);
+          (Substitution::new(), tau)
+        },
+        None => return Err(InferError::UnknownIdentifier(name.clone())),
+      },
+      /*
+      PrefixExp(op, expr) => match op.get_type()? {
+        Func(box t1, box t2) => {
+          let expr_ty = self.infer(expr)?;
+          self.unify(t1, expr_ty)?;
+          Ok(t2)
+        },
+        other => Err(format!("{:?} is not a prefix op function type", other))
+      },
+      */
       /*
       BinExp(op, lhs, rhs) => { /* remember there are both the haskell convention talk and the write you a haskell ways to do this! */
         match op.get_type()? {
@@ -367,6 +388,17 @@ impl Infer {
     */
       e => return Err(InferError::Custom(format!("Type inference for {:?} not done", e)))
     })
+  }
+  fn instantiate(&mut self, sigma: &PolyType) -> MonoType {
+    let ref ty: MonoType = sigma.1;
+    let mut subst = Substitution::new();
+
+    for name in sigma.0.iter() {
+      let fresh_mvar = self.fresh();
+      let new = Substitution::bind_variable(name, &fresh_mvar);
+      subst = subst.merge(new);
+    }
+    ty.apply_substitution(&subst)
   }
 }
 
