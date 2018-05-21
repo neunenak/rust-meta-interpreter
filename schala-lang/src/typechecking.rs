@@ -139,6 +139,15 @@ impl TypeEnvironment {
   }
 }
 
+impl TypeContext {
+  pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
+    Ok(format!("SUCKA"))
+  }
+}
+
+
+
+
 /* TODO this should just check the name against a map, and that map should be pre-populated with
  * types */
 /*

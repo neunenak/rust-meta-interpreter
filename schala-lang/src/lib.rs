@@ -89,8 +89,7 @@ fn symbol_table(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
 }
 
 fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
-  /*
-  match handle.type_context.borrow_mut().type_check_ast(&input) {
+  match handle.type_context.type_check_ast(&input) {
     Ok(ty) => {
       comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty))));
       Ok(input)
@@ -100,8 +99,6 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
       Ok(input)
     }
   }
-  */
-  Ok(input)
 }
 
 fn ast_reducing(_handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<ast_reducing::ReducedAST, String> {
