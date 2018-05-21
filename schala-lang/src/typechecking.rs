@@ -15,7 +15,7 @@ use itertools::Itertools;
 use parsing;
 
 pub struct TypeContext {
-  bindings: HashMap<Rc<String>, Type>,
+  environment: TypeEnvironment,
   pub symbol_table: SymbolTable
 }
 
@@ -214,7 +214,7 @@ pub type TypeResult<T> = Result<T, String>;
 
 impl TypeContext {
   pub fn new() -> TypeContext {
-    TypeContext { bindings: HashMap::new(), /*type_var_count: 0*/ symbol_table: SymbolTable::new() }
+    TypeContext { environment: TypeEnvironment::default(), /*type_var_count: 0*/ symbol_table: SymbolTable::new() }
   }
 
   /* note: this adds names for *forward reference* but doesn't actually create any types. solve that problem
@@ -255,8 +255,8 @@ impl TypeContext {
     for (sym, ty) in &self.symbol_table.values {
       write!(output, "{} -> {:?}\n", sym, ty).unwrap();
     }
-    write!(output, "\nBindings\n").unwrap();
-    for (sym, ty) in &self.bindings {
+    write!(output, "\nType Env\n").unwrap();
+    for (sym, ty) in &self.environment.map {
       write!(output, "{} : {:?}\n", sym, ty).unwrap();
     }
     output
