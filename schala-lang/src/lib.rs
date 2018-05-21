@@ -36,7 +36,7 @@ mod eval;
 pub struct Schala {
   state: eval::State<'static>,
   symbol_table: Rc<RefCell<symbol_table::SymbolTable>>,
-  //type_context
+  type_context: typechecking::TypeContext,
 }
 
 impl Schala {
@@ -45,6 +45,7 @@ impl Schala {
     Schala {
       symbol_table: symbols.clone(),
       state: eval::State::new(symbols),
+      type_context: typechecking::TypeContext::new(),
     }
   }
 }

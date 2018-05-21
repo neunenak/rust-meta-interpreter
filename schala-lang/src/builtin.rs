@@ -1,8 +1,33 @@
 use std::rc::Rc;
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Write;
 
-use typechecking::{Type, TypeResult, TConstOld};
 use self::Type::*; use self::TConstOld::*;
+
+
+//TODO get rid of these types and replace them with the right MonoType or whatever ones later
+#[derive(Debug, PartialEq, Clone)]
+pub enum Type {
+  Const(TConstOld),
+  Func(Box<Type>, Box<Type>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum TConstOld {
+  Nat,
+  Int,
+  Float,
+  StringT,
+  Bool,
+  Custom(String),
+}
+
+impl fmt::Display for Type {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{:?}", self)
+  }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct BinOp {
@@ -16,7 +41,7 @@ impl BinOp {
   pub fn sigil(&self) -> &Rc<String> {
     &self.sigil
   }
-  pub fn get_type(&self) -> TypeResult<Type> {
+  pub fn get_type(&self) -> Result<Type, String> {
     let s = self.sigil.as_str();
     BINOPS.get(s).map(|x| x.0.clone()).ok_or(format!("Binop {} not found", s))
   }
@@ -44,7 +69,7 @@ impl PrefixOp {
   pub fn is_prefix(op: &str) -> bool {
     PREFIX_OPS.get(op).is_some()
   }
-  pub fn get_type(&self) -> TypeResult<Type> {
+  pub fn get_type(&self) -> Result<Type, String> {
     let s = self.sigil.as_str();
     PREFIX_OPS.get(s).map(|x| x.0.clone()).ok_or(format!("Prefix op {} not found", s))
   }

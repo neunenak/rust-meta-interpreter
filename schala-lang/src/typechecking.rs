@@ -3,8 +3,6 @@ use std::collections::{HashSet, HashMap};
 use std::collections::hash_set::Union;
 use std::iter::Iterator;
 //use std::char;
-use std::fmt;
-use std::fmt::Write;
 
 use itertools::Itertools;
 
@@ -17,7 +15,13 @@ pub struct TypeContext {
   environment: TypeEnvironment,
 }
 
-/* real meat of type stuff here */
+impl TypeContext {
+  pub fn new() -> TypeContext {
+    TypeContext { environment: TypeEnvironment::default() }
+  }
+}
+
+pub type TypeResult<T> = Result<T, String>;
 
 #[derive(Debug, PartialEq, Clone)]
 enum MonoType {
@@ -135,33 +139,9 @@ impl TypeEnvironment {
   }
 }
 
-
-
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Type {
-  Const(TConstOld),
-  Func(Box<Type>, Box<Type>),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum TConstOld {
-  Nat,
-  Int,
-  Float,
-  StringT,
-  Bool,
-  Custom(String),
-}
-
-impl fmt::Display for Type {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{:?}", self)
-  }
-}
-
 /* TODO this should just check the name against a map, and that map should be pre-populated with
  * types */
+/*
 impl parsing::TypeName {
   fn to_type(&self) -> TypeResult<Type> {
 	use self::parsing::TypeSingletonName;
@@ -184,15 +164,12 @@ impl parsing::TypeName {
     })
   }
 }
+*/
 
-pub type TypeResult<T> = Result<T, String>;
 
+
+/*
 impl TypeContext {
-  pub fn new() -> TypeContext {
-    TypeContext { environment: TypeEnvironment::default(), /*type_var_count: 0*/ }
-  }
-
-
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
     let ref block = ast.0;
     let mut infer = Infer::default();
@@ -220,6 +197,7 @@ enum InferError {
 }
 
 type InferResult<T> = Result<T, InferError>;
+
 
 impl Infer {
   fn fresh(&mut self) -> MonoType {
@@ -293,30 +271,6 @@ impl Infer {
         },
         None => return Err(InferError::UnknownIdentifier(name.clone())),
       },
-      /*
-      PrefixExp(op, expr) => match op.get_type()? {
-        Func(box t1, box t2) => {
-          let expr_ty = self.infer(expr)?;
-          self.unify(t1, expr_ty)?;
-          Ok(t2)
-        },
-        other => Err(format!("{:?} is not a prefix op function type", other))
-      },
-      */
-      /*
-      BinExp(op, lhs, rhs) => { /* remember there are both the haskell convention talk and the write you a haskell ways to do this! */
-        match op.get_type()? {
-          Func(box t1, box Func(box t2, box t3)) => {
-            let lhs_ty = self.infer(lhs)?;
-            let rhs_ty = self.infer(rhs)?;
-            self.unify(t1, lhs_ty)?;
-            self.unify(t2, rhs_ty)?;
-            Ok(t3)
-          },
-          other => return Err(format!("{:?} is not a binary function type", other))
-        }
-      },
-    */
       e => return Err(InferError::Custom(format!("Type inference for {:?} not done", e)))
     })
   }
@@ -332,6 +286,20 @@ impl Infer {
     ty.apply_substitution(&subst)
   }
 }
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+/* OLD STUFF DOWN HERE */
 
 
 
