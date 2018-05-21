@@ -129,6 +129,10 @@ impl TypeEnvironment {
   fn lookup(&self, name: &TypeName) -> Option<PolyType> {
     self.map.get(name).map(|x| x.clone())
   }
+
+  fn insert(&mut self, name: &TypeName, ty: PolyType) {
+    self.map.insert(name.clone(), ty);
+  }
 }
 
 pub struct TypeContext {
@@ -180,7 +184,15 @@ impl<'a> Infer<'a> {
     Ok(ret)
   }
 
-  fn declaration(&mut self, expr: &parsing::Declaration) -> InferResult<MonoType> {
+  fn declaration(&mut self, decl: &parsing::Declaration) -> InferResult<MonoType> {
+    use parsing::Declaration::*;
+    match decl {
+      Binding { name, expr, .. } => {
+        let ty = self.anno_expression(&expr)?;
+        return Err(InferError::Custom(format!("This decl not yet supported")))
+      },
+      _ => return Err(InferError::Custom(format!("This decl not yet supported")))
+    }
     Ok(MonoType::Const(TypeConst::Unit))
   }
 
