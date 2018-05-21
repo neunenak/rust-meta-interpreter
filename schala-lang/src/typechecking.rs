@@ -2,7 +2,8 @@ use std::rc::Rc;
 use std::collections::{HashSet, HashMap};
 use std::collections::hash_set::Union;
 use std::iter::Iterator;
-//use std::char;
+use std::fmt;
+use std::fmt::Write;
 
 use itertools::Itertools;
 
@@ -150,6 +151,14 @@ pub struct TypeContext {
 impl TypeContext {
   pub fn new() -> TypeContext {
     TypeContext { environment: TypeEnvironment::default() }
+  }
+  
+  pub fn debug_types(&self) -> String {
+    let mut output = format!("Type context\n");
+    for (sym, ty) in &self.environment.map {
+      write!(output, "{} -> {:?}\n", sym, ty).unwrap();
+    }
+    output
   }
 
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {

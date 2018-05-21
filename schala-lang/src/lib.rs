@@ -91,10 +91,12 @@ fn symbol_table(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
 fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
   match handle.type_context.type_check_ast(&input) {
     Ok(ty) => {
-      comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty))));
+      comp.map(|c| c.add_artifact(TraceArtifact::new("type_table", format!("{}", handle.type_context.debug_types()))));
+      comp.map(|c| c.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty))));
       Ok(input)
     },
     Err(msg) => {
+      comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_table", format!("{}", handle.type_context.debug_types()))));
       comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("Type error: {:?}", msg))));
       Ok(input)
     }
