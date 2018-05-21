@@ -13,16 +13,6 @@ use parsing;
 
 type TypeName = Rc<String>;
 
-pub struct TypeContext {
-  environment: TypeEnvironment,
-}
-
-impl TypeContext {
-  pub fn new() -> TypeContext {
-    TypeContext { environment: TypeEnvironment::default() }
-  }
-}
-
 pub type TypeResult<T> = Result<T, String>;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -141,10 +131,31 @@ impl TypeEnvironment {
   }
 }
 
+pub struct TypeContext {
+  environment: TypeEnvironment,
+}
+
 impl TypeContext {
+  pub fn new() -> TypeContext {
+    TypeContext { environment: TypeEnvironment::default() }
+  }
+
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
+    let ref block = ast.0;
+    let mut infer = Infer { env: &mut self.environment };
+    /*
+    let output = infer.infer_block(block, &env);
+    match output {
+      Ok(s) => Ok(format!("{:?}", s)),
+      Err(s) => Err(format!("Error: {:?}", s))
+    }
+    */
     Ok(format!("SUCKA"))
   }
+}
+
+struct Infer<'a> {
+  env: &'a TypeEnvironment
 }
 
 
