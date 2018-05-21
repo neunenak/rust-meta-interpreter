@@ -143,14 +143,11 @@ impl TypeContext {
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
     let ref block = ast.0;
     let mut infer = Infer { env: &mut self.environment };
-    /*
-    let output = infer.infer_block(block, &env);
+    let output = infer.block(block);
     match output {
       Ok(s) => Ok(format!("{:?}", s)),
       Err(s) => Err(format!("Error: {:?}", s))
     }
-    */
-    Ok(format!("SUCKA"))
   }
 }
 
@@ -158,8 +155,39 @@ struct Infer<'a> {
   env: &'a TypeEnvironment
 }
 
+#[derive(Debug)]
+enum InferError {
+  CannotUnify(MonoType, MonoType),
+  OccursCheckFailed(TypeName, MonoType),
+  UnknownIdentifier(TypeName),
+  Custom(String),
+}
 
+type InferResult<T> = Result<T, InferError>;
 
+impl<'a> Infer<'a> {
+  fn block(&mut self, block: &Vec<parsing::Statement>) -> InferResult<MonoType> {
+    let mut ret = MonoType::Const(TypeConst::Unit);
+    for s in block {
+      ret = match s {
+        parsing::Statement::ExpressionStatement(expr) => self.expression(expr)?,
+        parsing::Statement::Declaration(decl) => {
+          self.declaration(decl)?;
+          MonoType::Const(TypeConst::Unit)
+        }
+      }
+    }
+    Ok(ret)
+  }
+
+  fn declaration(&mut self, expr: &parsing::Declaration) -> InferResult<MonoType> {
+    Ok(MonoType::Const(TypeConst::Unit))
+  }
+
+  fn expression(&mut self, expr: &parsing::Expression) -> InferResult<MonoType> {
+    Ok(MonoType::Const(TypeConst::Unit))
+  }
+}
 
 /* TODO this should just check the name against a map, and that map should be pre-populated with
  * types */
