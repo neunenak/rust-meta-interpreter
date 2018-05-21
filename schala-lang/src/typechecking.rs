@@ -11,6 +11,8 @@ use itertools::Itertools;
 
 use parsing;
 
+type TypeName = Rc<String>;
+
 pub struct TypeContext {
   environment: TypeEnvironment,
 }
@@ -26,7 +28,7 @@ pub type TypeResult<T> = Result<T, String>;
 #[derive(Debug, PartialEq, Clone)]
 enum MonoType {
   Const(TypeConst),
-  Var(Rc<String>),
+  Var(TypeName),
   Function(Box<MonoType>, Box<MonoType>),
 }
 
@@ -42,7 +44,7 @@ enum TypeConst {
 }
 
 impl MonoType {
-  fn free_vars(&self) -> HashSet<Rc<String>> {
+  fn free_vars(&self) -> HashSet<TypeName> {
     use self::MonoType::*;
     match self {
       Const(_) => HashSet::new(),
@@ -72,16 +74,16 @@ impl MonoType {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-struct PolyType(HashSet<Rc<String>>, MonoType);
+struct PolyType(HashSet<TypeName>, MonoType);
 
 impl PolyType {
-  fn free_vars(&self) -> HashSet<Rc<String>> {
+  fn free_vars(&self) -> HashSet<TypeName> {
     let mtype = self.1.free_vars();
     self.0.difference(&mtype).cloned().collect()
   }
 
   fn apply_substitution(&self, s: &Substitution) -> PolyType {
-    let mut map: HashMap<Rc<String>, MonoType> = HashMap::new();
+    let mut map: HashMap<TypeName, MonoType> = HashMap::new();
     for (name, monotype) in s.0.iter() {
       if let None = self.0.get(name) {
         map.insert(name.clone(), monotype.clone());
@@ -94,14 +96,14 @@ impl PolyType {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-struct Substitution(HashMap<Rc<String>, MonoType>);
+struct Substitution(HashMap<TypeName, MonoType>);
 
 impl Substitution {
   fn new() -> Substitution {
     Substitution(HashMap::new())
   }
 
-  fn bind_variable(name: &Rc<String>, var: &MonoType) -> Substitution {
+  fn bind_variable(name: &TypeName, var: &MonoType) -> Substitution {
     Substitution(hashmap! {
       name.clone() => var.clone()
     })
@@ -122,7 +124,7 @@ impl Substitution {
 
 #[derive(Debug, Default)]
 struct TypeEnvironment {
-  map: HashMap<Rc<String>, PolyType>,
+  map: HashMap<TypeName, PolyType>,
 }
 
 impl TypeEnvironment {
@@ -134,7 +136,7 @@ impl TypeEnvironment {
     TypeEnvironment { map }
   }
 
-  fn lookup(&self, name: &Rc<String>) -> Option<PolyType> {
+  fn lookup(&self, name: &TypeName) -> Option<PolyType> {
     self.map.get(name).map(|x| x.clone())
   }
 }
