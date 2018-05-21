@@ -7,11 +7,11 @@ use itertools::Itertools;
 
 use util::StateStack;
 use ast_reducing::{ReducedAST, Stmt, Expr, Lit, Func};
-use typechecking::{TypeContext, SymbolSpec, Symbol};
+use symbol_table::{SymbolSpec, Symbol, SymbolTable};
 
 pub struct State<'a> {
   values: StateStack<'a, Rc<String>, ValueEntry>,
-  type_context_handle: Rc<RefCell<TypeContext>>,
+  symbol_table_handle: Rc<RefCell<SymbolTable>>,
 }
 
 macro_rules! builtin_binding {
@@ -21,12 +21,12 @@ macro_rules! builtin_binding {
 }
 
 impl<'a> State<'a> {
-  pub fn new(type_context_handle: Rc<RefCell<TypeContext>>) -> State<'a> {
+  pub fn new(symbol_table_handle: Rc<RefCell<SymbolTable>>) -> State<'a> {
     let mut values = StateStack::new(Some(format!("global")));
     builtin_binding!("print", values);
     builtin_binding!("println", values);
     builtin_binding!("getline", values);
-    State { values, type_context_handle }
+    State { values, symbol_table_handle }
   }
 
   pub fn debug_print(&self) -> String {
@@ -181,7 +181,7 @@ impl<'a> State<'a> {
         }
         let mut func_state = State {
           values: self.values.new_frame(name.map(|n| format!("{}", n))),
-          type_context_handle: self.type_context_handle.clone(),
+          symbol_table_handle: self.symbol_table_handle.clone(),
         };
         for (param, val) in params.into_iter().zip(args.into_iter()) {
           let val = func_state.expression(val)?;
@@ -264,8 +264,8 @@ impl<'a> State<'a> {
     //TODO add a layer of indirection here to talk to the symbol table first, and only then look up
     //in the values table
 
-    let type_context = self.type_context_handle.borrow();
-    Ok(match type_context.symbol_table.values.get(&name) {
+    let symbol_table = self.symbol_table_handle.borrow();
+    Ok(match symbol_table.values.get(&name) {
       Some(Symbol { name, spec }) => match spec {
         SymbolSpec::Custom(_typename) => {
           Expr::Lit(Lit::Custom(name.clone()))
@@ -290,15 +290,15 @@ impl<'a> State<'a> {
 mod eval_tests {
   use std::cell::RefCell;
   use std::rc::Rc;
-  use typechecking::TypeContext;
+  use symbol_table::SymbolTable;
   use tokenizing::tokenize;
   use parsing::parse;
   use eval::State;
 
   macro_rules! fresh_env {
     ($string:expr, $correct:expr) => {
-      let type_context = Rc::new(RefCell::new(TypeContext::new()));
-      let mut state = State::new(type_context);
+      let symbol_table = Rc::new(RefCell::new(SymbolTable::new()));
+      let mut state = State::new(symbol_table);
       let all_output = state.evaluate(parse(tokenize($string)).0.unwrap().reduce(), true);
       let ref output = all_output.last().unwrap();
       assert_eq!(**output, Ok($correct.to_string()));

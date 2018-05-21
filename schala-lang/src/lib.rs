@@ -24,6 +24,7 @@ mod util;
 mod builtin;
 mod tokenizing;
 mod parsing;
+mod symbol_table;
 mod typechecking;
 mod ast_reducing;
 mod eval;
@@ -34,15 +35,16 @@ mod eval;
 #[PipelineSteps(tokenizing, parsing, symbol_table, typechecking, ast_reducing, eval)]
 pub struct Schala {
   state: eval::State<'static>,
-  type_context: Rc<RefCell<typechecking::TypeContext>>,
+  symbol_table: Rc<RefCell<symbol_table::SymbolTable>>,
+  //type_context
 }
 
 impl Schala {
   pub fn new() -> Schala {
-    let type_context = Rc::new(RefCell::new(typechecking::TypeContext::new()));
+    let symbols = Rc::new(RefCell::new(symbol_table::SymbolTable::new()));
     Schala {
-      type_context: type_context.clone(),
-      state: eval::State::new(type_context),
+      symbol_table: symbols.clone(),
+      state: eval::State::new(symbols),
     }
   }
 }
@@ -74,10 +76,10 @@ fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mu
 }
 
 fn symbol_table(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
-  let add = handle.type_context.borrow_mut().add_top_level_types(&input);
+  let add = handle.symbol_table.borrow_mut().add_top_level_symbols(&input);
   match add {
     Ok(()) => {
-      let artifact = TraceArtifact::new("symbol_table", handle.type_context.borrow().debug_symbol_table());
+      let artifact = TraceArtifact::new("symbol_table", handle.symbol_table.borrow().debug_symbol_table());
       comp.map(|comp| comp.add_artifact(artifact));
       Ok(input)
     },
@@ -86,6 +88,7 @@ fn symbol_table(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
 }
 
 fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
+  /*
   match handle.type_context.borrow_mut().type_check_ast(&input) {
     Ok(ty) => {
       comp.map(|comp| comp.add_artifact(TraceArtifact::new("type_check", format!("{:?}", ty))));
@@ -96,6 +99,8 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
       Ok(input)
     }
   }
+  */
+  Ok(input)
 }
 
 fn ast_reducing(_handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<ast_reducing::ReducedAST, String> {

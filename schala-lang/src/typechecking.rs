@@ -8,7 +8,6 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
-
 /* GIANT TODO - use the rust im crate, unless I make this code way less haskell-ish after it's done
   */
 
@@ -16,31 +15,7 @@ use parsing;
 
 pub struct TypeContext {
   environment: TypeEnvironment,
-  pub symbol_table: SymbolTable
 }
-
-//cf. p. 150 or so of Language Implementation Patterns
-pub struct SymbolTable {
-  pub values: HashMap<Rc<String>, Symbol> //TODO this will eventually have real type information
-}
-
-impl SymbolTable {
-  fn new() -> SymbolTable {
-    SymbolTable { values: HashMap::new() }
-  }
-}
-
-#[derive(Debug)]
-pub struct Symbol {
-  pub name: Rc<String>,
-  pub spec: SymbolSpec,
-}
-
-#[derive(Debug)]
-pub enum SymbolSpec {
-  Func, Custom(String)
-}
-
 
 /* real meat of type stuff here */
 
@@ -214,53 +189,9 @@ pub type TypeResult<T> = Result<T, String>;
 
 impl TypeContext {
   pub fn new() -> TypeContext {
-    TypeContext { environment: TypeEnvironment::default(), /*type_var_count: 0*/ symbol_table: SymbolTable::new() }
+    TypeContext { environment: TypeEnvironment::default(), /*type_var_count: 0*/ }
   }
 
-  /* note: this adds names for *forward reference* but doesn't actually create any types. solve that problem
-   * later */
-  pub fn add_top_level_types(&mut self, ast: &parsing::AST) -> TypeResult<()> {
-    use self::parsing::{Statement, TypeName, Variant, TypeSingletonName, TypeBody};
-    use self::parsing::Declaration::*;
-    use self::Type::*;
-    for statement in ast.0.iter() {
-      if let Statement::Declaration(decl) = statement {
-        match decl {
-          FuncSig(signature) | FuncDecl(signature, _) => {
-            self.symbol_table.values.insert(
-              signature.name.clone(),
-              Symbol { name: signature.name.clone(), spec: SymbolSpec::Func }
-            );
-          },
-          TypeDecl(TypeSingletonName { name, ..}, TypeBody(variants)) => {
-            for var in variants {
-              match var {
-                Variant::UnitStruct(variant_name) => {
-                  //TODO will have to make this a function to this type eventually
-                  let spec = SymbolSpec::Custom(format!("{}", name));
-                  self.symbol_table.values.insert(variant_name.clone(), Symbol { name: variant_name.clone(), spec });
-                },
-                e => return Err(format!("{:?} not supported in typing yet", e)),
-              }
-            }
-          },
-          _ => ()
-        }
-      }
-    }
-    Ok(())
-  }
-  pub fn debug_symbol_table(&self) -> String {
-    let mut output = format!("Symbol table\n");
-    for (sym, ty) in &self.symbol_table.values {
-      write!(output, "{} -> {:?}\n", sym, ty).unwrap();
-    }
-    write!(output, "\nType Env\n").unwrap();
-    for (sym, ty) in &self.environment.map {
-      write!(output, "{} : {:?}\n", sym, ty).unwrap();
-    }
-    output
-  }
 
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
     let ref block = ast.0;
