@@ -154,8 +154,14 @@ impl TypeContext {
 
   pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
     let ref block = ast.0;
-    let mut infer = Infer { env: &mut self.environment };
-    let output = infer.block(block);
+    let output = {
+      let mut infer = Infer::new(&mut self.environment);
+      let output = infer.block(block);
+      output
+    };
+
+    println!("ENV LOOKS LIKE: {:?}", self.environment);
+
     match output {
       Ok(s) => Ok(format!("{:?}", s)),
       Err(s) => Err(format!("Error: {:?}", s))
@@ -164,7 +170,8 @@ impl TypeContext {
 }
 
 struct Infer<'a> {
-  env: &'a mut TypeEnvironment
+  env: &'a mut TypeEnvironment,
+  _idents: usize
 }
 
 #[derive(Debug)]
@@ -178,6 +185,30 @@ enum InferError {
 type InferResult<T> = Result<T, InferError>;
 
 impl<'a> Infer<'a> {
+
+  fn new(env: &'a mut TypeEnvironment) -> Infer {
+    Infer {
+      env,
+      _idents: 0
+    }
+  }
+
+  fn fresh(&mut self) -> MonoType {
+    let i = self._idents;
+    self._idents += 1;
+    let name = Rc::new(format!("{}", ('a' as u8 + 1) as char));
+    MonoType::Var(name)
+  }
+
+  fn instantiate(&mut self, ptype: PolyType) -> MonoType {
+    let mtype = ptype.1.clone();
+    let mut m = HashMap::new();
+    for name in ptype.0.iter() {
+      m.insert(name.clone(), self.fresh());
+    }
+    let sub = Substitution(m);
+    mtype.apply_substitution(&sub)
+  }
 
   fn generalize(&mut self, ty: MonoType) -> PolyType {
     let free_mtype = ty.free_vars();
@@ -234,8 +265,13 @@ impl<'a> Infer<'a> {
       FloatLiteral(_) => MonoType::Const(TypeConst::Float),
       StringLiteral(_) => MonoType::Const(TypeConst::StringT),
       BoolLiteral(_) => MonoType::Const(TypeConst::Bool),
-      Value(v) => {
-        unimplemented!()
+      Value(name) => {
+        let sigma = match self.env.lookup(name) {
+          Some(ty) => ty,
+          None => return Err(InferError::UnknownIdentifier(name.clone())),
+        };
+        let tau = self.instantiate(sigma);
+        tau
       },
       _ => return Err(InferError::Custom(format!("this expression type not done yet")))
     })
