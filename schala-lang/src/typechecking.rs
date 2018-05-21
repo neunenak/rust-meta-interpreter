@@ -170,7 +170,7 @@ impl<'a> Infer<'a> {
     let mut ret = MonoType::Const(TypeConst::Unit);
     for s in block {
       ret = match s {
-        parsing::Statement::ExpressionStatement(expr) => self.expression(expr)?,
+        parsing::Statement::ExpressionStatement(expr) => self.anno_expression(expr)?,
         parsing::Statement::Declaration(decl) => {
           self.declaration(decl)?;
           MonoType::Const(TypeConst::Unit)
@@ -184,8 +184,32 @@ impl<'a> Infer<'a> {
     Ok(MonoType::Const(TypeConst::Unit))
   }
 
-  fn expression(&mut self, expr: &parsing::Expression) -> InferResult<MonoType> {
-    Ok(MonoType::Const(TypeConst::Unit))
+  fn anno_expression(&mut self, expr: &parsing::Expression) -> InferResult<MonoType> {
+    match expr {
+      parsing::Expression(e, Some(anno)) => {
+        return Err(InferError::Custom(format!("Annotations not done yet")))
+        /*
+        let anno_ty = anno.to_type()?;
+        let ty = self.infer_exprtype(&e)?;
+        self.unify(ty, anno_ty)
+        */
+      },
+      parsing::Expression(e, None) => self.expression(e)
+    }
+  }
+
+  fn expression(&mut self, expr: &parsing::ExpressionType) -> InferResult<MonoType> {
+    use self::parsing::ExpressionType::*;
+    Ok(match expr {
+      NatLiteral(_) => MonoType::Const(TypeConst::Nat),
+      FloatLiteral(_) => MonoType::Const(TypeConst::Float),
+      StringLiteral(_) => MonoType::Const(TypeConst::StringT),
+      BoolLiteral(_) => MonoType::Const(TypeConst::Bool),
+      Value(v) => {
+        unimplemented!()
+      },
+      _ => return Err(InferError::Custom(format!("this expression type not done yet")))
+    })
   }
 }
 
