@@ -250,11 +250,29 @@ impl<'a> Infer<'a> {
         self.env.extend(name, sigma);
       },
       FuncDecl(Signature { name, params, type_anno }, block) => {
-        //TODO fill in here
 
+        let mut fn_type_env = TypeEnvironment::default();
+        let mut local_infer = Infer::new(&mut fn_type_env);
 
+        let mut arg_types: Vec<MonoType> = Vec::new();
 
-        return Err(InferError::Custom(format!("This decl not yet supported")))
+        for (param_name, maybe_type) in params {
+          let tau = local_infer.fresh();
+          let sigma = PolyType(HashSet::new(), tau);
+          local_infer.env.extend(param_name, sigma);
+        }
+
+        let ret_type = local_infer.block(block)?;
+
+        let mut final_type = MonoType::Function(Box::new(MonoType::Const(TypeConst::Unit)), Box::new(ret_type));
+
+        for ty in arg_types.into_iter().rev() {
+          final_type = MonoType::Function(Box::new(ty), Box::new(final_type));
+        }
+        
+        let final_ptype = self.generalize(final_type);
+
+        self.env.extend(name, final_ptype);
       },
       _ => return Err(InferError::Custom(format!("This decl not yet supported")))
     }
@@ -290,7 +308,7 @@ impl<'a> Infer<'a> {
         let tau = self.instantiate(sigma);
         tau
       },
-      _ => return Err(InferError::Custom(format!("this expression type not done yet")))
+      e => return Err(InferError::Custom(format!("this expression type not done yet: {:?}", e)))
     })
   }
 }
