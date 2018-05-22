@@ -242,11 +242,19 @@ impl<'a> Infer<'a> {
 
   fn infer_declaration(&mut self, decl: &parsing::Declaration) -> InferResult<MonoType> {
     use parsing::Declaration::*;
+    use parsing::Signature;
     match decl {
       Binding { name, expr, .. } => {
         let tau: MonoType = self.infer_expression(&expr)?;
         let sigma = self.generalize(tau);
         self.env.extend(name, sigma);
+      },
+      FuncDecl(Signature { name, params, type_anno }, block) => {
+        //TODO fill in here
+
+
+
+        return Err(InferError::Custom(format!("This decl not yet supported")))
       },
       _ => return Err(InferError::Custom(format!("This decl not yet supported")))
     }
