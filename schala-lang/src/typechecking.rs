@@ -257,14 +257,17 @@ impl<'a> Infer<'a> {
         let mut arg_types: Vec<MonoType> = Vec::new();
 
         for (param_name, maybe_type) in params {
+          println!("HANDLING PARAM: {}", param_name);
           let tau = local_infer.fresh();
           let sigma = PolyType(HashSet::new(), tau);
           local_infer.env.extend(param_name, sigma);
         }
 
         let ret_type = local_infer.block(block)?;
+        println!("RET TYPE: {:?}", ret_type);
 
         let mut final_type = MonoType::Function(Box::new(MonoType::Const(TypeConst::Unit)), Box::new(ret_type));
+        println!("ARG TYPES: {:?}", arg_types);
 
         for ty in arg_types.into_iter().rev() {
           final_type = MonoType::Function(Box::new(ty), Box::new(final_type));
@@ -307,6 +310,12 @@ impl<'a> Infer<'a> {
         };
         let tau = self.instantiate(sigma);
         tau
+      },
+      Call { f, arguments } => {
+        /*
+        let sigma = match sel
+        */
+        unimplemented!()
       },
       e => return Err(InferError::Custom(format!("this expression type not done yet: {:?}", e)))
     })
