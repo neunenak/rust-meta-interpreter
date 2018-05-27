@@ -1,13 +1,32 @@
 use std::rc::Rc;
+/*
 use std::collections::{HashSet, HashMap};
 use std::collections::hash_set::Union;
 use std::iter::Iterator;
 use std::fmt;
 use std::fmt::Write;
-
 use itertools::Itertools;
+*/
 
 use parsing;
+
+pub type TypeName = Rc<String>;
+type TypeResult<T> = Result<T, String>;
+
+#[derive(Debug)]
+enum Type {
+  Const(TConst),
+  Var(TypeName),
+  Func(Vec<Type>),
+}
+
+#[derive(Debug)]
+enum TConst {
+  Unit,
+  Nat,
+  StringT,
+  Custom(String)
+}
 
 pub struct TypeContext;
 
@@ -21,7 +40,30 @@ impl TypeContext {
   }
 
   pub fn type_check_ast(&mut self, input: &parsing::AST) -> Result<String, String> {
-    Ok(format!("VOID VOID VOID"))
+    let output = self.infer_block(&input.0)?;
+    Ok(format!("{:?}", output))
+  }
+}
+
+impl TypeContext {
+  fn infer_block(&mut self, block: &Vec<parsing::Statement>) -> TypeResult<Type> {
+    let mut output = Type::Const(TConst::Unit);
+    for statement in block {
+      output = self.infer_statement(statement)?;
+    }
+    Ok(output)
+  }
+  fn infer_statement(&mut self, statement: &parsing::Statement) -> TypeResult<Type> {
+    match statement {
+      parsing::Statement::ExpressionStatement(expr) => self.infer_expr(expr),
+      parsing::Statement::Declaration(decl) => self.infer_decl(decl)
+    }
+  }
+  fn infer_decl(&mut self, decl: &parsing::Declaration) -> TypeResult<Type> {
+    Ok(Type::Const(TConst::Unit))
+  }
+  fn infer_expr(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
+    Ok(Type::Const(TConst::Unit))
   }
 }
 
@@ -31,7 +73,6 @@ impl TypeContext {
 
 /*
 
-type TypeName = Rc<String>;
 
 pub type TypeResult<T> = Result<T, String>;
 */
