@@ -7,320 +7,34 @@ use std::fmt::Write;
 
 use itertools::Itertools;
 
+use parsing;
+
+pub struct TypeContext;
+
+impl TypeContext {
+  pub fn new() -> TypeContext {
+    TypeContext { }
+  }
+
+  pub fn debug_types(&self) -> String {
+    format!("Nothing to debug")
+  }
+
+  pub fn type_check_ast(&mut self, input: &parsing::AST) -> Result<String, String> {
+    Ok(format!("VOID VOID VOID"))
+  }
+}
+
+
 /* GIANT TODO - use the rust im crate, unless I make this code way less haskell-ish after it's done
   */
 
-use parsing;
+/*
 
 type TypeName = Rc<String>;
 
 pub type TypeResult<T> = Result<T, String>;
-
-#[derive(Debug, PartialEq, Clone)]
-enum MonoType {
-  Const(TypeConst),
-  Var(TypeName),
-  Function(Box<MonoType>, Box<MonoType>),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-enum TypeConst {
-  Unit,
-  Nat,
-  Int,
-  Float,
-  StringT,
-  Bool,
-  Tuple(Vec<MonoType>),
-}
-
-impl MonoType {
-  fn free_vars(&self) -> HashSet<TypeName> {
-    use self::MonoType::*;
-    match self {
-      Const(_) => HashSet::new(),
-      Var(a) => {
-        let mut h = HashSet::new();
-        h.insert(a.clone());
-        h
-      },
-      Function(a, b) => {
-        a.free_vars().union(&b.free_vars()).cloned().collect()
-      },
-    }
-  }
-
-  //TODO maybe this should be type self, and consume?
-  fn apply_substitution(&self, s: &Substitution) -> MonoType {
-    use self::MonoType::*;
-    match self {
-      Const(t) => Const(t.clone()),
-      Var(a) => s.0.get(a).map(|x| x.clone()).unwrap_or(Var(a.clone())),
-      Function(a, b) => Function(
-        Box::new(a.apply_substitution(s)),
-        Box::new(b.apply_substitution(s))
-      )
-    }
-  }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-struct PolyType(HashSet<TypeName>, MonoType);
-
-impl PolyType {
-  fn free_vars(&self) -> HashSet<TypeName> {
-    let mtype = self.1.free_vars();
-    self.0.difference(&mtype).cloned().collect()
-  }
-
-  fn apply_substitution(&self, s: &Substitution) -> PolyType {
-    let mut map: HashMap<TypeName, MonoType> = HashMap::new();
-    for (name, monotype) in s.0.iter() {
-      if let None = self.0.get(name) {
-        map.insert(name.clone(), monotype.clone());
-      }
-    }
-    let newsub = Substitution(map);
-    let new = self.1.apply_substitution(&newsub);
-    PolyType(self.0.clone(), new)
-  }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-struct Substitution(HashMap<TypeName, MonoType>);
-
-impl Substitution {
-  fn new() -> Substitution {
-    Substitution(HashMap::new())
-  }
-
-  fn bind_variable(name: &TypeName, var: &MonoType) -> Substitution {
-    Substitution(hashmap! {
-      name.clone() => var.clone()
-    })
-  }
-
-  fn merge(self, other: Substitution) -> Substitution {
-    let mut map = HashMap::new();
-    for (name, ty) in self.0.into_iter() {
-      map.insert(name, ty);
-    }
-    for (name, ty) in other.0.into_iter() {
-      map.insert(name, ty);
-    }
-    Substitution(map)
-  }
-}
-
-
-#[derive(Debug, Default)]
-struct TypeEnvironment {
-  map: HashMap<TypeName, PolyType>,
-}
-
-impl TypeEnvironment {
-  fn apply_substitution(&self, s: &Substitution) -> TypeEnvironment {
-    let mut map = HashMap::new();
-    for (name, polytype) in self.map.iter() {
-      map.insert(name.clone(), polytype.apply_substitution(s));
-    }
-    TypeEnvironment { map }
-  }
-
-  fn lookup(&self, name: &TypeName) -> Option<PolyType> {
-    self.map.get(name).map(|x| x.clone())
-  }
-
-  fn extend(&mut self, name: &TypeName, ty: PolyType) {
-    self.map.insert(name.clone(), ty);
-  }
-
-  fn free_vars(&self) -> HashSet<TypeName> {
-    let mut free = HashSet::new();
-    for (_, ptype) in self.map.iter() {
-      free = free.union(&ptype.free_vars()).cloned().collect()
-    }
-    free
-  }
-}
-
-pub struct TypeContext {
-  environment: TypeEnvironment,
-}
-
-impl TypeContext {
-  pub fn new() -> TypeContext {
-    TypeContext { environment: TypeEnvironment::default() }
-  }
-  
-  pub fn debug_types(&self) -> String {
-    let mut output = format!("Type context\n");
-    for (sym, ty) in &self.environment.map {
-      write!(output, "{} -> {:?}\n", sym, ty).unwrap();
-    }
-    output
-  }
-
-  pub fn type_check_ast(&mut self, ast: &parsing::AST) -> TypeResult<String> {
-    let ref block = ast.0;
-    let output = {
-      let mut infer = Infer::new(&mut self.environment);
-      let output = infer.block(block);
-      output
-    };
-
-    println!("ENV LOOKS LIKE: {:?}", self.environment);
-
-    match output {
-      Ok(s) => Ok(format!("{:?}", s)),
-      Err(s) => Err(format!("Error: {:?}", s))
-    }
-  }
-}
-
-struct Infer<'a> {
-  env: &'a mut TypeEnvironment,
-  _idents: usize
-}
-
-#[derive(Debug)]
-enum InferError {
-  CannotUnify(MonoType, MonoType),
-  OccursCheckFailed(TypeName, MonoType),
-  UnknownIdentifier(TypeName),
-  Custom(String),
-}
-
-type InferResult<T> = Result<T, InferError>;
-
-impl<'a> Infer<'a> {
-
-  fn new(env: &'a mut TypeEnvironment) -> Infer {
-    Infer {
-      env,
-      _idents: 0
-    }
-  }
-
-  fn fresh(&mut self) -> MonoType {
-    let i = self._idents;
-    self._idents += 1;
-    let name = Rc::new(format!("{}", ('a' as u8 + 1) as char));
-    MonoType::Var(name)
-  }
-
-  fn instantiate(&mut self, ptype: PolyType) -> MonoType {
-    let mtype = ptype.1.clone();
-    let mut m = HashMap::new();
-    for name in ptype.0.iter() {
-      m.insert(name.clone(), self.fresh());
-    }
-    let sub = Substitution(m);
-    mtype.apply_substitution(&sub)
-  }
-
-  fn generalize(&mut self, ty: MonoType) -> PolyType {
-    let free_mtype = ty.free_vars();
-    let free_env = self.env.free_vars();
-    let diff: HashSet<TypeName> = free_mtype.difference(&free_env).cloned().collect();
-    PolyType(diff, ty)
-  }
-
-  fn block(&mut self, block: &Vec<parsing::Statement>) -> InferResult<MonoType> {
-    let mut ret = MonoType::Const(TypeConst::Unit);
-    for s in block {
-      ret = match s {
-        parsing::Statement::ExpressionStatement(expr) => self.infer_expression(expr)?,
-        parsing::Statement::Declaration(decl) => {
-          self.infer_declaration(decl)?;
-          MonoType::Const(TypeConst::Unit)
-        }
-      }
-    }
-    Ok(ret)
-  }
-
-  fn infer_declaration(&mut self, decl: &parsing::Declaration) -> InferResult<MonoType> {
-    use parsing::Declaration::*;
-    use parsing::Signature;
-    match decl {
-      Binding { name, expr, .. } => {
-        let tau: MonoType = self.infer_expression(&expr)?;
-        let sigma = self.generalize(tau);
-        self.env.extend(name, sigma);
-      },
-      FuncDecl(Signature { name, params, type_anno }, block) => {
-
-        let mut fn_type_env = TypeEnvironment::default();
-        let mut local_infer = Infer::new(&mut fn_type_env);
-
-        let mut arg_types: Vec<MonoType> = Vec::new();
-
-        for (param_name, maybe_type) in params {
-          println!("HANDLING PARAM: {}", param_name);
-          let tau = local_infer.fresh();
-          let sigma = PolyType(HashSet::new(), tau);
-          local_infer.env.extend(param_name, sigma);
-        }
-
-        let ret_type = local_infer.block(block)?;
-        println!("RET TYPE: {:?}", ret_type);
-
-        let mut final_type = MonoType::Function(Box::new(MonoType::Const(TypeConst::Unit)), Box::new(ret_type));
-        println!("ARG TYPES: {:?}", arg_types);
-
-        for ty in arg_types.into_iter().rev() {
-          final_type = MonoType::Function(Box::new(ty), Box::new(final_type));
-        }
-        
-        let final_ptype = self.generalize(final_type);
-
-        self.env.extend(name, final_ptype);
-      },
-      _ => return Err(InferError::Custom(format!("This decl not yet supported")))
-    }
-    Ok(MonoType::Const(TypeConst::Unit))
-  }
-
-  fn infer_expression(&mut self, expr: &parsing::Expression) -> InferResult<MonoType> {
-    match expr {
-      parsing::Expression(e, Some(anno)) => {
-        return Err(InferError::Custom(format!("Annotations not done yet")))
-        /*
-        let anno_ty = anno.to_type()?;
-        let ty = self.infer_exprtype(&e)?;
-        self.unify(ty, anno_ty)
-        */
-      },
-      parsing::Expression(e, None) => self.infer_expression_type(e)
-    }
-  }
-
-  fn infer_expression_type(&mut self, expr: &parsing::ExpressionType) -> InferResult<MonoType> {
-    use self::parsing::ExpressionType::*;
-    Ok(match expr {
-      NatLiteral(_) => MonoType::Const(TypeConst::Nat),
-      FloatLiteral(_) => MonoType::Const(TypeConst::Float),
-      StringLiteral(_) => MonoType::Const(TypeConst::StringT),
-      BoolLiteral(_) => MonoType::Const(TypeConst::Bool),
-      Value(name) => {
-        let sigma = match self.env.lookup(name) {
-          Some(ty) => ty,
-          None => return Err(InferError::UnknownIdentifier(name.clone())),
-        };
-        let tau = self.instantiate(sigma);
-        tau
-      },
-      Call { f, arguments } => {
-        /*
-        let sigma = match sel
-        */
-        unimplemented!()
-      },
-      e => return Err(InferError::Custom(format!("this expression type not done yet: {:?}", e)))
-    })
-  }
-}
+*/
 
 /* TODO this should just check the name against a map, and that map should be pre-populated with
  * types */
