@@ -14,14 +14,14 @@ use util::StateStack;
 pub type TypeName = Rc<String>;
 type TypeResult<T> = Result<T, String>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum Type {
   Const(TConst),
   Var(TypeName),
   Func(Vec<Type>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum TConst {
   Unit,
   Nat,
@@ -93,6 +93,12 @@ impl<'a> TypeContext<'a> {
       Call { f, arguments } =>  {
 
         return Err(format!("NOTDONE"))
+      },
+      Value(name) => {
+        match self.values.lookup(name) {
+          Some(ty) => ty.clone(),
+          None => return Err(format!("Unknown variable: {}", name))
+        }
       },
       _ => Type::Const(Unit)
     })
