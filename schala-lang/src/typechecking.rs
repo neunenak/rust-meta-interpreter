@@ -14,14 +14,14 @@ use util::StateStack;
 pub type TypeName = Rc<String>;
 type TypeResult<T> = Result<T, String>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Type {
   Const(TConst),
   Var(TypeName),
   Func(Vec<Type>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum TConst {
   Unit,
   Nat,
@@ -39,7 +39,7 @@ impl<'a> TypeContext<'a> {
   }
 
   pub fn debug_types(&self) -> String {
-    format!("Nothing to debug")
+    format!("{:?}", self.values)
   }
 
   pub fn type_check_ast(&mut self, input: &parsing::AST) -> Result<String, String> {
@@ -66,7 +66,8 @@ impl<'a> TypeContext<'a> {
     use parsing::Declaration::*;
     match decl {
       Binding { name, expr, .. } => {
-
+        let ty = self.infer_expr(expr)?;
+        self.values.insert(name.clone(), ty);
       },
       _ => (),
     }
@@ -380,3 +381,27 @@ impl TypeContext {
 }
 */
 
+
+#[cfg(test)]
+mod tests {
+  use super::{Type, TConst, TypeContext};
+  use super::Type::*;
+  use super::TConst::*;
+
+  macro_rules! type_test {
+    ($input:expr, $correct:expr) => {
+      {
+      let mut tc = TypeContext::new();
+      let ast = ::parsing::parse(::tokenizing::tokenize($input)).0.unwrap() ;
+      //tc.add_symbols(&ast);
+      assert_eq!($correct, tc.infer_block(&ast.0).unwrap())
+      }
+    }
+  }
+
+  #[test]
+  fn basic_inference() {
+    type_test!("30", Const(Nat));
+    //type_test!("fn x(a: Int): Bool {}; x(1)", TConst(Boolean));
+  }
+}
