@@ -63,7 +63,24 @@ impl TypeContext {
     Ok(Type::Const(TConst::Unit))
   }
   fn infer_expr(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
-    Ok(Type::Const(TConst::Unit))
+    match expr {
+      parsing::Expression(expr, Some(anno)) => {
+        self.infer_exprtype(expr)
+      },
+      parsing::Expression(expr, None) => {
+        self.infer_exprtype(expr)
+      }
+    }
+  }
+
+  fn infer_exprtype(&mut self, expr: &parsing::ExpressionType) -> TypeResult<Type> {
+    use self::TConst::*;
+    use parsing::ExpressionType::*;
+    Ok(match expr {
+      NatLiteral(_) => Type::Const(Nat),
+      StringLiteral(_) => Type::Const(StringT),
+      _ => Type::Const(Unit)
+    })
   }
 }
 
