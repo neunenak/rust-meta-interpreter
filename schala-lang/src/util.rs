@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::cmp::Eq;
 
+//TODO rename this ScopeStack
 #[derive(Default, Debug)]
 pub struct StateStack<'a, T: 'a, V: 'a>  where T: Hash + Eq {
   parent: Option<&'a StateStack<'a, T, V>>,
@@ -27,6 +28,7 @@ impl<'a, T, V> StateStack<'a, T, V> where T: Hash + Eq {
       (Some(value), _) => Some(value),
     }
   }
+  //TODO rename new_scope
   pub fn new_frame(&'a self, name: Option<String>) -> StateStack<'a, T, V> where T: Hash + Eq {
     StateStack {
       parent: Some(self),

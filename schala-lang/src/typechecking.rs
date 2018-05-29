@@ -9,6 +9,7 @@ use itertools::Itertools;
 */
 
 use parsing;
+use util::StateStack;
 
 pub type TypeName = Rc<String>;
 type TypeResult<T> = Result<T, String>;
@@ -28,11 +29,13 @@ enum TConst {
   Custom(String)
 }
 
-pub struct TypeContext;
+pub struct TypeContext<'a> {
+  values: StateStack<'a, TypeName, Type>
+}
 
-impl TypeContext {
-  pub fn new() -> TypeContext {
-    TypeContext { }
+impl<'a> TypeContext<'a> {
+  pub fn new() -> TypeContext<'static> {
+    TypeContext { values: StateStack::new(None) }
   }
 
   pub fn debug_types(&self) -> String {
@@ -45,7 +48,7 @@ impl TypeContext {
   }
 }
 
-impl TypeContext {
+impl<'a> TypeContext<'a> {
   fn infer_block(&mut self, block: &Vec<parsing::Statement>) -> TypeResult<Type> {
     let mut output = Type::Const(TConst::Unit);
     for statement in block {
@@ -60,6 +63,13 @@ impl TypeContext {
     }
   }
   fn infer_decl(&mut self, decl: &parsing::Declaration) -> TypeResult<Type> {
+    use parsing::Declaration::*;
+    match decl {
+      Binding { name, expr, .. } => {
+
+      },
+      _ => (),
+    }
     Ok(Type::Const(TConst::Unit))
   }
   fn infer_expr(&mut self, expr: &parsing::Expression) -> TypeResult<Type> {
@@ -79,6 +89,10 @@ impl TypeContext {
     Ok(match expr {
       NatLiteral(_) => Type::Const(Nat),
       StringLiteral(_) => Type::Const(StringT),
+      Call { f, arguments } =>  {
+
+        return Err(format!("NOTDONE"))
+      },
       _ => Type::Const(Unit)
     })
   }

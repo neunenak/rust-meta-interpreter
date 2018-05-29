@@ -36,7 +36,7 @@ mod eval;
 pub struct Schala {
   state: eval::State<'static>,
   symbol_table: Rc<RefCell<symbol_table::SymbolTable>>,
-  type_context: typechecking::TypeContext,
+  type_context: typechecking::TypeContext<'static>,
 }
 
 impl Schala {
