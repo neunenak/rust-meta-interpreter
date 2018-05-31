@@ -24,7 +24,11 @@ pub struct Symbol {
 
 #[derive(Debug)]
 pub enum SymbolSpec {
-  Func, Custom(String)
+  Func,
+  DataConstructor {
+    type_name: Rc<String>,
+    type_args: Vec<Rc<String>>,
+  },
 }
 
 impl SymbolTable {
@@ -42,13 +46,27 @@ impl SymbolTable {
               Symbol { name: signature.name.clone(), spec: SymbolSpec::Func }
               );
           },
-          TypeDecl(TypeSingletonName { name, ..}, TypeBody(variants)) => {
+          TypeDecl(TypeSingletonName { name, params}, TypeBody(variants)) => {
             for var in variants {
               match var {
                 Variant::UnitStruct(variant_name) => {
                   //TODO will have to make this a function to this type eventually
-                  let spec = SymbolSpec::Custom(format!("{}", name));
+                  let spec = SymbolSpec::DataConstructor {
+                    type_name: name.clone(),
+                    type_args: vec![],
+                  };
                   self.values.insert(variant_name.clone(), Symbol { name: variant_name.clone(), spec });
+                },
+                Variant::TupleStruct(variant_name, tuple_members) => {
+                  let type_args = vec![
+
+                  ];
+                  let spec = SymbolSpec::DataConstructor { 
+                    type_name: name.clone(),
+                    type_args
+                  };
+                  let symbol = Symbol { name: variant_name.clone(), spec };
+                  self.values.insert(variant_name.clone(), symbol);
                 },
                 e => return Err(format!("{:?} not supported in typing yet", e)),
               }

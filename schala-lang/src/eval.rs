@@ -267,8 +267,12 @@ impl<'a> State<'a> {
     let symbol_table = self.symbol_table_handle.borrow();
     Ok(match symbol_table.values.get(&name) {
       Some(Symbol { name, spec }) => match spec {
-        SymbolSpec::Custom(_typename) => {
-          Expr::Lit(Lit::Custom(name.clone()))
+        SymbolSpec::DataConstructor { type_name, type_args } => {
+          if type_args.len() == 0 {
+            Expr::Lit(Lit::Custom(name.clone()))
+          } else {
+            return Err(format!("This data constructor thing not done"))
+          }
         },
         SymbolSpec::Func => match self.values.lookup(&name) {
           Some(Binding { val: Expr::Func(UserDefined { name, params, body }), .. }) => {
