@@ -1,7 +1,6 @@
 use std::rc::Rc;
-use std::collections::HashMap;
-/*
 use std::collections::{HashSet, HashMap};
+/*
 use std::collections::hash_set::Union;
 use std::iter::Iterator;
 use std::fmt;
@@ -38,30 +37,54 @@ struct Scheme {
 
 #[derive(Debug, PartialEq, Clone)]
 struct Substitution(HashMap<TypeName, Type>);
+impl Substitution {
+  fn empty() -> Substitution {
+    Substitution(HashMap::new())
+  }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 struct TypeEnv(HashMap<TypeName, Scheme>);
 
+impl TypeEnv {
+  fn default() -> TypeEnv {
+    TypeEnv(HashMap::new())
+  }
+}
+
 pub struct TypeContext<'a> {
-  values: StateStack<'a, TypeName, Type>
+  values: StateStack<'a, TypeName, Type>,
+  global_env: TypeEnv
 }
 
 impl<'a> TypeContext<'a> {
   pub fn new() -> TypeContext<'static> {
-    TypeContext { values: StateStack::new(None) }
+    TypeContext { values: StateStack::new(None), global_env: TypeEnv::default() }
   }
 
   pub fn debug_types(&self) -> String {
-    format!("{:?}", self.values)
+    format!("{:?}", self.global_env)
   }
 
   pub fn type_check_ast(&mut self, input: &parsing::AST) -> Result<String, String> {
-    let output = self.infer_block(&input.0)?;
+    let ref mut global_env = self.global_env;
+    let output = global_env.infer_block(&input.0)?;
     Ok(format!("{:?}", output))
   }
 }
 
-impl<'a> TypeContext<'a> {
+impl TypeEnv {
+  fn instantiate(&mut self, sigma: Scheme) -> Type {
+    match sigma {
+      Scheme { ty, .. } => ty,
+    }
+  }
+  fn generate(&mut self, ty: Type) -> Scheme {
+    Scheme {
+      names: vec![], //TODO incomplete
+      ty
+    }
+  }
   fn infer_block(&mut self, block: &Vec<parsing::Statement>) -> TypeResult<Type> {
     let mut output = Type::Const(TConst::Unit);
     for statement in block {
@@ -80,7 +103,8 @@ impl<'a> TypeContext<'a> {
     match decl {
       Binding { name, expr, .. } => {
         let ty = self.infer_expr(expr)?;
-        self.values.insert(name.clone(), ty);
+        let sigma = self.generate(ty);
+        self.0.insert(name.clone(), sigma);
       },
       _ => (),
     }
@@ -108,10 +132,11 @@ impl<'a> TypeContext<'a> {
         return Err(format!("NOTDONE"))
       },
       Value(name) => {
-        match self.values.lookup(name) {
-          Some(ty) => ty.clone(),
+        let s = match self.0.get(name) {
+          Some(sigma) => sigma.clone(),
           None => return Err(format!("Unknown variable: {}", name))
-        }
+        };
+        self.instantiate(s)
       },
       _ => Type::Const(Unit)
     })
