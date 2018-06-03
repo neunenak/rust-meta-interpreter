@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::collections::{HashSet, HashMap};
 /*
@@ -10,6 +11,7 @@ use itertools::Itertools;
 
 use parsing;
 use util::StateStack;
+use symbol_table::{SymbolSpec, Symbol, SymbolTable};
 
 pub type TypeName = Rc<String>;
 type TypeResult<T> = Result<T, String>;
@@ -54,12 +56,13 @@ impl TypeEnv {
 
 pub struct TypeContext<'a> {
   values: StateStack<'a, TypeName, Type>,
+  symbol_table_handle: Rc<RefCell<SymbolTable>>,
   global_env: TypeEnv
 }
 
 impl<'a> TypeContext<'a> {
-  pub fn new() -> TypeContext<'static> {
-    TypeContext { values: StateStack::new(None), global_env: TypeEnv::default() }
+  pub fn new(symbol_table_handle: Rc<RefCell<SymbolTable>>) -> TypeContext<'static> {
+    TypeContext { values: StateStack::new(None), global_env: TypeEnv::default(), symbol_table_handle }
   }
 
   pub fn debug_types(&self) -> String {

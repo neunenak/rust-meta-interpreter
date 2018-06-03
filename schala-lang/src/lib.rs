@@ -44,8 +44,8 @@ impl Schala {
     let symbols = Rc::new(RefCell::new(symbol_table::SymbolTable::new()));
     Schala {
       symbol_table: symbols.clone(),
+      type_context: typechecking::TypeContext::new(symbols.clone()),
       state: eval::State::new(symbols),
-      type_context: typechecking::TypeContext::new(),
     }
   }
 }
