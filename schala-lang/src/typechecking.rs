@@ -130,6 +130,10 @@ impl TypeEnv {
     Ok(match expr {
       NatLiteral(_) => Type::Const(Nat),
       StringLiteral(_) => Type::Const(StringT),
+      BinExp(op, lhs, rhs) => {
+
+        return Err(format!("NOTDONE"))
+      },
       Call { f, arguments } =>  {
 
         return Err(format!("NOTDONE"))
