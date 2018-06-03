@@ -4,6 +4,7 @@ use std::fmt;
 use std::fmt::Write;
 
 use parsing;
+use typechecking::TypeName;
 
 //cf. p. 150 or so of Language Implementation Patterns
 pub struct SymbolTable {
@@ -24,7 +25,7 @@ pub struct Symbol {
 
 #[derive(Debug)]
 pub enum SymbolSpec {
-  Func,
+  Func(Vec<TypeName>),
   DataConstructor {
     type_name: Rc<String>,
     type_args: Vec<Rc<String>>,
@@ -41,9 +42,25 @@ impl SymbolTable {
       if let Statement::Declaration(decl) = statement {
         match decl {
           FuncSig(signature) | FuncDecl(signature, _) => {
+            let mut ch: char = 'a';
+            let mut types = vec![];
+            for param in signature.params.iter() {
+              match param {
+                (_, Some(ty)) => {
+                  //TODO eventually handle this case different
+                  types.push(Rc::new(format!("{}", ch)));
+                  ch = ((ch as u8) + 1) as char;
+                },
+                (_, None) => {
+                  types.push(Rc::new(format!("{}", ch)));
+                  ch = ((ch as u8) + 1) as char;
+                }
+              }
+            }
+            let spec = SymbolSpec::Func(types);
             self.values.insert(
               signature.name.clone(),
-              Symbol { name: signature.name.clone(), spec: SymbolSpec::Func }
+              Symbol { name: signature.name.clone(), spec }
               );
           },
           TypeDecl(TypeSingletonName { name, params}, TypeBody(variants)) => {

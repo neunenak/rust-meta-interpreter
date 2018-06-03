@@ -274,7 +274,7 @@ impl<'a> State<'a> {
             return Err(format!("This data constructor thing not done"))
           }
         },
-        SymbolSpec::Func => match self.values.lookup(&name) {
+        SymbolSpec::Func(_) => match self.values.lookup(&name) {
           Some(Binding { val: Expr::Func(UserDefined { name, params, body }), .. }) => {
             Expr::Func(UserDefined { name: name.clone(), params: params.clone(), body: body.clone() })
           },
