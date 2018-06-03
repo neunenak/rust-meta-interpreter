@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::collections::HashMap;
 /*
 use std::collections::{HashSet, HashMap};
 use std::collections::hash_set::Union;
@@ -28,6 +29,18 @@ enum TConst {
   StringT,
   Custom(String)
 }
+
+#[derive(Debug, PartialEq, Clone)]
+struct Scheme {
+  names: Vec<TypeName>,
+  ty: Type,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+struct Substitution(HashMap<TypeName, Type>);
+
+#[derive(Debug, PartialEq, Clone)]
+struct TypeEnv(HashMap<TypeName, Scheme>);
 
 pub struct TypeContext<'a> {
   values: StateStack<'a, TypeName, Type>
