@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Write;
 /*
 use std::collections::hash_set::Union;
 use std::iter::Iterator;
-use std::fmt;
-use std::fmt::Write;
 use itertools::Itertools;
 */
 
@@ -35,6 +35,12 @@ enum TConst {
 struct Scheme {
   names: Vec<TypeName>,
   ty: Type,
+}
+
+impl fmt::Display for Scheme {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "∀{:?} . {:?}", self.names, self.ty)
+  }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -85,7 +91,11 @@ impl<'a> TypeContext<'a> {
   }
 
   pub fn debug_types(&self) -> String {
-    format!("{:?}", self.global_env)
+    let mut output = format!("Type environment\n");
+    for (name, scheme) in &self.global_env.0 {
+      write!(output, "{} -> {}\n", name, scheme).unwrap();
+    }
+    output
   }
 
   pub fn type_check_ast(&mut self, input: &parsing::AST) -> Result<String, String> {
