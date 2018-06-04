@@ -52,6 +52,25 @@ impl TypeEnv {
   fn default() -> TypeEnv {
     TypeEnv(HashMap::new())
   }
+
+  fn populate_from_symbols(&mut self, symbol_table: &SymbolTable) {
+    for (name, symbol) in symbol_table.values.iter() {
+      if let SymbolSpec::Func(ref type_names) = symbol.spec {
+        let mut ch: char = 'a';
+        let mut names = vec![];
+        for _ in type_names.iter() {
+          names.push(Rc::new(format!("{}", ch)));
+          ch = ((ch as u8) + 1) as char;
+        }
+
+        let sigma = Scheme {
+          names: names.clone(),
+          ty: Type::Func(names.into_iter().map(|n| Type::Var(n)).collect())
+        };
+        self.0.insert(name.clone(), sigma);
+      }
+    }
+  }
 }
 
 pub struct TypeContext<'a> {
@@ -70,8 +89,9 @@ impl<'a> TypeContext<'a> {
   }
 
   pub fn type_check_ast(&mut self, input: &parsing::AST) -> Result<String, String> {
-    let ref mut global_env = self.global_env;
-    let output = global_env.infer_block(&input.0)?;
+    let ref symbol_table = self.symbol_table_handle.borrow();
+    self.global_env.populate_from_symbols(symbol_table);
+    let output = self.global_env.infer_block(&input.0)?;
     Ok(format!("{:?}", output))
   }
 }
