@@ -19,7 +19,6 @@ pub enum TConstOld {
   Float,
   StringT,
   Bool,
-  Custom(String),
 }
 
 impl fmt::Display for Type {

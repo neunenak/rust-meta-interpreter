@@ -23,6 +23,12 @@ pub struct Symbol {
   pub spec: SymbolSpec,
 }
 
+impl fmt::Display for Symbol {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "<Name: {}, Spec: {}>", self.name, self.spec)
+  }
+}
+
 #[derive(Debug)]
 pub enum SymbolSpec {
   Func(Vec<TypeName>),
@@ -30,6 +36,16 @@ pub enum SymbolSpec {
     type_name: Rc<String>,
     type_args: Vec<Rc<String>>,
   },
+}
+
+impl fmt::Display for SymbolSpec {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    use self::SymbolSpec::*;
+    match self {
+      Func(type_names) => write!(f, "Func({:?})", type_names),
+      DataConstructor { type_name, type_args } => write!(f, "DataConstructor({:?} -> {})", type_args, type_name),
+    }
+  }
 }
 
 impl SymbolTable {
@@ -97,8 +113,8 @@ impl SymbolTable {
   }
   pub fn debug_symbol_table(&self) -> String {
     let mut output = format!("Symbol table\n");
-    for (sym, ty) in &self.values {
-      write!(output, "{} -> {:?}\n", sym, ty).unwrap();
+    for (name, sym) in &self.values {
+      write!(output, "{} -> {}\n", name, sym).unwrap();
     }
     output
   }
