@@ -1,7 +1,6 @@
 use std::rc::Rc;
 use std::collections::HashMap;
 use std::fmt;
-use std::fmt::Write;
 
 use self::Type::*; use self::TConstOld::*;
 

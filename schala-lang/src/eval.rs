@@ -140,11 +140,20 @@ impl<'a> State<'a> {
     match expr {
       literal @ Lit(_) => Ok(literal),
       Call { box f, args } => {
-        let f = match self.expression(f)? {
-          Func(f) => f,
-          other => return Err(format!("Tried to call {:?} which is not a function", other)),
-        };
-        self.apply_function(f, args)
+        if let Val(name) = f {
+          let symbol_table = self.symbol_table_handle.borrow();
+          match symbol_table.values.get(&name) {
+            Some(Symbol { spec: SymbolSpec::DataConstructor { type_name, type_args }, .. }) => {
+              Ok(Expr::Lit(self::Lit::Nat(99)))
+            },
+            _ => return Err(format!("Bad symbol {}", name))
+          }
+        } else {
+          match self.expression(f)? {
+            Func(f) => self.apply_function(f, args),
+            other => return Err(format!("Tried to call {:?} which is not a function or data constructor", other)),
+          }
+        }
       },
       Val(v) => self.value(v),
       func @ Func(_) => Ok(func),
