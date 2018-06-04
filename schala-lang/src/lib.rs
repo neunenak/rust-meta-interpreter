@@ -40,13 +40,22 @@ pub struct Schala {
 }
 
 impl Schala {
-  pub fn new() -> Schala {
+  fn new_blank_env() -> Schala {
     let symbols = Rc::new(RefCell::new(symbol_table::SymbolTable::new()));
     Schala {
       symbol_table: symbols.clone(),
       type_context: typechecking::TypeContext::new(symbols.clone()),
       state: eval::State::new(symbols),
     }
+  }
+
+  pub fn new() -> Schala {
+    let prelude = r#"
+type Option<T> = Some(T) | None
+    "#;
+    let mut s = Schala::new_blank_env();
+    s.execute_pipeline(prelude, &EvalOptions::default());
+    s
   }
 }
 
