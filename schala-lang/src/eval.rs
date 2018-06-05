@@ -6,7 +6,7 @@ use std::io;
 use itertools::Itertools;
 
 use util::StateStack;
-use ast_reducing::{ReducedAST, Stmt, Expr, Lit, Func};
+use reduced_ast::{ReducedAST, Stmt, Expr, Lit, Func};
 use symbol_table::{SymbolSpec, Symbol, SymbolTable};
 
 pub struct State<'a> {

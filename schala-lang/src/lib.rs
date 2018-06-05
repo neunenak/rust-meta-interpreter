@@ -26,7 +26,7 @@ mod tokenizing;
 mod parsing;
 mod symbol_table;
 mod typechecking;
-mod ast_reducing;
+mod reduced_ast;
 mod eval;
 
 #[derive(ProgrammingLanguageInterface)]
@@ -116,13 +116,13 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
   }
 }
 
-fn ast_reducing(_handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<ast_reducing::ReducedAST, String> {
+fn ast_reducing(_handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<reduced_ast::ReducedAST, String> {
   let output = input.reduce();
   comp.map(|comp| comp.add_artifact(TraceArtifact::new("ast_reducing", format!("{:?}", output))));
   Ok(output)
 }
 
-fn eval(handle: &mut Schala, input: ast_reducing::ReducedAST, comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
+fn eval(handle: &mut Schala, input: reduced_ast::ReducedAST, comp: Option<&mut UnfinishedComputation>) -> Result<String, String> {
   comp.map(|comp| comp.add_artifact(TraceArtifact::new("value_state", handle.state.debug_print())));
   let evaluation_outputs = handle.state.evaluate(input, true);
   let text_output: Result<Vec<String>, String> = evaluation_outputs
