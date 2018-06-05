@@ -83,7 +83,6 @@ impl SymbolTable {
             for var in variants {
               match var {
                 Variant::UnitStruct(variant_name) => {
-                  //TODO will have to make this a function to this type eventually
                   let spec = SymbolSpec::DataConstructor {
                     type_name: name.clone(),
                     type_args: vec![],
@@ -91,9 +90,10 @@ impl SymbolTable {
                   self.values.insert(variant_name.clone(), Symbol { name: variant_name.clone(), spec });
                 },
                 Variant::TupleStruct(variant_name, tuple_members) => {
-                  let type_args = vec![
-
-                  ];
+                  let type_args = tuple_members.iter().map(|type_name| match type_name {
+                    TypeName::Singleton(TypeSingletonName { name, ..}) => name.clone(),
+                    TypeName::Tuple(_) => unimplemented!(),
+                  }).collect();
                   let spec = SymbolSpec::DataConstructor { 
                     type_name: name.clone(),
                     type_args
