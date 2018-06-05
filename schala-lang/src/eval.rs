@@ -44,10 +44,24 @@ enum ValueEntry {
 
 type EvalResult<T> = Result<T, String>;
 
+
 impl Expr {
   fn to_repl(&self) -> String {
     use self::Lit::*;
     use self::Func::*;
+    fn paren_wrapped_vec(exprs: &Vec<Expr>) -> String {
+      let mut buf = String::new();
+      write!(buf, "(").unwrap();
+      for term in exprs.iter().map(|e| Some(e)).intersperse(None) {
+        match term {
+          Some(e) => write!(buf, "{}", e.to_repl()).unwrap(),
+          None => write!(buf, ", ").unwrap(),
+        };
+      }
+      write!(buf, ")").unwrap();
+      buf
+    }
+
     match self {
       Expr::Lit(ref l) => match l {
         Nat(n) => format!("{}", n),
@@ -55,25 +69,15 @@ impl Expr {
         Float(f) => format!("{}", f),
         Bool(b) => format!("{}", b),
         StringLit(s) => format!("\"{}\"", s),
-        Custom(s) => format!("{}", s),
+        Custom(name, args) if args.len() == 0 => format!("{}", name),
+        Custom(name, args) => format!("{}{}", name, paren_wrapped_vec(args)),
       },
       Expr::Func(f) => match f {
         BuiltIn(name) => format!("<built-in function {}>", name),
         UserDefined { name: None, .. } => format!("<function>"),
         UserDefined { name: Some(name), .. } => format!("<function {}>", name),
       },
-      Expr::Tuple(exprs) => {
-        let mut buf = String::new();
-        write!(buf, "(").unwrap();
-        for term in exprs.iter().map(|e| Some(e)).intersperse(None) {
-          match term {
-            Some(e) => write!(buf, "{}", e.to_repl()).unwrap(),
-            None => write!(buf, ", ").unwrap(),
-          };
-        }
-        write!(buf, ")").unwrap();
-        buf
-      },
+      Expr::Tuple(exprs) => paren_wrapped_vec(exprs),
       _ => format!("{:?}", self),
     }
   }
@@ -141,13 +145,7 @@ impl<'a> State<'a> {
       literal @ Lit(_) => Ok(literal),
       Call { box f, args } => {
         if let Val(name) = f {
-          let symbol_table = self.symbol_table_handle.borrow();
-          match symbol_table.values.get(&name) {
-            Some(Symbol { spec: SymbolSpec::DataConstructor { type_name, type_args }, .. }) => {
-              Ok(Expr::Lit(self::Lit::Nat(99)))
-            },
-            _ => return Err(format!("Bad symbol {}", name))
-          }
+          self.apply_data_constructor(name, args)
         } else {
           match self.expression(f)? {
             Func(f) => self.apply_function(f, args),
@@ -177,6 +175,19 @@ impl<'a> State<'a> {
         Ok(Expr::Unit)
       },
       e => Err(format!("Expr {:?} eval not implemented", e))
+    }
+  }
+
+  fn apply_data_constructor(&mut self, name: Rc<String>, args: Vec<Expr>) -> EvalResult<Expr> {
+    let symbol_table = self.symbol_table_handle.borrow();
+    match symbol_table.values.get(&name) {
+      Some(Symbol { spec: SymbolSpec::DataConstructor { type_name, type_args }, name }) => {
+        if args.len() != type_args.len() {
+          return Err(format!("Data constructor {} requires {} args", name, type_args.len()));
+        }
+        Ok(Expr::Lit(self::Lit::Custom(name.clone(), vec![])))
+      },
+      _ => return Err(format!("Bad symbol {}", name))
     }
   }
 
@@ -278,7 +289,7 @@ impl<'a> State<'a> {
       Some(Symbol { name, spec }) => match spec {
         SymbolSpec::DataConstructor { type_name, type_args } => {
           if type_args.len() == 0 {
-            Expr::Lit(Lit::Custom(name.clone()))
+            Expr::Lit(Lit::Custom(name.clone(), vec![]))
           } else {
             return Err(format!("This data constructor thing not done"))
           }
