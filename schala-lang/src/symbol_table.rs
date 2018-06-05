@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::fmt;
 use std::fmt::Write;
 
-use parsing;
+use ast;
 use typechecking::TypeName;
 
 //cf. p. 150 or so of Language Implementation Patterns
@@ -51,9 +51,9 @@ impl fmt::Display for SymbolSpec {
 impl SymbolTable {
   /* note: this adds names for *forward reference* but doesn't actually create any types. solve that problem
    * later */
-  pub fn add_top_level_symbols(&mut self, ast: &parsing::AST) -> Result<(), String> {
-    use self::parsing::{Statement, TypeName, Variant, TypeSingletonName, TypeBody};
-    use self::parsing::Declaration::*;
+  pub fn add_top_level_symbols(&mut self, ast: &ast::AST) -> Result<(), String> {
+    use self::ast::{Statement, TypeName, Variant, TypeSingletonName, TypeBody};
+    use self::ast::Declaration::*;
     for statement in ast.0.iter() {
       if let Statement::Declaration(decl) = statement {
         match decl {

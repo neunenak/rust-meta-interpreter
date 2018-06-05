@@ -6,6 +6,8 @@ use tokenizing::*;
 use tokenizing::Kw::*;
 use tokenizing::TokenType::*;
 
+use ast::*;
+
 use builtin::{BinOp, PrefixOp};
 
 /* Schala EBNF Grammar */
@@ -173,134 +175,6 @@ macro_rules! expect {
   }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct AST(pub Vec<Statement>);
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Statement {
-  ExpressionStatement(Expression),
-  Declaration(Declaration),
-}
-
-type Block = Vec<Statement>;
-
-type ParamName = Rc<String>;
-type InterfaceName = Rc<String>; //should be a singleton I think??
-type FormalParam = (ParamName, Option<TypeName>);
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Declaration {
-  FuncSig(Signature),
-  FuncDecl(Signature, Block),
-  TypeDecl(TypeSingletonName, TypeBody), //should have TypeSingletonName in it
-  TypeAlias(Rc<String>, Rc<String>), //should have TypeSingletonName in it, or maybe just String, not sure
-  Binding {
-    name: Rc<String>,
-    constant: bool,
-    expr: Expression,
-  },
-  Impl {
-    type_name: TypeName,
-    interface_name: Option<InterfaceName>,
-    block: Vec<Declaration>,
-  },
-  Interface {
-    name: Rc<String>,
-    signatures: Vec<Signature>
-  }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Signature {
-  pub name: Rc<String>,
-  pub params: Vec<FormalParam>,
-  pub type_anno: Option<TypeName>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct TypeBody(pub Vec<Variant>);
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Variant {
-  UnitStruct(Rc<String>),
-  TupleStruct(Rc<String>, Vec<TypeName>),
-  Record(Rc<String>, Vec<(Rc<String>, TypeName)>),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Expression(pub ExpressionType, pub Option<TypeName>);
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum TypeName {
-  Tuple(Vec<TypeName>),
-  Singleton(TypeSingletonName)
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct TypeSingletonName {
-  pub name: Rc<String>,
-  pub params: Vec<TypeName>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum ExpressionType {
-  NatLiteral(u64),
-  FloatLiteral(f64),
-  StringLiteral(Rc<String>),
-  BoolLiteral(bool),
-  BinExp(BinOp, Box<Expression>, Box<Expression>),
-  PrefixExp(PrefixOp, Box<Expression>),
-  TupleLiteral(Vec<Expression>),
-  Value(Rc<String>),
-  NamedStruct {
-    name: Rc<String>,
-    fields: Vec<(Rc<String>, Expression)>,
-  },
-  Call {
-    f: Box<Expression>,
-    arguments: Vec<Expression>,
-  },
-  Index {
-    indexee: Box<Expression>,
-    indexers: Vec<Expression>,
-  },
-  IfExpression(Box<Expression>, Block, Option<Block>),
-  MatchExpression(Box<Expression>, Vec<MatchArm>),
-  WhileExpression {
-    condition: Option<Box<Expression>>,
-    body: Block,
-  },
-  ForExpression {
-    enumerators: Vec<Enumerator>,
-    body: Box<ForBody>,
-  },
-  Lambda {
-    params: Vec<FormalParam>,
-    body: Block,
-  },
-  ListLiteral(Vec<Expression>),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Enumerator {
-  id: Rc<String>,
-  generator: Expression,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum ForBody {
-  MonadicReturn(Expression),
-  StatementBlock(Block),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct MatchArm {
-  pat: Pattern,
-  expr: Expression,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Pattern(Rc<String>);
 
 macro_rules! parse_method {
   ($name:ident(&mut $self:ident) -> $type:ty $body:block) => {

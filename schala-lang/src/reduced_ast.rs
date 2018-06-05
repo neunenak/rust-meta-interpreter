@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use parsing::{AST, Statement, Expression, Declaration};
+use ast::{AST, Statement, Expression, Declaration};
 use builtin::{BinOp, PrefixOp};
 
 #[derive(Debug)]
@@ -76,7 +76,7 @@ impl AST {
 
 impl Statement {
   fn reduce(&self) -> Stmt { 
-    use parsing::Statement::*;
+    use ast::Statement::*;
     match self {
       ExpressionStatement(expr) => Stmt::Expr(expr.reduce()),
       Declaration(decl) => decl.reduce(),
@@ -86,7 +86,7 @@ impl Statement {
 
 impl Expression {
   fn reduce(&self) -> Expr {
-    use parsing::ExpressionType::*;
+    use ast::ExpressionType::*;
     let ref input = self.0;
     match input {
       NatLiteral(n) => Expr::Lit(Lit::Nat(*n)),
@@ -117,7 +117,7 @@ impl Expression {
 impl Declaration {
   fn reduce(&self) -> Stmt {
     use self::Declaration::*;
-    use ::parsing::Signature;
+    use ::ast::Signature;
     match self {
       Binding {name, constant, expr } => Stmt::Binding { name: name.clone(), constant: *constant, expr: expr.reduce() },
       FuncDecl(Signature { name, params, .. }, statements) => Stmt::PreBinding {

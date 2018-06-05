@@ -23,6 +23,7 @@ macro_rules! bx {
 mod util;
 mod builtin;
 mod tokenizing;
+mod ast;
 mod parsing;
 mod symbol_table;
 mod typechecking;
@@ -74,7 +75,7 @@ fn tokenizing(_handle: &mut Schala, input: &str, comp: Option<&mut UnfinishedCom
   }
 }
 
-fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
+fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mut UnfinishedComputation>) -> Result<ast::AST, String> {
 
   let (ast, trace) = parsing::parse(input);
   comp.map(|comp| {
@@ -85,7 +86,7 @@ fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mu
   ast.map_err(|err| err.msg)
 }
 
-fn symbol_table(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
+fn symbol_table(handle: &mut Schala, input: ast::AST, comp: Option<&mut UnfinishedComputation>) -> Result<ast::AST, String> {
   let add = handle.symbol_table.borrow_mut().add_top_level_symbols(&input);
   match add {
     Ok(()) => {
@@ -97,7 +98,7 @@ fn symbol_table(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
   }
 }
 
-fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<parsing::AST, String> {
+fn typechecking(handle: &mut Schala, input: ast::AST, comp: Option<&mut UnfinishedComputation>) -> Result<ast::AST, String> {
   match handle.type_context.type_check_ast(&input) {
     Ok(ty) => {
       comp.map(|c| {
@@ -116,7 +117,7 @@ fn typechecking(handle: &mut Schala, input: parsing::AST, comp: Option<&mut Unfi
   }
 }
 
-fn ast_reducing(_handle: &mut Schala, input: parsing::AST, comp: Option<&mut UnfinishedComputation>) -> Result<reduced_ast::ReducedAST, String> {
+fn ast_reducing(_handle: &mut Schala, input: ast::AST, comp: Option<&mut UnfinishedComputation>) -> Result<reduced_ast::ReducedAST, String> {
   let output = input.reduce();
   comp.map(|comp| comp.add_artifact(TraceArtifact::new("ast_reducing", format!("{:?}", output))));
   Ok(output)
