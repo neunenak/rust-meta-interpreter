@@ -469,11 +469,14 @@ mod tests {
   use super::{Type, TConst, TypeContext};
   use super::Type::*;
   use super::TConst::*;
+  use std::rc::Rc;
+  use std::cell::RefCell;
 
   macro_rules! type_test {
     ($input:expr, $correct:expr) => {
       {
-      let mut tc = TypeContext::new();
+      let symbol_table = Rc::new(RefCell::new(SymbolTable::new()));
+      let mut tc = TypeContext::new(symbol_table);
       let ast = ::ast::parse(::tokenizing::tokenize($input)).0.unwrap() ;
       //tc.add_symbols(&ast);
       assert_eq!($correct, tc.infer_block(&ast.0).unwrap())
