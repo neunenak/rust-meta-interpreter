@@ -117,8 +117,9 @@ fn typechecking(handle: &mut Schala, input: ast::AST, comp: Option<&mut Unfinish
   }
 }
 
-fn ast_reducing(_handle: &mut Schala, input: ast::AST, comp: Option<&mut UnfinishedComputation>) -> Result<reduced_ast::ReducedAST, String> {
-  let output = input.reduce();
+fn ast_reducing(handle: &mut Schala, input: ast::AST, comp: Option<&mut UnfinishedComputation>) -> Result<reduced_ast::ReducedAST, String> {
+  let ref symbol_table = handle.symbol_table.borrow();
+  let output = input.reduce(symbol_table);
   comp.map(|comp| comp.add_artifact(TraceArtifact::new("ast_reducing", format!("{:?}", output))));
   Ok(output)
 }

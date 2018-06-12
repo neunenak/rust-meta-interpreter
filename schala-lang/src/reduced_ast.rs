@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use ast::{AST, Statement, Expression, Declaration};
+use symbol_table::SymbolTable;
 use builtin::{BinOp, PrefixOp};
 
 #[derive(Debug)]
@@ -65,27 +66,27 @@ pub enum Func {
 }
 
 impl AST {
-  pub fn reduce(&self) -> ReducedAST {
+  pub fn reduce(&self, symbol_table: &SymbolTable) -> ReducedAST {
     let mut output = vec![];
     for statement in self.0.iter() {
-      output.push(statement.reduce());
+      output.push(statement.reduce(symbol_table));
     }
     ReducedAST(output)
   }
 }
 
 impl Statement {
-  fn reduce(&self) -> Stmt { 
+  fn reduce(&self, symbol_table: &SymbolTable) -> Stmt { 
     use ast::Statement::*;
     match self {
-      ExpressionStatement(expr) => Stmt::Expr(expr.reduce()),
-      Declaration(decl) => decl.reduce(),
+      ExpressionStatement(expr) => Stmt::Expr(expr.reduce(symbol_table)),
+      Declaration(decl) => decl.reduce(symbol_table),
     }
   }
 }
 
 impl Expression {
-  fn reduce(&self) -> Expr {
+  fn reduce(&self, symbol_table: &SymbolTable) -> Expr {
     use ast::ExpressionType::*;
     let ref input = self.0;
     match input {
@@ -93,20 +94,20 @@ impl Expression {
       FloatLiteral(f) => Expr::Lit(Lit::Float(*f)),
       StringLiteral(s) => Expr::Lit(Lit::StringLit(s.clone())),
       BoolLiteral(b) => Expr::Lit(Lit::Bool(*b)),
-      BinExp(binop, lhs, rhs) => binop.reduce(lhs, rhs),
-      PrefixExp(op, arg) => op.reduce(arg),
+      BinExp(binop, lhs, rhs) => binop.reduce(symbol_table, lhs, rhs),
+      PrefixExp(op, arg) => op.reduce(symbol_table, arg),
       Value(name) => Expr::Val(name.clone()),
       Call { f, arguments } => Expr::Call {
-        f: Box::new(f.reduce()),
-        args: arguments.iter().map(|arg| arg.reduce()).collect(),
+        f: Box::new(f.reduce(symbol_table)),
+        args: arguments.iter().map(|arg| arg.reduce(symbol_table)).collect(),
       },
-      TupleLiteral(exprs) => Expr::Tuple(exprs.iter().map(|e| e.reduce()).collect()),
+      TupleLiteral(exprs) => Expr::Tuple(exprs.iter().map(|e| e.reduce(symbol_table)).collect()),
       IfExpression(cond, then_clause, else_clause) => Expr::Conditional {
-        cond: Box::new((**cond).reduce()),
-        then_clause: then_clause.iter().map(|expr| expr.reduce()).collect(),
+        cond: Box::new((**cond).reduce(symbol_table)),
+        then_clause: then_clause.iter().map(|expr| expr.reduce(symbol_table)).collect(),
         else_clause: match else_clause {
           None => vec![],
-          Some(stmts) => stmts.iter().map(|expr| expr.reduce()).collect(),
+          Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
         }
       },
       _ => Expr::UnimplementedSigilValue,
@@ -115,17 +116,17 @@ impl Expression {
 }
 
 impl Declaration {
-  fn reduce(&self) -> Stmt {
+  fn reduce(&self, symbol_table: &SymbolTable) -> Stmt {
     use self::Declaration::*;
     use ::ast::Signature;
     match self {
-      Binding {name, constant, expr } => Stmt::Binding { name: name.clone(), constant: *constant, expr: expr.reduce() },
+      Binding {name, constant, expr } => Stmt::Binding { name: name.clone(), constant: *constant, expr: expr.reduce(symbol_table) },
       FuncDecl(Signature { name, params, .. }, statements) => Stmt::PreBinding {
         name: name.clone(),
         func: Func::UserDefined {
           name: Some(name.clone()),
           params: params.iter().map(|param| param.0.clone()).collect(),
-          body: statements.iter().map(|stmt| stmt.reduce()).collect(),
+          body: statements.iter().map(|stmt| stmt.reduce(symbol_table)).collect(),
         }
       },
       TypeDecl(_,_) => Stmt::Noop,
@@ -135,22 +136,22 @@ impl Declaration {
 }
 
 impl BinOp {
-  fn reduce(&self, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Expr {
+  fn reduce(&self, symbol_table: &SymbolTable, lhs: &Box<Expression>, rhs: &Box<Expression>) -> Expr {
     if **self.sigil() == "=" {
       Expr::Assign {
-        val: Box::new(lhs.reduce()),
-        expr: Box::new(rhs.reduce()),
+        val: Box::new(lhs.reduce(symbol_table)),
+        expr: Box::new(rhs.reduce(symbol_table)),
       }
     } else {
       let f = Box::new(Expr::Func(Func::BuiltIn(self.sigil().clone())));
-      Expr::Call { f, args: vec![lhs.reduce(), rhs.reduce()]}
+      Expr::Call { f, args: vec![lhs.reduce(symbol_table), rhs.reduce(symbol_table)]}
     }
   }
 }
 
 impl PrefixOp {
-  fn reduce(&self, arg: &Box<Expression>) -> Expr {
+  fn reduce(&self, symbol_table: &SymbolTable, arg: &Box<Expression>) -> Expr {
     let f = Box::new(Expr::Func(Func::BuiltIn(self.sigil().clone())));
-    Expr::Call { f, args: vec![arg.reduce()]}
+    Expr::Call { f, args: vec![arg.reduce(symbol_table)]}
   }
 }
