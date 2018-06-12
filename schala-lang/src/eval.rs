@@ -325,7 +325,8 @@ mod eval_tests {
       let mut state = State::new(symbol_table);
       let ast = parse(tokenize($string)).0.unwrap();
       state.symbol_table_handle.borrow_mut().add_top_level_symbols(&ast);
-      let all_output = state.evaluate(ast.reduce(), true);
+      let reduced = ast.reduce(&state.symbol_table_handle.borrow());
+      let all_output = state.evaluate(reduced, true);
       let ref output = all_output.last().unwrap();
       assert_eq!(**output, Ok($correct.to_string()));
     }

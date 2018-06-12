@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use ast::{AST, Statement, Expression, Declaration};
-use symbol_table::SymbolTable;
+use symbol_table::{Symbol, SymbolSpec, SymbolTable};
 use builtin::{BinOp, PrefixOp};
 
 #[derive(Debug)]
@@ -29,6 +29,10 @@ pub enum Expr {
   Tuple(Vec<Expr>),
   Func(Func),
   Val(Rc<String>),
+  Constructor {
+    name: Rc<String>,
+    args: Vec<Expr>,
+  },
   Call {
     f: Box<Expr>,
     args: Vec<Expr>,
@@ -96,7 +100,15 @@ impl Expression {
       BoolLiteral(b) => Expr::Lit(Lit::Bool(*b)),
       BinExp(binop, lhs, rhs) => binop.reduce(symbol_table, lhs, rhs),
       PrefixExp(op, arg) => op.reduce(symbol_table, arg),
-      Value(name) => Expr::Val(name.clone()),
+      Value(name) => {
+        match symbol_table.values.get(name) {
+          Some(Symbol { name, spec: SymbolSpec::DataConstructor { type_name, type_args } }) => {
+            //TODO finish
+            Expr::Val(name.clone())
+          },
+          _ => Expr::Val(name.clone()),
+        }
+      },
       Call { f, arguments } => Expr::Call {
         f: Box::new(f.reduce(symbol_table)),
         args: arguments.iter().map(|arg| arg.reduce(symbol_table)).collect(),
