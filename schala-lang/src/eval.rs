@@ -151,6 +151,7 @@ impl<'a> State<'a> {
         }
       },
       Val(v) => self.value(v),
+      constr @ Constructor { .. } => Ok(constr),
       func @ Func(_) => Ok(func),
       Tuple(exprs) => Ok(Tuple(exprs.into_iter().map(|expr| self.expression(expr)).collect::<Result<Vec<Expr>,_>>()?)),
       Conditional { box cond, then_clause, else_clause } => self.conditional(cond, then_clause, else_clause),
