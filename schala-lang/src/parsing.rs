@@ -627,11 +627,13 @@ impl Parser {
 
   parse_method!(match_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, Keyword(Kw::Match));
-    let expr = self.expression()?;
-    //TODO abstract these errors into the delimited macro
-    //expect!(self, LCurlyBrace, "Expected '{'");
+    let expr = {
+      self.restrictions.no_struct_literal = true;
+      let x = self.expression();
+      self.restrictions.no_struct_literal = false;
+      x?
+    };
     let body = self.match_body()?;
-    //expect!(self, RCurlyBrace, "Expected '}'");
     Ok(Expression(ExpressionType::MatchExpression(bx!(expr), body), None))
   });
 
