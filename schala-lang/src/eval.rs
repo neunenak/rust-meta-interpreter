@@ -144,13 +144,10 @@ impl<'a> State<'a> {
     match expr {
       literal @ Lit(_) => Ok(literal),
       Call { box f, args } => {
-        if let Val(name) = f {
-          self.apply_data_constructor(name, args)
-        } else {
-          match self.expression(f)? {
-            Func(f) => self.apply_function(f, args),
-            other => return Err(format!("Tried to call {:?} which is not a function or data constructor", other)),
-          }
+        match self.expression(f)? {
+          Constructor {name} => self.apply_data_constructor(name, args),
+          Func(f) => self.apply_function(f, args),
+          other => return Err(format!("Tried to call {:?} which is not a function or data constructor", other)),
         }
       },
       Val(v) => self.value(v),
@@ -179,16 +176,21 @@ impl<'a> State<'a> {
   }
 
   fn apply_data_constructor(&mut self, name: Rc<String>, args: Vec<Expr>) -> EvalResult<Expr> {
-    let symbol_table = self.symbol_table_handle.borrow();
-    match symbol_table.values.get(&name) {
-      Some(Symbol { spec: SymbolSpec::DataConstructor { type_name, type_args }, name }) => {
-        if args.len() != type_args.len() {
-          return Err(format!("Data constructor {} requires {} args", name, type_args.len()));
-        }
-        Ok(Expr::Lit(self::Lit::Custom(name.clone(), vec![])))
-      },
-      _ => return Err(format!("Bad symbol {}", name))
+    {
+      let symbol_table = self.symbol_table_handle.borrow();
+      match symbol_table.values.get(&name) {
+        Some(Symbol { spec: SymbolSpec::DataConstructor { type_name, type_args }, name }) => {
+          if args.len() != type_args.len() {
+            return Err(format!("Data constructor {} requires {} args", name, type_args.len()));
+          }
+          ()
+        },
+        _ => return Err(format!("Bad symbol {}", name))
+      }
     }
+    let evaled_args = args.into_iter().map(|expr| self.expression(expr)).collect::<Result<Vec<Expr>,_>>()?;
+    //let evaled_args = vec![];
+    Ok(Expr::Lit(self::Lit::Custom(name.clone(), evaled_args)))
   }
 
   fn apply_function(&mut self, f: Func, args: Vec<Expr>) -> EvalResult<Expr> {
@@ -285,7 +287,8 @@ impl<'a> State<'a> {
     //in the values table
 
     let symbol_table = self.symbol_table_handle.borrow();
-    Ok(match symbol_table.values.get(&name) {
+    let value = symbol_table.values.get(&name);
+    Ok(match value {
       Some(Symbol { name, spec }) => match spec {
         SymbolSpec::DataConstructor { type_name, type_args } => {
           if type_args.len() == 0 {

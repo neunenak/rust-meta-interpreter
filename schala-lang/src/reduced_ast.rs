@@ -31,7 +31,6 @@ pub enum Expr {
   Val(Rc<String>),
   Constructor {
     name: Rc<String>,
-    args: Vec<Expr>,
   },
   Call {
     f: Box<Expr>,
@@ -102,9 +101,8 @@ impl Expression {
       PrefixExp(op, arg) => op.reduce(symbol_table, arg),
       Value(name) => {
         match symbol_table.values.get(name) {
-          Some(Symbol { name, spec: SymbolSpec::DataConstructor { type_name, type_args } }) => {
-            //TODO finish
-            Expr::Val(name.clone())
+          Some(Symbol { spec: SymbolSpec::DataConstructor { type_args, .. }, .. }) => {
+            Expr::Constructor { name: name.clone() }
           },
           _ => Expr::Val(name.clone()),
         }
