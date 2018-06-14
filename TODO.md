@@ -18,6 +18,15 @@ pattern matching/introducing bindings:
 pattern matching w/ if-let:
 `if person is Person("Alice", age) { "${age}" } else { "nope" }`
 
+-https://soc.github.io/languages/unified-condition-syntax syntax:
+
+`if <cond-expr>" then <then-expr> else <else-expr>`
+`if <half-expr> \n <rest-expr1> then <result1-expr> \n <rest-expr2> then <result-expr2> else <result3-expr>`
+-and rest-exprs (or "targets") can have 'is' for pattern-matching, actually so can a full cond-expr
+
+Grammar:
+
+conditional := 'if' discriminator
 
 
 - Next priorities: - get ADTs working, get matches working
