@@ -1,6 +1,25 @@
 
 # TODO Items
 
+- if/match playground
+
+simple if
+`if x == 1.0 { "a" } else { "b" }`
+
+one comparison multiple targets:
+`if x == { 1.0 -> "a", 2.0 -> "b", else -> "c" }`
+
+different comparison operators/ method calls:
+`if x { == 1.0 -> "a", eq NaN -> "n", .hella() -> "h", else -> "z" }`
+
+pattern matching/introducing bindings:
+`if alice { .age < 18 -> "18", is Person("Alice", age) -> "${age}", else -> "none" }`
+
+pattern matching w/ if-let:
+`if person is Person("Alice", age) { "${age}" } else { "nope" }`
+
+
+
 - Next priorities: - get ADTs working, get matches working
 
 - inclusive/exclusive range syntax like .. vs ..=
