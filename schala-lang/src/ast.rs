@@ -93,7 +93,10 @@ pub enum ExpressionType {
     indexee: Box<Expression>,
     indexers: Vec<Expression>,
   },
-  IfExpression(Box<Expression>, Block, Option<Block>),
+  IfExpression {
+    discriminator: Box<Discriminator>,
+    body: Box<IfExpressionBody>,
+  },
   WhileExpression {
     condition: Option<Box<Expression>>,
     body: Block,
@@ -107,6 +110,28 @@ pub enum ExpressionType {
     body: Block,
   },
   ListLiteral(Vec<Expression>),
+}
+#[derive(Debug, PartialEq, Clone)]
+pub enum Discriminator {
+  Simple(Expression),
+  BinOp(Expression, BinOp)
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum IfExpressionBody {
+  SimpleConditional(Block, Option<Block>),
+  GuardList(Vec<Guard>)
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Guard {
+  pat: Pattern,
+  body: Block,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Pattern {
+
 }
 
 #[derive(Debug, PartialEq, Clone)]

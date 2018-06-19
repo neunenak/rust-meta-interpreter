@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use ast::{AST, Statement, Expression, Declaration};
+use ast::{AST, Statement, Expression, Declaration, Discriminator};
 use symbol_table::{Symbol, SymbolSpec, SymbolTable};
 use builtin::{BinOp, PrefixOp};
 
@@ -112,6 +112,15 @@ impl Expression {
         args: arguments.iter().map(|arg| arg.reduce(symbol_table)).collect(),
       },
       TupleLiteral(exprs) => Expr::Tuple(exprs.iter().map(|e| e.reduce(symbol_table)).collect()),
+      IfExpression { discriminator, body } => {
+        let cond = Box::new(match **discriminator {
+          Discriminator::Simple(ref expr) => expr.reduce(symbol_table),
+          _ => panic!(),
+        });
+
+        Expr::Conditional { cond, then_clause: vec![], else_clause: vec![] }
+      },
+      /*
       IfExpression(cond, then_clause, else_clause) => Expr::Conditional {
         cond: Box::new((**cond).reduce(symbol_table)),
         then_clause: then_clause.iter().map(|expr| expr.reduce(symbol_table)).collect(),
@@ -120,6 +129,7 @@ impl Expression {
           Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
         }
       },
+      */
       _ => Expr::UnimplementedSigilValue,
     }
   }
