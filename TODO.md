@@ -24,9 +24,22 @@ pattern matching w/ if-let:
 `if <half-expr> \n <rest-expr1> then <result1-expr> \n <rest-expr2> then <result-expr2> else <result3-expr>`
 -and rest-exprs (or "targets") can have 'is' for pattern-matching, actually so can a full cond-expr
 
-Grammar:
+UNIFIED IF EXPRESSIONS FINAL WORK:
 
-conditional := 'if' discriminator
+basic syntax:
+
+`if_expr := if discriminator '{' (guard_expr)* '}'`
+`guard_expr := pattern 'then' block_or_expr'`
+`pattern := rhs | is_pattern`
+`is_pattern := 'is' ???`
+`rhs := expression | ???`
+
+
+if the only two guard patterns are true and false, then the abbreviated syntax:
+`'if' discriminator 'then' block_or_expr 'else' block_or_expr`
+can replace `'if' discriminator '{' 'true' 'then' block_or_expr; 'false' 'then' block_or_expr '}'`
+
+
 
 
 - Next priorities: - get ADTs working, get matches working
