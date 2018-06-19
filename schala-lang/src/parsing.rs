@@ -1141,6 +1141,24 @@ fn a(x) {
       )])
     };
 
+    parse_test! {
+      "if a() then { b(); c() } else { q }", AST(vec![exprstatement!(
+        IfExpression {
+          discriminator: bx! {
+            Discriminator::Simple(ex!(Call { f: bx!(ex!(val!("a"))), arguments: vec![]}))
+          },
+          body: bx! {
+            IfExpressionBody::SimpleConditional(
+              vec![exprstatement!(Call { f: bx!(ex!(val!("b"))), arguments: vec![]}), exprstatement!(Call { f: bx!(ex!(val!("c"))), arguments: vec![] })],
+              Some(
+                vec![exprstatement!(val!("q"))],
+              )
+            )
+          }
+        }
+      )])
+    };
+
     /*
     parse_test!("if a() then { b(); c() }", AST(vec![exprstatement!(
         IfExpression(bx!(ex!(Call { f: bx!(ex!(val!("a"))), arguments: vec![]})),
