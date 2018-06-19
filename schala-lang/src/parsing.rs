@@ -542,7 +542,7 @@ impl Parser {
       LParen => self.paren_expr(),
       LSquareBracket => self.list_expr(),
       Keyword(Kw::If) => self.if_expr(),
-      Keyword(Kw::Match) => self.match_expr(),
+      //Keyword(Kw::Match) => self.match_expr(),
       Keyword(Kw::For) => self.for_expr(),
       Keyword(Kw::While) => self.while_expr(),
       Identifier(_) => self.identifier_expr(),
@@ -642,6 +642,7 @@ impl Parser {
     Ok(delimited!(self, LCurlyBrace, statement, Newline | Semicolon, RCurlyBrace, nonstrict))
   });
 
+  /*
   parse_method!(match_expr(&mut self) -> ParseResult<Expression> {
     expect!(self, Keyword(Kw::Match));
     let expr = {
@@ -669,6 +670,7 @@ impl Parser {
     let identifier = self.identifier()?;
     Ok(Pattern(identifier))
   });
+  */
 
   parse_method!(while_expr(&mut self) -> ParseResult<Expression> {
     use self::ExpressionType::*;

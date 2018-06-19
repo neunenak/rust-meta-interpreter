@@ -94,7 +94,6 @@ pub enum ExpressionType {
     indexers: Vec<Expression>,
   },
   IfExpression(Box<Expression>, Block, Option<Block>),
-  MatchExpression(Box<Expression>, Vec<MatchArm>),
   WhileExpression {
     condition: Option<Box<Expression>>,
     body: Block,
@@ -121,12 +120,3 @@ pub enum ForBody {
   MonadicReturn(Expression),
   StatementBlock(Block),
 }
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct MatchArm {
-  pub pat: Pattern,
-  pub expr: Expression,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Pattern(pub Rc<String>);

@@ -45,7 +45,8 @@ impl fmt::Display for TokenType {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Kw {
-  If, Else,
+  If, Then, Else,
+  Is,
   Func,
   For, While,
   Match,
@@ -61,11 +62,12 @@ lazy_static! {
   static ref KEYWORDS: HashMap<&'static str, Kw> =
     hashmap! {
       "if" => Kw::If,
+      "then" => Kw::Then,
       "else" => Kw::Else,
+      "is" => Kw::Is,
       "fn" => Kw::Func,
       "for" => Kw::For,
       "while" => Kw::While,
-      "match" => Kw::Match,
       "var" => Kw::Var,
       "const" => Kw::Const,
       "let" => Kw::Let,
