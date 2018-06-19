@@ -894,7 +894,9 @@ pub fn parse(input: Vec<Token>) -> (Result<AST, ParseError>, Vec<String>) {
 #[cfg(test)]
 mod parse_tests {
   use ::std::rc::Rc;
-  use super::{AST, Expression, Statement, PrefixOp, BinOp, TypeBody, Variant, Enumerator, ForBody, parse, tokenize};
+  use super::{parse, tokenize};
+  use builtin::{PrefixOp, BinOp};
+  use ast::{AST, Expression, Statement, IfExpressionBody, Discriminator, TypeBody, Variant, Enumerator, ForBody};
   use super::Statement::*;
   use super::Declaration::*;
   use super::Signature;
@@ -1123,6 +1125,22 @@ fn a(x) {
 
   #[test]
   fn parsing_block_expressions() {
+    parse_test! {
+      "if a() then { b(); c() }", AST(vec![exprstatement!(
+        IfExpression {
+          discriminator: bx! {
+            Discriminator::Simple(ex!(Call { f: bx!(ex!(val!("a"))), arguments: vec![]}))
+          },
+          body: bx! {
+            IfExpressionBody::SimpleConditional(
+              vec![exprstatement!(Call { f: bx!(ex!(val!("b"))), arguments: vec![]}), exprstatement!(Call { f: bx!(ex!(val!("c"))), arguments: vec![] })],
+              None
+            )
+          }
+        }
+      )])
+    };
+
     /*
     parse_test!("if a() then { b(); c() }", AST(vec![exprstatement!(
         IfExpression(bx!(ex!(Call { f: bx!(ex!(val!("a"))), arguments: vec![]})),
