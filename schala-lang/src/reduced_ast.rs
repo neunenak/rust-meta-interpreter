@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use ast::{AST, Statement, Expression, Declaration, Discriminator};
+use ast::{AST, Statement, Expression, Declaration, Discriminator, IfExpressionBody};
 use symbol_table::{Symbol, SymbolSpec, SymbolTable};
 use builtin::{BinOp, PrefixOp};
 
@@ -117,19 +117,18 @@ impl Expression {
           Discriminator::Simple(ref expr) => expr.reduce(symbol_table),
           _ => panic!(),
         });
-
-        Expr::Conditional { cond, then_clause: vec![], else_clause: vec![] }
-      },
-      /*
-      IfExpression(cond, then_clause, else_clause) => Expr::Conditional {
-        cond: Box::new((**cond).reduce(symbol_table)),
-        then_clause: then_clause.iter().map(|expr| expr.reduce(symbol_table)).collect(),
-        else_clause: match else_clause {
-          None => vec![],
-          Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
+        match **body {
+          IfExpressionBody::SimpleConditional(ref then_clause, ref else_clause) => {
+            let then_clause = then_clause.iter().map(|expr| expr.reduce(symbol_table)).collect();
+            let else_clause = match else_clause {
+              None => vec![],
+              Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
+            };
+            Expr::Conditional { cond, then_clause, else_clause }
+          },
+          _ => panic!(),
         }
       },
-      */
       _ => Expr::UnimplementedSigilValue,
     }
   }
