@@ -120,6 +120,7 @@ pub enum Discriminator {
 #[derive(Debug, PartialEq, Clone)]
 pub enum IfExpressionBody {
   SimpleConditional(Block, Option<Block>),
+  SimplePatternMatch(Pattern, Block, Option<Block>),
   GuardList(Vec<Guard>)
 }
 

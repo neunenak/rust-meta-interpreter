@@ -126,6 +126,14 @@ impl Expression {
             };
             Expr::Conditional { cond, then_clause, else_clause }
           },
+          IfExpressionBody::SimplePatternMatch(ref pat, ref then_clause, ref else_clause) => {
+            let then_clause = then_clause.iter().map(|expr| expr.reduce(symbol_table)).collect();
+            let else_clause = match else_clause {
+              None => vec![],
+              Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
+            };
+            Expr::Conditional { cond, then_clause, else_clause }
+          },
           _ => panic!(),
         }
       },

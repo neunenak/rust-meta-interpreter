@@ -112,7 +112,7 @@ pattern := identifier //TODO NOT DONE
 /* NEW GOOD */
 
 /* Expression - If */
-if_expr := 'if' discriminator ('then' condititional | guard_block)
+if_expr := 'if' discriminator ('then' condititional | 'is' pattern 'then' conditional | guard_block)
 discriminator := modified_precedence_expression
 conditional := block else_clause
 else_clause := ε | 'else' block
@@ -634,10 +634,10 @@ impl Parser {
       x?
     });
 
-    let body = Box::new(if let Keyword(Kw::Then) = self.peek() {
-      self.conditional()?
-    } else {
-      self.guard_block()?
+    let body = Box::new(match self.peek() {
+      Keyword(Kw::Then) => self.conditional()?,
+      Keyword(Kw::Is) => self.simple_pattern_match()? ,
+      _ => self.guard_block()?
     });
 
     Ok(Expression(ExpressionType::IfExpression { discriminator, body }, None))
@@ -654,6 +654,15 @@ impl Parser {
     Ok(IfExpressionBody::SimpleConditional(then_clause, else_clause))
   });
 
+  parse_method!(simple_pattern_match(&mut self) -> ParseResult<IfExpressionBody> {
+    expect!(self, Keyword(Kw::Is));
+    let pat = self.pattern()?;
+    expect!(self, Keyword(Kw::Then));
+    let then_clause = self.block()?; //TODO should be block_or_expr
+    let else_clause = self.else_clause()?;
+    Ok(IfExpressionBody::SimplePatternMatch(pat, then_clause, else_clause))
+  });
+
   parse_method!(guard_block(&mut self) -> ParseResult<IfExpressionBody> {
     ParseError::new("Rest of if not done")
   });
@@ -665,6 +674,11 @@ impl Parser {
     } else {
       None
     })
+  });
+
+  parse_method!(pattern(&mut self) -> ParseResult<Pattern> {
+    let identifier = self.identifier()?;
+    Ok(Pattern {  })
   });
 
   parse_method!(block(&mut self) -> ParseResult<Block> {
@@ -695,10 +709,6 @@ impl Parser {
     Ok(MatchArm { pat, expr })
   });
 
-  parse_method!(pattern(&mut self) -> ParseResult<Pattern> {
-    let identifier = self.identifier()?;
-    Ok(Pattern(identifier))
-  });
   */
 
   parse_method!(while_expr(&mut self) -> ParseResult<Expression> {
