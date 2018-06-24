@@ -132,7 +132,8 @@ pub struct Guard {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Pattern {
-
+  pub free_vars: Vec<Rc<String>>,
+  pub var: Variant,
 }
 
 #[derive(Debug, PartialEq, Clone)]

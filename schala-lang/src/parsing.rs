@@ -678,7 +678,10 @@ impl Parser {
 
   parse_method!(pattern(&mut self) -> ParseResult<Pattern> {
     let identifier = self.identifier()?;
-    Ok(Pattern {  })
+    Ok(Pattern {
+      free_vars: vec![],
+      var: Variant::UnitStruct(identifier)
+    })
   });
 
   parse_method!(block(&mut self) -> ParseResult<Block> {
