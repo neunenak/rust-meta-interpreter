@@ -112,9 +112,10 @@ pattern := identifier //TODO NOT DONE
 /* NEW GOOD */
 
 /* Expression - If */
-if_expr := 'if' discriminator ('then' condititional | 'is' pattern 'then' conditional | guard_block)
+if_expr := 'if' discriminator ('then' condititional | 'is' simple_pattern_match | guard_block)
 discriminator := modified_precedence_expression
 conditional := block else_clause
+simple_pattern_match := pattern 'then' conditional
 else_clause := ε | 'else' block
 
 /* Expression - While */
