@@ -131,9 +131,19 @@ pub struct Guard {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Pattern {
-  pub free_vars: Vec<Rc<String>>,
-  pub var: Variant,
+pub enum Pattern {
+  TuplePattern(Vec<Pattern>),
+  Literal(PatternLiteral),
+  TupleStruct(Rc<String>, Vec<Pattern>),
+  Record(Rc<String>, Vec<(Rc<String>, Pattern)>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum PatternLiteral {
+  NumPattern(ExpressionType),
+  StringPattern(Rc<String>),
+  BoolPattern(bool),
+  VarPattern(Rc<String>)
 }
 
 #[derive(Debug, PartialEq, Clone)]

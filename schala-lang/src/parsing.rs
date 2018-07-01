@@ -107,9 +107,16 @@ else_clause := ε | 'else' block
 match_expr := 'match' expression match_body
 match_body := '{' (match_arm)* '}'
 match_arm := pattern '=>' expression
-pattern := identifier //TODO NOT DONE
 
 /* NEW GOOD */
+
+/* Pattern syntax */
+pattern := '(' (pattern, ',')* ')' | simple_pattern
+simple_pattern := pattern_literal | record_pattern | tuple_struct_pattern
+pattern_literal := 'true' | 'false' | number_literal | STR_LITERAL | IDENTIFIER
+record_pattern := IDENTIFIER '{' (record_pattern_entry, ',')* '}'
+record_pattern_entry := ???
+tuple_struct_pattern := IDENTIFIER '(' (pattern, ',')* ')'
 
 /* Expression - If */
 if_expr := 'if' discriminator ('then' condititional | 'is' simple_pattern_match | guard_block)
@@ -678,10 +685,51 @@ impl Parser {
   });
 
   parse_method!(pattern(&mut self) -> ParseResult<Pattern> {
-    let identifier = self.identifier()?;
-    Ok(Pattern {
-      free_vars: vec![],
-      var: Variant::UnitStruct(identifier)
+    if let LParen = self.peek() {
+      let tuple_pattern_variants = delimited!(self, LParen, pattern, Comma, RParen);
+      Ok(Pattern::TuplePattern(tuple_pattern_variants))
+    } else {
+      self.simple_pattern()
+    }
+  });
+
+  parse_method!(simple_pattern(&mut self) -> ParseResult<Pattern> {
+    /*
+    let name = self.identifier()?;
+    match self.peek() {
+      LParen => {
+        let tuple_members = delimited!(self, LParen, type_name, Comma, RParen);
+        Ok(TupleStruct(name, tuple_members))
+      },
+      LCurlyBrace => {
+        let typed_identifier_list = delimited!(self, LCurlyBrace, typed_identifier, Comma, RCurlyBrace);
+        Ok(Record(name, typed_identifier_list))
+      },
+      _ => Ok(UnitStruct(name))
+    }
+    */
+
+    Ok(match self.peek() {
+      Identifier(_) => {
+        let id = self.identifier()?;
+        match self.peek() {
+          LCurlyBrace => { unimplemented!() },
+          LParen => {
+            let members = delimited!(self, LParen, pattern, Comma, RParen);
+            Pattern::TupleStruct(id, members)
+          },
+          _ => Pattern::Literal(PatternLiteral::VarPattern(id))
+        }
+      },
+      Keyword(Kw::True) => Pattern::Literal(PatternLiteral::BoolPattern(true)),
+      Keyword(Kw::False) => Pattern::Literal(PatternLiteral::BoolPattern(false)),
+      StrLiteral(s) =>  Pattern::Literal(PatternLiteral::StringPattern(s)),
+      DigitGroup(_) | HexLiteral(_) | BinNumberSigil | Period => {
+        //TODO handle negatives
+        let Expression(expr_type, _) = self.number_literal()?;
+        Pattern::Literal(PatternLiteral::NumPattern(expr_type))
+      },
+      other => return ParseError::new(&format!("{:?} is not a valid Pattern", other))
     })
   });
 
