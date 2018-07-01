@@ -1,6 +1,8 @@
 
 # TODO Items
 
+-consult http://gluon-lang.org/book/embedding-api.html
+
 - if/match playground
 
 simple if
