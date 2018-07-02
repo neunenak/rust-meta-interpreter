@@ -3,7 +3,7 @@
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
 extern crate getopts;
-extern crate rustyline;
+extern crate linefeed;
 extern crate itertools;
 extern crate colored;
 
@@ -24,8 +24,6 @@ use std::fmt::Write as FmtWrite;
 
 use colored::*;
 use itertools::Itertools;
-use rustyline::error::ReadlineError;
-use rustyline::Editor;
 
 mod language;
 mod webapp;
@@ -132,11 +130,12 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
   }
 }
 
-struct TabCompleteHandler { 
+struct TabCompleteHandler {
   passes: Vec<String>,
   sigil: char,
 }
 
+/*
 impl TabCompleteHandler {
   fn complete_interpreter_directive(&self, line: &str, pos: usize) -> rustyline::Result<(usize, Vec<String>)> {
     let mut iter = line.chars();
@@ -155,7 +154,9 @@ impl TabCompleteHandler {
     Ok((pos, completes))
   }
 }
+*/
 
+/*
 impl rustyline::completion::Completer for TabCompleteHandler {
   fn complete(&self, line: &str, pos: usize) -> rustyline::Result<(usize, Vec<String>)> {
     if line.starts_with(&format!("{}", self.sigil)) {
@@ -165,27 +166,29 @@ impl rustyline::completion::Completer for TabCompleteHandler {
     }
   }
 }
+*/
 
 struct Repl {
   options: EvalOptions,
   languages: Vec<Box<ProgrammingLanguageInterface>>,
   current_language_index: usize,
   interpreter_directive_sigil: char,
-  console: rustyline::Editor<TabCompleteHandler>,
+  line_reader: linefeed::interface::Interface<linefeed::terminal::DefaultTerminal>,
 }
 
 impl Repl {
   fn new(languages: Vec<Box<ProgrammingLanguageInterface>>, initial_index: usize) -> Repl {
+    use linefeed::Interface;
     let i = if initial_index < languages.len() { initial_index } else { 0 };
 
-    let console = Editor::<TabCompleteHandler>::new();
+    let line_reader = Interface::new("schala-repl").unwrap();
 
     Repl {
       options: Repl::get_options(),
       languages: languages,
       current_language_index: i,
       interpreter_directive_sigil: ':',
-      console
+      line_reader
     }
   }
 
@@ -220,24 +223,31 @@ impl Repl {
   }
 
   fn run(&mut self) {
+    use linefeed::ReadResult;
+
     println!("Schala MetaInterpreter version {}", VERSION_STRING);
     println!("Type {}help for help with the REPL", self.interpreter_directive_sigil);
 
-    self.console.get_history().load(".schala_history").unwrap_or(());
+    self.line_reader.load_history(".schala_history").unwrap_or(());
 
     loop {
       let language_name = self.languages[self.current_language_index].get_language_name();
+      /*
       let tab_complete_handler = TabCompleteHandler { sigil: self.interpreter_directive_sigil, passes: self.get_cur_language().get_passes() };
-      self.console.set_completer(Some(tab_complete_handler));
+      self.line_reader.set_completer(Some(tab_complete_handler));
+      */
       let prompt_str = format!("{} >> ", language_name);
+      self.line_reader.set_prompt(&prompt_str);
 
-      match self.console.readline(&prompt_str) {
-        Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => break,
+      match self.line_reader.read_line() {
+        //Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => break,
         Err(e) => {
           println!("Terminal read error: {}", e);
         },
-        Ok(ref input) => {
-          self.console.get_history().add(input);
+        Ok(ReadResult::Eof) => break,
+        Ok(ReadResult::Signal(_)) => break,
+        Ok(ReadResult::Input(ref input)) => {
+          self.line_reader.add_history_unique(input.to_string());
           let output = match input.chars().nth(0) {
             Some(ch) if ch == self.interpreter_directive_sigil => self.handle_interpreter_directive(input),
             _ => Some(self.input_handler(input)),
@@ -248,7 +258,7 @@ impl Repl {
         }
       }
     }
-    self.console.get_history().save(".schala_history").unwrap_or(());
+    self.line_reader.save_history(".schala_history").unwrap_or(());
     self.save_options();
     println!("Exiting...");
   }
