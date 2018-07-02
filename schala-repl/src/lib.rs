@@ -165,22 +165,9 @@ use linefeed::complete::{Completion, Completer};
 use linefeed::terminal::Terminal;
 
 impl TabCompleteHandler {
-  fn new(sigil: char, passes: Vec<String>) -> TabCompleteHandler {
+  fn new(sigil: char, top_level_commands: CommandTree) -> TabCompleteHandler {
     TabCompleteHandler {
-      top_level_commands: CommandTree::Top(vec![
-        CommandTree::term("exit"),
-        CommandTree::term("quit"),
-        CommandTree::NonTerminal(format!("debug"), vec![
-          CommandTree::term("passes"),
-          CommandTree::NonTerminal(format!("show"), passes.iter().map(|p| CommandTree::term(p)).collect()),
-          CommandTree::NonTerminal(format!("hide"), passes.iter().map(|p| CommandTree::term(p)).collect()),
-        ]),
-        CommandTree::NonTerminal(format!("lang"), vec![
-          CommandTree::term("next"),
-          CommandTree::term("prev"),
-          CommandTree::NonTerminal(format!("go"), vec![])//TODO
-        ]),
-      ]),
+      top_level_commands,
       sigil,
     }
   }
@@ -295,8 +282,8 @@ impl Repl {
 
     loop {
       let language_name = self.languages[self.current_language_index].get_language_name();
-
-      let tab_complete_handler = TabCompleteHandler::new(self.interpreter_directive_sigil, self.get_cur_language().get_passes());
+      let directives = self.get_directives(&self.get_cur_language().get_passes());
+      let tab_complete_handler = TabCompleteHandler::new(self.interpreter_directive_sigil, directives);
       self.line_reader.set_completer(std::sync::Arc::new(tab_complete_handler));
 
       let prompt_str = format!("{} >> ", language_name);
@@ -330,6 +317,23 @@ impl Repl {
     let ref mut language = self.languages[self.current_language_index];
     let interpreter_output = language.execute_pipeline(input, &self.options);
     interpreter_output.to_repl()
+  }
+
+  fn get_directives(&self, passes: &Vec<String>) -> CommandTree {
+    CommandTree::Top(vec![
+      CommandTree::term("exit"),
+      CommandTree::term("quit"),
+      CommandTree::NonTerminal(format!("debug"), vec![
+        CommandTree::term("passes"),
+        CommandTree::NonTerminal(format!("show"), passes.iter().map(|p| CommandTree::term(p)).collect()),
+        CommandTree::NonTerminal(format!("hide"), passes.iter().map(|p| CommandTree::term(p)).collect()),
+      ]),
+      CommandTree::NonTerminal(format!("lang"), vec![
+        CommandTree::term("next"),
+        CommandTree::term("prev"),
+        CommandTree::NonTerminal(format!("go"), vec![])//TODO
+      ]),
+    ])
   }
 
   fn handle_interpreter_directive(&mut self, input: &str) -> Option<String> {
