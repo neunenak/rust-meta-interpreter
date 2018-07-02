@@ -130,43 +130,78 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
   }
 }
 
+enum CommandTree {
+  Terminal(String),
+  NonTerminal(String, Vec<CommandTree>)
+}
+
 struct TabCompleteHandler {
   passes: Vec<String>,
   sigil: char,
+  top_level_commands: Vec<String>,
 }
 
-/*
+use linefeed::complete::{Completion, Completer};
+use linefeed::terminal::Terminal;
+
 impl TabCompleteHandler {
-  fn complete_interpreter_directive(&self, line: &str, pos: usize) -> rustyline::Result<(usize, Vec<String>)> {
-    let mut iter = line.chars();
-    iter.next();
-    let commands: Vec<&str> = iter
-      .as_str()
-      .split_whitespace()
-      .collect();
-    println!("POS {}---", pos);
-    let completes = match &commands[..] {
-      &["debug", "show"] | &["debug", "hide"] => self.passes.clone(),
-      &["debug"] | &["debug", _] => vec!["passes".to_string(), "show".to_string(), "hide".to_string()],
-      &[_cmd] => vec!["debug".to_string()],
-      _ => vec![],
-    };
-    Ok((pos, completes))
-  }
-}
-*/
-
-/*
-impl rustyline::completion::Completer for TabCompleteHandler {
-  fn complete(&self, line: &str, pos: usize) -> rustyline::Result<(usize, Vec<String>)> {
-    if line.starts_with(&format!("{}", self.sigil)) {
-      self.complete_interpreter_directive(line, pos)
-    } else {
-      Ok((pos, vec!(format!("tab-completion-no-done"), format!("tab-completion-still-not-done"))))
+  fn new(sigil: char, passes: Vec<String>) -> TabCompleteHandler {
+    TabCompleteHandler {
+      passes,
+      sigil,
+      top_level_commands: vec![
+        "exit".to_string(),
+        "quit".to_string(),
+        "lang".to_string(),
+        "debug".to_string(),
+      ]
     }
   }
 }
-*/
+
+impl<T: Terminal> Completer<T> for TabCompleteHandler {
+  fn complete(&self, word: &str, prompter: &linefeed::prompter::Prompter<T>, start: usize, end: usize) -> Option<Vec<Completion>> {
+    let line = prompter.buffer();
+
+    if line.starts_with(&format!("{}", self.sigil)) {
+      let mut words = line[1..(if start == 0 { 1 } else { start })].split_whitespace();
+      let mut completions = Vec::new();
+      match words.next() {
+        None => {
+          let word = word.get(1..).unwrap();
+          for cmd in self.top_level_commands.iter() {
+            if cmd.starts_with(word) {
+              completions.push(
+                Completion {
+                  completion: format!(":{}", cmd),
+                  display: Some(cmd.clone()),
+                  suffix: linefeed::complete::Suffix::Some(' ')
+                }
+              )
+            }
+          }
+        },
+        Some("debug") => match words.next() {
+          None => for cmd in ["show", "hide", "passes"].iter() {
+            if cmd.starts_with(word) {
+              completions.push(Completion::simple(cmd.to_string()));
+            }
+          },
+          Some("show") | Some("hide") => for pass in self.passes.iter() {
+            if pass.starts_with(word) {
+              completions.push(Completion::simple(pass.to_string()));
+            }
+          },
+          _ => return None,
+        },
+        _ => return None
+      }
+      Some(completions)
+    } else {
+      None
+    }
+  }
+}
 
 struct Repl {
   options: EvalOptions,
@@ -232,10 +267,10 @@ impl Repl {
 
     loop {
       let language_name = self.languages[self.current_language_index].get_language_name();
-      /*
-      let tab_complete_handler = TabCompleteHandler { sigil: self.interpreter_directive_sigil, passes: self.get_cur_language().get_passes() };
-      self.line_reader.set_completer(Some(tab_complete_handler));
-      */
+
+      let tab_complete_handler = TabCompleteHandler::new(self.interpreter_directive_sigil, self.get_cur_language().get_passes());
+      self.line_reader.set_completer(std::sync::Arc::new(tab_complete_handler));
+
       let prompt_str = format!("{} >> ", language_name);
       self.line_reader.set_prompt(&prompt_str);
 
