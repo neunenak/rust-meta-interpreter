@@ -132,13 +132,33 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
 
 enum CommandTree {
   Terminal(String),
-  NonTerminal(String, Vec<CommandTree>)
+  NonTerminal(String, Vec<CommandTree>),
+  Top(Vec<CommandTree>),
+}
+
+impl CommandTree {
+  fn term(s: &str) -> CommandTree {
+    CommandTree::Terminal(s.to_string())
+  }
+  fn get_cmd(&self) -> String {
+    match self {
+      CommandTree::Terminal(s) => s.to_string(),
+      CommandTree::NonTerminal(s, _) => s.to_string(),
+      CommandTree::Top(_) => "".to_string(),
+    }
+  }
+  fn get_children(&self) -> Vec<String> {
+    match self {
+      CommandTree::Terminal(_) => vec![],
+      CommandTree::NonTerminal(_, children) => children.iter().map(|x| x.get_cmd()).collect(),
+      CommandTree::Top(children) => children.iter().map(|x| x.get_cmd()).collect(),
+    }
+  }
 }
 
 struct TabCompleteHandler {
-  passes: Vec<String>,
   sigil: char,
-  top_level_commands: Vec<String>,
+  top_level_commands: CommandTree,
 }
 
 use linefeed::complete::{Completion, Completer};
@@ -147,54 +167,62 @@ use linefeed::terminal::Terminal;
 impl TabCompleteHandler {
   fn new(sigil: char, passes: Vec<String>) -> TabCompleteHandler {
     TabCompleteHandler {
-      passes,
+      top_level_commands: CommandTree::Top(vec![
+        CommandTree::term("exit"),
+        CommandTree::term("quit"),
+        CommandTree::NonTerminal(format!("debug"), vec![
+          CommandTree::term("passes"),
+          CommandTree::NonTerminal(format!("show"), passes.iter().map(|p| CommandTree::term(p)).collect()),
+          CommandTree::NonTerminal(format!("hide"), passes.iter().map(|p| CommandTree::term(p)).collect()),
+        ]),
+        CommandTree::NonTerminal(format!("lang"), vec![
+          CommandTree::term("next"),
+          CommandTree::term("prev"),
+          CommandTree::NonTerminal(format!("go"), vec![])//TODO
+        ]),
+      ]),
       sigil,
-      top_level_commands: vec![
-        "exit".to_string(),
-        "quit".to_string(),
-        "lang".to_string(),
-        "debug".to_string(),
-      ]
     }
   }
 }
 
 impl<T: Terminal> Completer<T> for TabCompleteHandler {
-  fn complete(&self, word: &str, prompter: &linefeed::prompter::Prompter<T>, start: usize, end: usize) -> Option<Vec<Completion>> {
+  fn complete(&self, word: &str, prompter: &linefeed::prompter::Prompter<T>, start: usize, _end: usize) -> Option<Vec<Completion>> {
     let line = prompter.buffer();
 
     if line.starts_with(&format!("{}", self.sigil)) {
       let mut words = line[1..(if start == 0 { 1 } else { start })].split_whitespace();
       let mut completions = Vec::new();
-      match words.next() {
-        None => {
-          let word = word.get(1..).unwrap();
-          for cmd in self.top_level_commands.iter() {
-            if cmd.starts_with(word) {
-              completions.push(
-                Completion {
-                  completion: format!(":{}", cmd),
-                  display: Some(cmd.clone()),
-                  suffix: linefeed::complete::Suffix::Some(' ')
-                }
-              )
+      let mut command_tree: Option<&CommandTree> = Some(&self.top_level_commands);
+
+      loop {
+        match words.next() {
+          None => {
+            let top = match command_tree {
+              Some(CommandTree::Top(_)) => true,
+              _ => false
+            };
+            let word = if top { word.get(1..).unwrap() } else { word };
+            for cmd in command_tree.map(|x| x.get_children()).unwrap_or(vec![]).into_iter() {
+              if cmd.starts_with(word) {
+                completions.push(Completion {
+                    completion: format!("{}{}", if top { ":" } else { "" }, cmd),
+                    display: Some(cmd.clone()),
+                    suffix: linefeed::complete::Suffix::Some(' ')
+                })
+              }
             }
+            break;
+          },
+          Some(s) => {
+            let new_ptr: Option<&CommandTree> = command_tree.and_then(|cm| match cm {
+              CommandTree::Top(children) => children.iter().find(|c| c.get_cmd() == s),
+              CommandTree::NonTerminal(_, children) => children.iter().find(|c| c.get_cmd() == s),
+              CommandTree::Terminal(_) => None,
+            });
+            command_tree = new_ptr;
           }
-        },
-        Some("debug") => match words.next() {
-          None => for cmd in ["show", "hide", "passes"].iter() {
-            if cmd.starts_with(word) {
-              completions.push(Completion::simple(cmd.to_string()));
-            }
-          },
-          Some("show") | Some("hide") => for pass in self.passes.iter() {
-            if pass.starts_with(word) {
-              completions.push(Completion::simple(pass.to_string()));
-            }
-          },
-          _ => return None,
-        },
-        _ => return None
+        }
       }
       Some(completions)
     } else {
