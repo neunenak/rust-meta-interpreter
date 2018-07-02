@@ -131,26 +131,33 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
 }
 
 enum CommandTree {
-  Terminal(String),
-  NonTerminal(String, Vec<CommandTree>),
+  Terminal(String, Option<String>),
+  NonTerminal(String, Vec<CommandTree>, Option<String>),
   Top(Vec<CommandTree>),
 }
 
 impl CommandTree {
-  fn term(s: &str) -> CommandTree {
-    CommandTree::Terminal(s.to_string())
+  fn term(s: &str, help: Option<&str>) -> CommandTree {
+    CommandTree::Terminal(s.to_string(), help.map(|x| x.to_string()))
   }
   fn get_cmd(&self) -> String {
     match self {
-      CommandTree::Terminal(s) => s.to_string(),
-      CommandTree::NonTerminal(s, _) => s.to_string(),
+      CommandTree::Terminal(s, _) => s.to_string(),
+      CommandTree::NonTerminal(s, _, _) => s.to_string(),
+      CommandTree::Top(_) => "".to_string(),
+    }
+  }
+  fn get_help(&self) -> String {
+    match self {
+      CommandTree::Terminal(_, h) => h.as_ref().map(|h| h.clone()).unwrap_or(format!("")),
+      CommandTree::NonTerminal(_, _, h) => h.as_ref().map(|h| h.clone()).unwrap_or(format!("")),
       CommandTree::Top(_) => "".to_string(),
     }
   }
   fn get_children(&self) -> Vec<String> {
     match self {
-      CommandTree::Terminal(_) => vec![],
-      CommandTree::NonTerminal(_, children) => children.iter().map(|x| x.get_cmd()).collect(),
+      CommandTree::Terminal(_, _) => vec![],
+      CommandTree::NonTerminal(_, children, _) => children.iter().map(|x| x.get_cmd()).collect(),
       CommandTree::Top(children) => children.iter().map(|x| x.get_cmd()).collect(),
     }
   }
@@ -204,8 +211,8 @@ impl<T: Terminal> Completer<T> for TabCompleteHandler {
           Some(s) => {
             let new_ptr: Option<&CommandTree> = command_tree.and_then(|cm| match cm {
               CommandTree::Top(children) => children.iter().find(|c| c.get_cmd() == s),
-              CommandTree::NonTerminal(_, children) => children.iter().find(|c| c.get_cmd() == s),
-              CommandTree::Terminal(_) => None,
+              CommandTree::NonTerminal(_, children, _) => children.iter().find(|c| c.get_cmd() == s),
+              CommandTree::Terminal(_, _) => None,
             });
             command_tree = new_ptr;
           }
@@ -321,18 +328,18 @@ impl Repl {
 
   fn get_directives(&self, passes: &Vec<String>) -> CommandTree {
     CommandTree::Top(vec![
-      CommandTree::term("exit"),
-      CommandTree::term("quit"),
+      CommandTree::term("exit", Some("exit the REPL")),
+      CommandTree::term("quit", Some("exit the REPL")),
       CommandTree::NonTerminal(format!("debug"), vec![
-        CommandTree::term("passes"),
-        CommandTree::NonTerminal(format!("show"), passes.iter().map(|p| CommandTree::term(p)).collect()),
-        CommandTree::NonTerminal(format!("hide"), passes.iter().map(|p| CommandTree::term(p)).collect()),
-      ]),
+        CommandTree::term("passes", None),
+        CommandTree::NonTerminal(format!("show"), passes.iter().map(|p| CommandTree::term(p, None)).collect(), None),
+        CommandTree::NonTerminal(format!("hide"), passes.iter().map(|p| CommandTree::term(p, None)).collect(), None),
+      ], None),
       CommandTree::NonTerminal(format!("lang"), vec![
-        CommandTree::term("next"),
-        CommandTree::term("prev"),
-        CommandTree::NonTerminal(format!("go"), vec![])//TODO
-      ]),
+        CommandTree::term("next", None),
+        CommandTree::term("prev", None),
+        CommandTree::NonTerminal(format!("go"), vec![], None)//TODO
+      ], None),
     ])
   }
 
@@ -392,10 +399,12 @@ impl Repl {
 
         writeln!(buf, "MetaInterpreter options").unwrap();
         writeln!(buf, "-----------------------").unwrap();
+        /*
         writeln!(buf, "exit | quit - exit the REPL").unwrap();
         writeln!(buf, "debug [show|hide] <pass_name> - show or hide debug info for a given pass").unwrap();
         writeln!(buf, "debug passes - display the names of all passes").unwrap();
         writeln!(buf, "lang [prev|next|go <name> |show] - toggle to previous or next language, go to a specific language by name, or show all languages").unwrap();
+        */
         writeln!(buf, "Language-specific help for {}", lang.get_language_name()).unwrap();
         writeln!(buf, "-----------------------").unwrap();
         writeln!(buf, "{}", lang.custom_interpreter_directives_help()).unwrap();
