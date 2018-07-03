@@ -33,7 +33,9 @@ const VERSION_STRING: &'static str = "0.1.0";
 
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
-pub use language::{LLVMCodeString, ProgrammingLanguageInterface, EvalOptions, ExecutionMethod, TraceArtifact, FinishedComputation, UnfinishedComputation};
+pub use language::{LLVMCodeString, ProgrammingLanguageInterface, EvalOptions,
+  ExecutionMethod, TraceArtifact, FinishedComputation, UnfinishedComputation, PassDebugDescriptor};
+
 pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
 pub fn repl_main(generators: Vec<PLIGenerator>) {
@@ -111,7 +113,7 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
 
   for pass in debug_passes.into_iter() {
     if let Some(_) = language.get_passes().iter().find(|stage_name| **stage_name == pass) {
-      options.debug_passes.insert(pass);
+      options.debug_passes.insert(pass, PassDebugDescriptor { opts: vec![] });
     }
   }
 
@@ -436,7 +438,7 @@ impl Repl {
       Some(&"passes") => Some(
         passes.into_iter()
         .map(|p| {
-          if self.options.debug_passes.contains(&p) {
+          if self.options.debug_passes.contains_key(&p) {
             let color = "green";
             format!("*{}", p.color(color))
           } else {
@@ -454,7 +456,7 @@ impl Repl {
         if let Some(stage) = passes.iter().find(|stage_name| **stage_name == debug_pass) {
           let msg = format!("{} debug for stage {}", if show { "Enabling" } else { "Disabling" }, debug_pass);
           if show {
-            self.options.debug_passes.insert(stage.clone());
+            self.options.debug_passes.insert(stage.clone(), PassDebugDescriptor { opts: vec![] });
           } else {
             self.options.debug_passes.remove(stage);
           }

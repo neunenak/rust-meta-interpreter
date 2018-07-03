@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use colored::*;
 use std::fmt::Write;
 
@@ -7,8 +7,14 @@ pub struct LLVMCodeString(pub String);
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EvalOptions {
   pub execution_method: ExecutionMethod,
-  pub debug_passes: HashSet<String>,
+  pub debug_passes: HashMap<String, PassDebugDescriptor>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PassDebugDescriptor {
+  pub opts: Vec<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ExecutionMethod {
   Compile,
@@ -151,13 +157,15 @@ macro_rules! pass_chain {
 macro_rules! pass_chain_helper {
   (($state:expr, $comp:expr, $options:expr); $input:expr, $pass:path $(, $rest:path)*) => {
     {
+      use schala_repl::PassDebugDescriptor;
       let pass_name = stringify!($pass);
       let output = {
-        let ref debug_set = $options.debug_passes;
-        let debug_handle: Option<&mut UnfinishedComputation> = if debug_set.contains(pass_name) {
-          Some(&mut $comp)
-        } else {
-          None
+        let ref debug_map = $options.debug_passes;
+        //let (debug_handle: Option<&mut UnfinishedComputation>, debug_opts) = if debug_set.contains_key(pass_name) {
+        //let (debug_handle: Option<&mut UnfinishedComputation>, debug_opts: Vec<String>) = match debug_map.get(pass_name) {
+        let (debug_handle, debug_opts) = match debug_map.get(pass_name) {
+          Some(PassDebugDescriptor { opts }) => (Some(&mut $comp), Some(opts.clone())),
+          _ => (None, None)
         };
         $pass($state, $input, debug_handle)
       };
