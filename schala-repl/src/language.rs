@@ -29,6 +29,7 @@ impl Default for ExecutionMethod {
 #[derive(Debug, Default)]
 pub struct UnfinishedComputation {
   artifacts: Vec<(String, TraceArtifact)>,
+  pub cur_debug_options: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -161,11 +162,13 @@ macro_rules! pass_chain_helper {
       let pass_name = stringify!($pass);
       let output = {
         let ref debug_map = $options.debug_passes;
-        //let (debug_handle: Option<&mut UnfinishedComputation>, debug_opts) = if debug_set.contains_key(pass_name) {
-        //let (debug_handle: Option<&mut UnfinishedComputation>, debug_opts: Vec<String>) = match debug_map.get(pass_name) {
-        let (debug_handle, debug_opts) = match debug_map.get(pass_name) {
-          Some(PassDebugDescriptor { opts }) => (Some(&mut $comp), Some(opts.clone())),
-          _ => (None, None)
+        let debug_handle = match debug_map.get(pass_name) {
+          Some(PassDebugDescriptor { opts }) => { //(Some(&mut $comp), Some(opts.clone())),
+            let ptr = &mut $comp;
+            ptr.cur_debug_options = opts.clone();
+            Some(ptr)
+          }
+          _ => None
         };
         $pass($state, $input, debug_handle)
       };

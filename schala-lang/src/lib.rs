@@ -79,6 +79,7 @@ fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mu
 
   let (ast, trace) = parsing::parse(input);
   comp.map(|comp| {
+    println!("DEBUG OPTS: {:?}", comp.cur_debug_options);
     //TODO need to control which of these debug stages get added
     comp.add_artifact(TraceArtifact::new_parse_trace(trace));
     comp.add_artifact(TraceArtifact::new("ast", format!("{:#?}", ast)));
