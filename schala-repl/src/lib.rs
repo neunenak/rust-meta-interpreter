@@ -289,7 +289,7 @@ impl Repl {
 
     loop {
       let language_name = self.languages[self.current_language_index].get_language_name();
-      let directives = self.get_directives(&self.get_cur_language().get_passes());
+      let directives = self.get_directives();
       let tab_complete_handler = TabCompleteHandler::new(self.interpreter_directive_sigil, directives);
       self.line_reader.set_completer(std::sync::Arc::new(tab_complete_handler));
 
@@ -326,20 +326,22 @@ impl Repl {
     interpreter_output.to_repl()
   }
 
-  fn get_directives(&self, passes: &Vec<String>) -> CommandTree {
+  fn get_directives(&self) -> CommandTree {
+    let ref passes = self.get_cur_language().get_passes();
     CommandTree::Top(vec![
       CommandTree::term("exit", Some("exit the REPL")),
       CommandTree::term("quit", Some("exit the REPL")),
+      CommandTree::term("help", Some("Print this help message")),
       CommandTree::NonTerminal(format!("debug"), vec![
         CommandTree::term("passes", None),
         CommandTree::NonTerminal(format!("show"), passes.iter().map(|p| CommandTree::term(p, None)).collect(), None),
         CommandTree::NonTerminal(format!("hide"), passes.iter().map(|p| CommandTree::term(p, None)).collect(), None),
-      ], None),
+      ], Some(format!("show or hide pass info for a given pass, or display the names of all passes"))),
       CommandTree::NonTerminal(format!("lang"), vec![
         CommandTree::term("next", None),
         CommandTree::term("prev", None),
         CommandTree::NonTerminal(format!("go"), vec![], None)//TODO
-      ], None),
+      ], Some(format!("switch between languages, or go directly to a langauge by name"))),
     ])
   }
 
@@ -396,9 +398,21 @@ impl Repl {
       "help" =>  {
         let mut buf = String::new();
         let ref lang = self.languages[self.current_language_index];
+        let directives = match self.get_directives() {
+            CommandTree::Top(children) => children,
+            _ => panic!("Top-level CommandTree not Top")
+        };
 
         writeln!(buf, "MetaInterpreter options").unwrap();
         writeln!(buf, "-----------------------").unwrap();
+
+        for directive in directives {
+          let trailer = " ";
+          writeln!(buf, "{}{}- {}", directive.get_cmd(), trailer, directive.get_help()).unwrap();
+        }
+
+        writeln!(buf, "").unwrap();
+
         /*
         writeln!(buf, "exit | quit - exit the REPL").unwrap();
         writeln!(buf, "debug [show|hide] <pass_name> - show or hide debug info for a given pass").unwrap();
