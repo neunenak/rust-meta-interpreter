@@ -299,7 +299,6 @@ impl Repl {
       self.line_reader.set_prompt(&prompt_str);
 
       match self.line_reader.read_line() {
-        //Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => break,
         Err(e) => {
           println!("Terminal read error: {}", e);
         },
@@ -453,10 +452,15 @@ impl Repl {
           Some(s) => s.to_string(),
           None => return Some(format!("Must specify a stage to debug")),
         };
+        let pass_opt = commands.get(3);
         if let Some(stage) = passes.iter().find(|stage_name| **stage_name == debug_pass) {
+          let mut opts = vec![];
+          if let Some(opt) = pass_opt {
+            opts.push(opt.to_string());
+          }
           let msg = format!("{} debug for stage {}", if show { "Enabling" } else { "Disabling" }, debug_pass);
           if show {
-            self.options.debug_passes.insert(stage.clone(), PassDebugDescriptor { opts: vec![] });
+            self.options.debug_passes.insert(stage.clone(), PassDebugDescriptor { opts });
           } else {
             self.options.debug_passes.remove(stage);
           }

@@ -81,8 +81,14 @@ fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mu
   comp.map(|comp| {
     println!("DEBUG OPTS: {:?}", comp.cur_debug_options);
     //TODO need to control which of these debug stages get added
-    comp.add_artifact(TraceArtifact::new_parse_trace(trace));
-    comp.add_artifact(TraceArtifact::new("ast", format!("{:#?}", ast)));
+    let opt = comp.cur_debug_options.get(0).map(|s| s.clone());
+    match opt {
+      None => comp.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast))),
+      Some(ref s) if s == "compact" => comp.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast))),
+      Some(ref s) if s == "expanded" => comp.add_artifact(TraceArtifact::new("ast", format!("{:#?}", ast))),
+      Some(ref s) if s == "trace" => comp.add_artifact(TraceArtifact::new_parse_trace(trace)),
+      Some(ref x) => println!("Bad parsing option: {}", x),
+    };
   });
   ast.map_err(|err| err.msg)
 }
