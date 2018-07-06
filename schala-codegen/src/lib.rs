@@ -65,8 +65,8 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
         let mut chain = pass_chain![self, options; #(#passes),* ];
         chain(input)
       }
-      fn get_passes(&self) -> Vec<String> {
-        vec![ #(#pass_names.to_string()),* ]
+      fn get_passes(&self) -> Vec<PassDescriptor> {
+        vec![ #(PassDescriptor { name: #pass_names.to_string(), debug_options: vec![] }),* ]
       }
     }
   };

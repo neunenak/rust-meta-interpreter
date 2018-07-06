@@ -87,7 +87,7 @@ fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mu
       Some(ref s) if s == "compact" => comp.add_artifact(TraceArtifact::new("ast", format!("{:?}", ast))),
       Some(ref s) if s == "expanded" => comp.add_artifact(TraceArtifact::new("ast", format!("{:#?}", ast))),
       Some(ref s) if s == "trace" => comp.add_artifact(TraceArtifact::new_parse_trace(trace)),
-      Some(ref x) => println!("Bad parsing option: {}", x),
+      Some(ref x) => println!("Bad parsing debug option: {}", x),
     };
   });
   ast.map_err(|err| err.msg)

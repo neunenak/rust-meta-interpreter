@@ -112,7 +112,7 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
   source_file.read_to_string(&mut buffer).unwrap();
 
   for pass in debug_passes.into_iter() {
-    if let Some(_) = language.get_passes().iter().find(|stage_name| **stage_name == pass) {
+    if let Some(_) = language.get_passes().iter().find(|desc| desc.name == pass) {
       options.debug_passes.insert(pass, PassDebugDescriptor { opts: vec![] });
     }
   }
@@ -335,8 +335,8 @@ impl Repl {
       CommandTree::term("help", Some("Print this help message")),
       CommandTree::NonTerminal(format!("debug"), vec![
         CommandTree::term("passes", None),
-        CommandTree::NonTerminal(format!("show"), passes.iter().map(|p| CommandTree::term(p, None)).collect(), None),
-        CommandTree::NonTerminal(format!("hide"), passes.iter().map(|p| CommandTree::term(p, None)).collect(), None),
+        CommandTree::NonTerminal(format!("show"), passes.iter().map(|p| CommandTree::term(&p.name, None)).collect(), None),
+        CommandTree::NonTerminal(format!("hide"), passes.iter().map(|p| CommandTree::term(&p.name, None)).collect(), None),
       ], Some(format!("show or hide pass info for a given pass, or display the names of all passes"))),
       CommandTree::NonTerminal(format!("lang"), vec![
         CommandTree::term("next", None),
@@ -436,12 +436,12 @@ impl Repl {
     match commands.get(1) {
       Some(&"passes") => Some(
         passes.into_iter()
-        .map(|p| {
-          if self.options.debug_passes.contains_key(&p) {
+        .map(|desc| {
+          if self.options.debug_passes.contains_key(&desc.name) {
             let color = "green";
-            format!("*{}", p.color(color))
+            format!("*{}", desc.name.color(color))
           } else {
-            p
+            desc.name 
           }
         })
         .intersperse(format!(" -> "))
@@ -453,16 +453,16 @@ impl Repl {
           None => return Some(format!("Must specify a stage to debug")),
         };
         let pass_opt = commands.get(3);
-        if let Some(stage) = passes.iter().find(|stage_name| **stage_name == debug_pass) {
+        if let Some(desc) = passes.iter().find(|desc| desc.name == debug_pass) {
           let mut opts = vec![];
           if let Some(opt) = pass_opt {
             opts.push(opt.to_string());
           }
-          let msg = format!("{} debug for stage {}", if show { "Enabling" } else { "Disabling" }, debug_pass);
+          let msg = format!("{} debug for pass {}", if show { "Enabling" } else { "Disabling" }, debug_pass);
           if show {
-            self.options.debug_passes.insert(stage.clone(), PassDebugDescriptor { opts });
+            self.options.debug_passes.insert(desc.name.clone(), PassDebugDescriptor { opts });
           } else {
-            self.options.debug_passes.remove(stage);
+            self.options.debug_passes.remove(&desc.name);
           }
           Some(msg)
         } else {

@@ -10,6 +10,12 @@ pub struct EvalOptions {
   pub debug_passes: HashMap<String, PassDebugDescriptor>,
 }
 
+#[derive(Debug, Hash, PartialEq)]
+pub struct PassDescriptor {
+  pub name: String,
+  pub debug_options: Vec<String>
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PassDebugDescriptor {
   pub opts: Vec<String>,
@@ -127,7 +133,7 @@ pub trait ProgrammingLanguageInterface {
 
   fn get_language_name(&self) -> String;
   fn get_source_file_suffix(&self) -> String;
-  fn get_passes(&self) -> Vec<String> {
+  fn get_passes(&self) -> Vec<PassDescriptor> {
     vec![]
   }
   fn handle_custom_interpreter_directives(&mut self, _commands: &Vec<&str>) -> Option<String> {
