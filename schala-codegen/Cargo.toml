@@ -6,6 +6,7 @@ authors = ["greg <greg.shuflin@protonmail.com>"]
 [dependencies]
 syn = { version = "0.13.1", features = ["full", "extra-traits"] }
 quote = "0.5"
+schala-repl = { path = "../schala-repl" }
 
 [lib]
 proc-macro = true

@@ -4,6 +4,8 @@ extern crate proc_macro;
 extern crate quote;
 extern crate syn;
 
+extern crate schala_repl;
+
 use proc_macro::TokenStream;
 use syn::{Ident, Attribute, DeriveInput};
 
@@ -54,6 +56,7 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
   let pass_names: Vec<String> = passes.iter().map(|pass| pass.to_string()).collect();
 
   let tokens = quote! {
+    use schala_repl::PassDescriptor;
     impl ProgrammingLanguageInterface for #name {
       fn get_language_name(&self) -> String {
         #language_name.to_string()

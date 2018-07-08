@@ -34,7 +34,7 @@ const VERSION_STRING: &'static str = "0.1.0";
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
 pub use language::{LLVMCodeString, ProgrammingLanguageInterface, EvalOptions,
-  ExecutionMethod, TraceArtifact, FinishedComputation, UnfinishedComputation, PassDebugDescriptor};
+  ExecutionMethod, TraceArtifact, FinishedComputation, UnfinishedComputation, PassDebugDescriptor, PassDescriptor};
 
 pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
