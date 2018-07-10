@@ -132,6 +132,7 @@ pub struct Guard {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Pattern {
+  Ignored,
   TuplePattern(Vec<Pattern>),
   Literal(PatternLiteral),
   TupleStruct(Rc<String>, Vec<Pattern>),

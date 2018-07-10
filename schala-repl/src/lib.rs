@@ -413,13 +413,6 @@ impl Repl {
         }
 
         writeln!(buf, "").unwrap();
-
-        /*
-        writeln!(buf, "exit | quit - exit the REPL").unwrap();
-        writeln!(buf, "debug [show|hide] <pass_name> - show or hide debug info for a given pass").unwrap();
-        writeln!(buf, "debug passes - display the names of all passes").unwrap();
-        writeln!(buf, "lang [prev|next|go <name> |show] - toggle to previous or next language, go to a specific language by name, or show all languages").unwrap();
-        */
         writeln!(buf, "Language-specific help for {}", lang.get_language_name()).unwrap();
         writeln!(buf, "-----------------------").unwrap();
         writeln!(buf, "{}", lang.custom_interpreter_directives_help()).unwrap();

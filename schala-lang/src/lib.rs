@@ -79,7 +79,6 @@ fn parsing(_handle: &mut Schala, input: Vec<tokenizing::Token>, comp: Option<&mu
 
   let (ast, trace) = parsing::parse(input);
   comp.map(|comp| {
-    println!("DEBUG OPTS: {:?}", comp.cur_debug_options);
     //TODO need to control which of these debug stages get added
     let opt = comp.cur_debug_options.get(0).map(|s| s.clone());
     match opt {

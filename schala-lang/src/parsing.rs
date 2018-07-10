@@ -694,21 +694,6 @@ impl Parser {
   });
 
   parse_method!(simple_pattern(&mut self) -> ParseResult<Pattern> {
-    /*
-    let name = self.identifier()?;
-    match self.peek() {
-      LParen => {
-        let tuple_members = delimited!(self, LParen, type_name, Comma, RParen);
-        Ok(TupleStruct(name, tuple_members))
-      },
-      LCurlyBrace => {
-        let typed_identifier_list = delimited!(self, LCurlyBrace, typed_identifier, Comma, RCurlyBrace);
-        Ok(Record(name, typed_identifier_list))
-      },
-      _ => Ok(UnitStruct(name))
-    }
-    */
-
     Ok(match self.peek() {
       Identifier(_) => {
         let id = self.identifier()?;
@@ -728,6 +713,10 @@ impl Parser {
         //TODO handle negatives
         let Expression(expr_type, _) = self.number_literal()?;
         Pattern::Literal(PatternLiteral::NumPattern(expr_type))
+      },
+      Underscore => {
+        self.next();
+        Pattern::Ignored
       },
       other => return ParseError::new(&format!("{:?} is not a valid Pattern", other))
     })
