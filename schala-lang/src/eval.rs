@@ -340,8 +340,8 @@ mod eval_tests {
   #[test]
   fn test_basic_eval() {
     fresh_env!("1 + 2", "3");
-    fresh_env!("var a = 1; a = 2", "Unit");
-    fresh_env!("var a = 1; a = 2; a", "2");
+    fresh_env!("let mut a = 1; a = 2", "Unit");
+    fresh_env!("let mut a = 1; a = 2; a", "2");
     fresh_env!(r#"("a", 1 + 2)"#, r#"("a", 3)"#);
   }
 
@@ -354,18 +354,18 @@ mod eval_tests {
   #[test]
   fn scopes() {
     let scope_ok = r#"
-    const a = 20
+    let a = 20
     fn haha() {
-      const a = 10
+      let a = 10
       a
     }
     haha()
     "#;
     fresh_env!(scope_ok, "10");
     let scope_ok = r#"
-    const a = 20
+    let a = 20
     fn haha() {
-      const a = 10
+      let a = 10
       a
     }
     a

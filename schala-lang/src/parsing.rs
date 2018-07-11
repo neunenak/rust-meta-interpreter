@@ -44,7 +44,11 @@ formal_param := IDENTIFIER type_anno+
 
 /* Declaration - Variable bindings */
 
+/* OLD */
 binding_declaration: 'var' IDENTIFIER '=' expression | 'const' IDENTIFIER '=' expression
+
+/* NEW */
+binding_declaration := 'let' 'mut'? IDENTIFIER '=' expresion
 
 /* Declaration - Interface */
 
@@ -296,7 +300,7 @@ impl Parser {
     match self.peek() {
       Keyword(Type) => self.type_declaration().map(|decl| { Statement::Declaration(decl) }),
       Keyword(Func)=> self.func_declaration().map(|func| { Statement::Declaration(func) }),
-      Keyword(Var) | Keyword(Const) => self.binding_declaration().map(|decl| Statement::Declaration(decl)),
+      Keyword(Let) => self.binding_declaration().map(|decl| Statement::Declaration(decl)),
       Keyword(Interface) => self.interface_declaration().map(|decl| Statement::Declaration(decl)),
       Keyword(Impl) => self.impl_declaration().map(|decl| Statement::Declaration(decl)),
       _ => self.expression().map(|expr| { Statement::ExpressionStatement(expr) } ),
@@ -396,10 +400,14 @@ impl Parser {
   });
 
   parse_method!(binding_declaration(&mut self) -> ParseResult<Declaration> {
-    let constant = match self.next() {
-      Keyword(Var) => false,
-      Keyword(Const) => true,
-      _ => return ParseError::new("Expected 'var' or 'const'"),
+
+    expect!(self, Keyword(Kw::Let));
+    let constant = match self.peek() {
+      Keyword(Kw::Mut) => {
+        self.next();
+        false 
+      }
+      _ => true
     };
     let name = self.identifier()?;
     expect!(self, Operator(ref o) if **o == "=");
@@ -1178,8 +1186,8 @@ fn a(x) {
 
   #[test]
   fn parsing_bindings() {
-    parse_test!("var a = 10", AST(vec![Declaration(Binding { name: rc!(a), constant: false, expr: ex!(NatLiteral(10)) } )]));
-    parse_test!("const a = 2 + 2", AST(vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(binexp!("+", NatLiteral(2), NatLiteral(2))) }) ]));
+    parse_test!("let mut a = 10", AST(vec![Declaration(Binding { name: rc!(a), constant: false, expr: ex!(NatLiteral(10)) } )]));
+    parse_test!("let a = 2 + 2", AST(vec![Declaration(Binding { name: rc!(a), constant: true, expr: ex!(binexp!("+", NatLiteral(2), NatLiteral(2))) }) ]));
   }
 
   #[test]
@@ -1294,7 +1302,7 @@ fn a(x) {
 
   #[test]
   fn parsing_type_annotations() {
-    parse_test!("const a = b : Int", AST(vec![
+    parse_test!("let a = b : Int", AST(vec![
       Declaration(Binding { name: rc!(a), constant: true, expr:
         Expression(val!("b"), Some(ty!("Int"))) })]));
 
