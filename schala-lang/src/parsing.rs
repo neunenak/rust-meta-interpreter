@@ -140,14 +140,18 @@ enumerator :=  identifier '<-' expression | identifier '=' expression //TODO add
 
 type TokenIter = Peekable<IntoIter<Token>>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct ParseError {
   pub msg: String,
+  pub token: Option<Token>
 }
 
 impl ParseError {
   fn new<T>(msg: &str) -> ParseResult<T> {
-    Err(ParseError { msg: msg.to_string() })
+    Err(ParseError { 
+      msg: msg.to_string(),
+      token: None
+    })
   }
 }
 
@@ -203,7 +207,7 @@ macro_rules! expect {
       $token_type if $cond => $self.next(),
       tok => {
         let msg = format!("Expected {}, got {:?}", print_token_pattern!($token_type), tok);
-        return Err(ParseError { msg })
+        return ParseError::new(&msg);
       }
     }
   }
@@ -226,7 +230,11 @@ macro_rules! parse_method {
       if $self.parse_level != 0 {
         $self.parse_level -= 1;
       }
-      result
+      match result {
+        Err(ParseError { token: None, msg }) =>
+          Err(ParseError { token: Some(next_token), msg }),
+        _ => result
+      }
     }
   };
 }
