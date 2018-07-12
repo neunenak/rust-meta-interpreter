@@ -27,7 +27,7 @@ declaration := type_declaration | func_declaration | binding_declaration | impl_
 /* Declarations - Types */
 
 type_declaration := 'type' type_declaration_body
-type_declaration_body := 'alias' type_alias | type_singleton_name '=' type_body
+type_declaration_body := 'alias' type_alias | 'mut'? type_singleton_name '=' type_body
 type_alias := IDENTIFIER '=' type_name
 type_body := variant_specifier ('|' variant_specifier)*
 variant_specifier := IDENTIFIER | IDENTIFIER '{' typed_identifier_list '}' | IDENTIFIER '(' type_name* ')'
@@ -316,6 +316,10 @@ impl Parser {
     if let Keyword(Alias) = self.peek() {
       self.type_alias()
     } else {
+      if let Keyword(Mut) = self.peek() {
+        self.next();
+        //TODO make this part of the type
+      }
       let name = self.type_singleton_name()?;
       expect!(self, Operator(ref c) if **c == "=");
       let body = self.type_body()?;
