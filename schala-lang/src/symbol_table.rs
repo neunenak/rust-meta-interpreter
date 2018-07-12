@@ -79,7 +79,7 @@ impl SymbolTable {
               Symbol { name: signature.name.clone(), spec }
               );
           },
-          TypeDecl(TypeSingletonName { name, params}, TypeBody(variants)) => {
+          TypeDecl { name: TypeSingletonName { name, params}, body: TypeBody(variants), mutable } => {
             for var in variants {
               match var {
                 Variant::UnitStruct(variant_name) => {

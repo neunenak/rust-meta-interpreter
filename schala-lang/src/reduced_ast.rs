@@ -156,7 +156,7 @@ impl Declaration {
           body: statements.iter().map(|stmt| stmt.reduce(symbol_table)).collect(),
         }
       },
-      TypeDecl(_,_) => Stmt::Noop,
+      TypeDecl { .. } => Stmt::Noop,
       _ => Stmt::Expr(Expr::UnimplementedSigilValue)
     }
   }

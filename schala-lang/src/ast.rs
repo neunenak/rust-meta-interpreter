@@ -21,7 +21,11 @@ pub type FormalParam = (ParamName, Option<TypeName>);
 pub enum Declaration {
   FuncSig(Signature),
   FuncDecl(Signature, Block),
-  TypeDecl(TypeSingletonName, TypeBody), //should have TypeSingletonName in it
+  TypeDecl {
+    name: TypeSingletonName,
+    body: TypeBody,
+    mutable: bool
+  },
   TypeAlias(Rc<String>, Rc<String>), //should have TypeSingletonName in it, or maybe just String, not sure
   Binding {
     name: Rc<String>,

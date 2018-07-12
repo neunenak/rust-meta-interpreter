@@ -316,14 +316,16 @@ impl Parser {
     if let Keyword(Alias) = self.peek() {
       self.type_alias()
     } else {
-      if let Keyword(Mut) = self.peek() {
+      let mutable = if let Keyword(Mut) = self.peek() {
         self.next();
-        //TODO make this part of the type
-      }
+        true
+      } else {
+        false
+      };
       let name = self.type_singleton_name()?;
       expect!(self, Operator(ref c) if **c == "=");
       let body = self.type_body()?;
-      Ok(Declaration::TypeDecl(name, body))
+      Ok(Declaration::TypeDecl { name, body, mutable})
     }
   });
 
@@ -1167,24 +1169,32 @@ fn a(x) {
 
   #[test]
   fn parsing_types() {
-    parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl(tys!("Yolo"), TypeBody(vec![UnitStruct(rc!(Yolo))])))]));
+    parse_test!("type Yolo = Yolo", AST(vec![Declaration(TypeDecl { name: tys!("Yolo"), body: TypeBody(vec![UnitStruct(rc!(Yolo))]), mutable: false} )]));
+    parse_test!("type mut Yolo = Yolo", AST(vec![Declaration(TypeDecl { name: tys!("Yolo"), body: TypeBody(vec![UnitStruct(rc!(Yolo))]), mutable: true} )]));
     parse_test!("type alias Sex = Drugs", AST(vec![Declaration(TypeAlias(rc!(Sex), rc!(Drugs)))]));
     parse_test!("type Sanchez = Miguel | Alejandro(Int, Option<a>) | Esperanza { a: Int, b: String }",
-      AST(vec![Declaration(TypeDecl(tys!("Sanchez"), TypeBody(vec![
+    AST(vec![Declaration(TypeDecl{
+      name: tys!("Sanchez"),
+      body: TypeBody(vec![
         UnitStruct(rc!(Miguel)),
         TupleStruct(rc!(Alejandro), vec![
           Singleton(TypeSingletonName { name: rc!(Int), params: vec![] }),
           Singleton(TypeSingletonName { name: rc!(Option), params: vec![Singleton(TypeSingletonName { name: rc!(a), params: vec![] })] }),
         ]),
         Record(rc!(Esperanza), vec![
-          (rc!(a), Singleton(TypeSingletonName { name: rc!(Int), params: vec![] })),
-          (rc!(b), Singleton(TypeSingletonName { name: rc!(String), params: vec![] })),
-        ])])))]));
+              (rc!(a), Singleton(TypeSingletonName { name: rc!(Int), params: vec![] })),
+              (rc!(b), Singleton(TypeSingletonName { name: rc!(String), params: vec![] })),
+        ])
+      ]),
+      mutable: false
+    })]));
 
     parse_test!("type Jorge<a> = Diego | Kike(a)", AST(vec![
-      Declaration(TypeDecl(
-        TypeSingletonName { name: rc!(Jorge), params: vec![Singleton(TypeSingletonName { name: rc!(a), params: vec![] })] },
-        TypeBody(vec![UnitStruct(rc!(Diego)), TupleStruct(rc!(Kike), vec![Singleton(TypeSingletonName { name: rc!(a), params: vec![] })])]))
+      Declaration(TypeDecl{
+        name: TypeSingletonName { name: rc!(Jorge), params: vec![Singleton(TypeSingletonName { name: rc!(a), params: vec![] })] },
+        body: TypeBody(vec![UnitStruct(rc!(Diego)), TupleStruct(rc!(Kike), vec![Singleton(TypeSingletonName { name: rc!(a), params: vec![] })])]),
+        mutable: false
+      }
     )]));
   }
 
