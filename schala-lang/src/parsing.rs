@@ -715,7 +715,10 @@ impl Parser {
       Identifier(_) => {
         let id = self.identifier()?;
         match self.peek() {
-          LCurlyBrace => { unimplemented!() },
+          LCurlyBrace => { 
+            let members = delimited!(self, LCurlyBrace, record_pattern_entry, Comma, RCurlyBrace);
+            Pattern::Record(id, members)
+          },
           LParen => {
             let members = delimited!(self, LParen, pattern, Comma, RParen);
             Pattern::TupleStruct(id, members)
@@ -737,6 +740,10 @@ impl Parser {
       },
       other => return ParseError::new(&format!("{:?} is not a valid Pattern", other))
     })
+  });
+
+  parse_method!(record_pattern_entry(&mut self) -> ParseResult<(Rc<String>, Pattern)> {
+    unimplemented!()
   });
 
   parse_method!(block(&mut self) -> ParseResult<Block> {
@@ -964,7 +971,7 @@ mod parse_tests {
   use ::std::rc::Rc;
   use super::{parse, tokenize};
   use builtin::{PrefixOp, BinOp};
-  use ast::{AST, Expression, Statement, IfExpressionBody, Discriminator, TypeBody, Variant, Enumerator, ForBody};
+  use ast::{AST, Expression, Statement, IfExpressionBody, Discriminator, Pattern, TypeBody, Variant, Enumerator, ForBody};
   use super::Statement::*;
   use super::Declaration::*;
   use super::Signature;
@@ -1391,6 +1398,19 @@ fn a(x) {
       exprstatement!(ForExpression { enumerators: vec![Enumerator { id: rc!(n), generator: ex!(val!("someRange"))}],
         body: bx!(ForBody::StatementBlock(vec![exprstatement!(Call { f: bx![ex!(val!("f"))], arguments: vec![ex!(val!("n"))] })]))
       })])
+    }
+  }
+
+  #[test]
+  fn patterns() {
+    parse_test! {
+      "if x is Some(a) then { 4 } else { 9 }", AST(vec![
+        exprstatement!(
+          IfExpression {
+            discriminator: Discriminator::Simple(ex!(Value("x"))),
+            body: SimplePatternMatch(TupleStruct("Some", [Literal(VarPattern("a"))]), [ExpressionStatement(Expression(NatLiteral(4), None))], Some([ExpressionStatement(Expression(NatLiteral(9), None))])) }
+          )
+      ])
     }
   }
 }
