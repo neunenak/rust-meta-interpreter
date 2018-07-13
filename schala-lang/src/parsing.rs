@@ -43,11 +43,6 @@ formal_param_list := '(' (formal_param ',')* ')'
 formal_param := IDENTIFIER type_anno+
 
 /* Declaration - Variable bindings */
-
-/* OLD */
-binding_declaration: 'var' IDENTIFIER '=' expression | 'const' IDENTIFIER '=' expression
-
-/* NEW */
 binding_declaration := 'let' 'mut'? IDENTIFIER '=' expresion
 
 /* Declaration - Interface */
