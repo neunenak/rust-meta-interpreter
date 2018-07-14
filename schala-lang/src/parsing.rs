@@ -114,7 +114,7 @@ pattern := '(' (pattern, ',')* ')' | simple_pattern
 simple_pattern := pattern_literal | record_pattern | tuple_struct_pattern
 pattern_literal := 'true' | 'false' | number_literal | STR_LITERAL | IDENTIFIER
 record_pattern := IDENTIFIER '{' (record_pattern_entry, ',')* '}'
-record_pattern_entry := ???
+record_pattern_entry := IDENTIFIER | IDENTIFIER ':' Pattern
 tuple_struct_pattern := IDENTIFIER '(' (pattern, ',')* ')'
 
 /* Expression - If */
@@ -751,7 +751,15 @@ impl Parser {
   });
 
   parse_method!(record_pattern_entry(&mut self) -> ParseResult<(Rc<String>, Pattern)> {
-    unimplemented!()
+    let name = self.identifier()?;
+    Ok(match self.peek() {
+      Colon => {
+        expect!(self, Colon);
+        let pat = self.pattern()?;
+        (name, pat)
+      },
+      _ => (name.clone(), Pattern::Literal(PatternLiteral::StringPattern(name.clone())))
+    })
   });
 
   parse_method!(block(&mut self) -> ParseResult<Block> {
@@ -1417,6 +1425,22 @@ fn a(x) {
           IfExpression {
             discriminator: bx!(Discriminator::Simple(ex!(Value(rc!(x))))),
             body: bx!(IfExpressionBody::SimplePatternMatch(Pattern::TupleStruct(rc!(Some), vec![Pattern::Literal(PatternLiteral::VarPattern(rc!(a)))]), vec![exprstatement!(NatLiteral(4))], Some(vec![exprstatement!(NatLiteral(9))]))) }
+          )
+      ])
+    }
+
+    parse_test! {
+      "if x is Something { a, b: x } then { 4 } else { 9 }", AST(vec![
+        exprstatement!(
+          IfExpression {
+            discriminator: bx!(Discriminator::Simple(ex!(Value(rc!(x))))),
+            body: bx!(IfExpressionBody::SimplePatternMatch(
+              Pattern::Record(rc!(Something), vec![
+                (rc!(a),Pattern::Literal(PatternLiteral::StringPattern(rc!(a)))),
+                (rc!(b),Pattern::Literal(PatternLiteral::VarPattern(rc!(x)))) 
+              ]),
+              vec![exprstatement!(NatLiteral(4))], Some(vec![exprstatement!(NatLiteral(9))]))) 
+            }
           )
       ])
     }
