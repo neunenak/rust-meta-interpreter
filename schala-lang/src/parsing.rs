@@ -10,124 +10,6 @@ use ast::*;
 
 use builtin::{BinOp, PrefixOp};
 
-/* Schala EBNF Grammar */
-/* Terminal productions are in 'single quotes' or UPPERCASE if they are a class
- * or not representable in ASCII
-
-
-/* Top-level Structure */
-
-program := (statement delimiter)* EOF
-delimiter := NEWLINE | ';'
-statement := expression | declaration
-block := '{' (statement delimiter)* '}'
-
-declaration := type_declaration | func_declaration | binding_declaration | impl_declaration
-
-/* Declarations - Types */
-
-type_declaration := 'type' type_declaration_body
-type_declaration_body := 'alias' type_alias | 'mut'? type_singleton_name '=' type_body
-type_alias := IDENTIFIER '=' type_name
-type_body := variant_specifier ('|' variant_specifier)*
-variant_specifier := IDENTIFIER | IDENTIFIER '{' typed_identifier_list '}' | IDENTIFIER '(' type_name* ')'
-typed_identifier_list := typed_identifier*
-typed_identifier := IDENTIFIER type_anno
-
-/* Declaration - Functions */
-
-func_declaration := func_signature func_body
-func_body := ε | '{' (statement delimiter)* '}'
-func_signature := 'fn' IDENTIFIER formal_param_list func_body
-formal_param_list := '(' (formal_param ',')* ')'
-formal_param := IDENTIFIER type_anno+
-
-/* Declaration - Variable bindings */
-binding_declaration := 'let' 'mut'? IDENTIFIER '=' expresion
-
-/* Declaration - Interface */
-
-interface_declaration := 'interface' interface_name signature_block
-impl_declaration := 'impl' IDENTIFIER decl_block | 'impl' interface_name 'for' IDENTIFIER decl_block
-decl_block := '{' (func_declaration)* '}'
-signature_block := '{' (func_signature)* '}'
-interface_name := IDENTIFIER
-
-/* Type annotations */
-
-type_anno := (':' type_name)+
-type_name := type_singleton_name | '(' type_names ')'
-type_names := ε | type_name (, type_name)*
-type_singleton_name = IDENTIFIER (type_params)*
-type_params := '<' type_name (, type_name)* '>'
-
-
-/* Expressions */
-
-expression := precedence_expr type_anno+
-precedence_expr := prefix_expr
-prefix_expr := prefix_op call_expr
-prefix_op := '+' | '-' | '!' | '~'
-call_expr := index_expr ( '(' expr_list ')' )*
-expr_list := expression (',' expression)* | ε
-index_expr := primary ( '[' (expression (',' (expression)* | ε) ']' )*
-primary := literal | paren_expr | if_expr | for_expr | while_expr | identifier_expr | curly_brace_expr | list_expr
-
-/* Primary Expressions */
-
-curly_brace_expr := lambda_expr | anonymous_struct //TODO
-list_expr := '[' (expression, ',')* ']'
-lambda_expr := '{' '|' (formal_param ',')* '|' (type_anno)* (statement delimiter)* '}'
-paren_expr := LParen paren_inner RParen
-paren_inner := (expression ',')*
-identifier_expr := named_struct | IDENTIFIER
-
-/* Expression - Literals */
-
-literal := 'true' | 'false' | number_literal | STR_LITERAL
-named_struct := IDENTIFIER record_block
-record_block :=  '{' (record_entry, ',')* | '}' //TODO support anonymus structs, update syntax
-record_entry := IDENTIFIER ':' expression
-anonymous_struct := TODO
-
-// a float_literal can still be assigned to an int in type-checking
-number_literal := int_literal | float_literal
-int_literal = ('0x' | '0b') digits
-float_literal := digits ('.' digits)
-digits := (DIGIT_GROUP underscore)+
-
-/* Pattern syntax */
-pattern := '(' (pattern, ',')* ')' | simple_pattern
-simple_pattern := pattern_literal | record_pattern | tuple_struct_pattern
-pattern_literal := 'true' | 'false' | number_literal | STR_LITERAL | IDENTIFIER
-record_pattern := IDENTIFIER '{' (record_pattern_entry, ',')* '}'
-record_pattern_entry := IDENTIFIER | IDENTIFIER ':' Pattern
-tuple_struct_pattern := IDENTIFIER '(' (pattern, ',')* ')'
-
-/* Expression - If */
-if_expr := 'if' discriminator ('then' condititional | 'is' simple_pattern_match | guard_block)
-discriminator := modified_precedence_expression
-modified_precedence_expression := precedence_expr (operator)+ //TODO this is currently hard, rearchitect things
-conditional := block else_clause
-simple_pattern_match := pattern 'then' conditional
-else_clause := ε | 'else' block
-guard_block := '{' (guard_arm, ',')* '}'
-guard_arm := guard '->' block
-guard := 'is' pattern | (operator)+ precedence_expr
-
-/* Expression - While */
-while_expr := 'while' while_cond '{' (statement delimiter)* '}'
-while_cond := ε | expression | expression 'is'  pattern //TODO maybe is-expresions should be primary
-
-//TODO this implies there must be at least one enumerator, which the parser doesn't support right
-//this second, and maybe should fail later anyway
-/* Expression - For */
-for_expr := 'for' (enumerator | '{' enumerators '}') for_expr_body
-for_expr_body := 'return' expression |  '{' (statement delimiter)* '}
-enumerators := enumerator (',' enumerators)*
-enumerator :=  identifier '<-' expression | identifier '=' expression //TODO add guards, etc.
-*/
-
 type TokenIter = Peekable<IntoIter<Token>>;
 
 #[derive(Debug)]
@@ -264,6 +146,123 @@ macro_rules! delimited {
     }
   };
 }
+
+/* Schala EBNF Grammar */
+/* Terminal productions are in 'single quotes' or UPPERCASE if they are a class
+ * or not representable in ASCII
+
+/* Top-level Structure */
+
+program := (statement delimiter)* EOF
+delimiter := NEWLINE | ';'
+statement := expression | declaration
+block := '{' (statement delimiter)* '}'
+
+declaration := type_declaration | func_declaration | binding_declaration | impl_declaration
+
+/* Declarations - Types */
+
+type_declaration := 'type' type_declaration_body
+type_declaration_body := 'alias' type_alias | 'mut'? type_singleton_name '=' type_body
+type_alias := IDENTIFIER '=' type_name
+type_body := variant_specifier ('|' variant_specifier)*
+variant_specifier := IDENTIFIER | IDENTIFIER '{' typed_identifier_list '}' | IDENTIFIER '(' type_name* ')'
+typed_identifier_list := typed_identifier*
+typed_identifier := IDENTIFIER type_anno
+
+/* Declaration - Functions */
+
+func_declaration := func_signature func_body
+func_body := ε | '{' (statement delimiter)* '}'
+func_signature := 'fn' IDENTIFIER formal_param_list func_body
+formal_param_list := '(' (formal_param ',')* ')'
+formal_param := IDENTIFIER type_anno+
+
+/* Declaration - Variable bindings */
+binding_declaration := 'let' 'mut'? IDENTIFIER '=' expresion
+
+/* Declaration - Interface */
+
+interface_declaration := 'interface' interface_name signature_block
+impl_declaration := 'impl' IDENTIFIER decl_block | 'impl' interface_name 'for' IDENTIFIER decl_block
+decl_block := '{' (func_declaration)* '}'
+signature_block := '{' (func_signature)* '}'
+interface_name := IDENTIFIER
+
+/* Type annotations */
+
+type_anno := (':' type_name)+
+type_name := type_singleton_name | '(' type_names ')'
+type_names := ε | type_name (, type_name)*
+type_singleton_name = IDENTIFIER (type_params)*
+type_params := '<' type_name (, type_name)* '>'
+
+
+/* Expressions */
+
+expression := precedence_expr type_anno+
+precedence_expr := prefix_expr
+prefix_expr := prefix_op call_expr
+prefix_op := '+' | '-' | '!' | '~'
+call_expr := index_expr ( '(' expr_list ')' )*
+expr_list := expression (',' expression)* | ε
+index_expr := primary ( '[' (expression (',' (expression)* | ε) ']' )*
+primary := literal | paren_expr | if_expr | for_expr | while_expr | identifier_expr | curly_brace_expr | list_expr
+
+/* Primary Expressions */
+
+curly_brace_expr := lambda_expr | anonymous_struct //TODO
+list_expr := '[' (expression, ',')* ']'
+lambda_expr := '{' '|' (formal_param ',')* '|' (type_anno)* (statement delimiter)* '}'
+paren_expr := LParen paren_inner RParen
+paren_inner := (expression ',')*
+identifier_expr := named_struct | IDENTIFIER
+
+/* Expression - Literals */
+
+literal := 'true' | 'false' | number_literal | STR_LITERAL
+named_struct := IDENTIFIER record_block
+record_block :=  '{' (record_entry, ',')* | '}' //TODO support anonymus structs, update syntax
+record_entry := IDENTIFIER ':' expression
+anonymous_struct := TODO
+
+// a float_literal can still be assigned to an int in type-checking
+number_literal := int_literal | float_literal
+int_literal = ('0x' | '0b') digits
+float_literal := digits ('.' digits)
+digits := (DIGIT_GROUP underscore)+
+
+/* Pattern syntax */
+pattern := '(' (pattern, ',')* ')' | simple_pattern
+simple_pattern := pattern_literal | record_pattern | tuple_struct_pattern
+pattern_literal := 'true' | 'false' | number_literal | STR_LITERAL | IDENTIFIER
+record_pattern := IDENTIFIER '{' (record_pattern_entry, ',')* '}'
+record_pattern_entry := IDENTIFIER | IDENTIFIER ':' Pattern
+tuple_struct_pattern := IDENTIFIER '(' (pattern, ',')* ')'
+
+/* Expression - If */
+if_expr := 'if' discriminator ('then' condititional | 'is' simple_pattern_match | guard_block)
+discriminator := modified_precedence_expression
+modified_precedence_expression := precedence_expr (operator)+ //TODO this is currently hard, rearchitect things
+conditional := block else_clause
+simple_pattern_match := pattern 'then' conditional
+else_clause := ε | 'else' block
+guard_block := '{' (guard_arm, ',')* '}'
+guard_arm := guard '->' block
+guard := 'is' pattern | (operator)+ precedence_expr
+
+/* Expression - While */
+while_expr := 'while' while_cond '{' (statement delimiter)* '}'
+while_cond := ε | expression | expression 'is'  pattern //TODO maybe is-expresions should be primary
+
+//TODO this implies there must be at least one enumerator, which the parser doesn't support right
+//this second, and maybe should fail later anyway
+/* Expression - For */
+for_expr := 'for' (enumerator | '{' enumerators '}') for_expr_body
+for_expr_body := 'return' expression |  '{' (statement delimiter)* '}
+enumerators := enumerator (',' enumerators)*
+enumerator :=  identifier '<-' expression | identifier '=' expression //TODO add guards, etc.
+*/
 
 impl Parser {
   parse_method!(program(&mut self) -> ParseResult<AST> {
