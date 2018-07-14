@@ -120,13 +120,13 @@ tuple_struct_pattern := IDENTIFIER '(' (pattern, ',')* ')'
 /* Expression - If */
 if_expr := 'if' discriminator ('then' condititional | 'is' simple_pattern_match | guard_block)
 discriminator := modified_precedence_expression
-modified_precedence_expression := ???
+modified_precedence_expression := precedence_expr (operator)+ //TODO this is currently hard, rearchitect things
 conditional := block else_clause
 simple_pattern_match := pattern 'then' conditional
 else_clause := ε | 'else' block
 guard_block := '{' (guard_arm, ',')* '}'
 guard_arm := guard '->' block
-guard := ??
+guard := 'is' pattern | (operator)+ precedence_expr
 
 /* Expression - While */
 while_expr := 'while' while_cond '{' (statement delimiter)* '}'
@@ -714,7 +714,14 @@ impl Parser {
   });
 
   parse_method!(guard(&mut self) -> ParseResult<Guard> {
-    unimplemented!()
+    Ok(match self.peek() {
+      Keyword(Kw::Is) => {
+        self.next();
+        let pat = self.pattern()?;
+        Guard::Pat(pat)
+      },
+      _ => unimplemented!() //TODO fix
+    })
   });
 
   parse_method!(pattern(&mut self) -> ParseResult<Pattern> {
