@@ -120,9 +120,12 @@ tuple_struct_pattern := IDENTIFIER '(' (pattern, ',')* ')'
 /* Expression - If */
 if_expr := 'if' discriminator ('then' condititional | 'is' simple_pattern_match | guard_block)
 discriminator := modified_precedence_expression
+modified_precedence_expression := ???
 conditional := block else_clause
 simple_pattern_match := pattern 'then' conditional
 else_clause := ε | 'else' block
+guard_block := '{' (guard, ',')* '}'
+guard := ??
 
 /* Expression - While */
 while_expr := 'while' while_cond '{' (statement delimiter)* '}'
@@ -688,10 +691,6 @@ impl Parser {
     Ok(IfExpressionBody::SimplePatternMatch(pat, then_clause, else_clause))
   });
 
-  parse_method!(guard_block(&mut self) -> ParseResult<IfExpressionBody> {
-    ParseError::new("Rest of if not done")
-  });
-
   parse_method!(else_clause(&mut self) -> ParseResult<Option<Block>> {
     Ok(if let Keyword(Kw::Else) = self.peek() {
       self.next();
@@ -699,6 +698,15 @@ impl Parser {
     } else {
       None
     })
+  });
+
+  parse_method!(guard_block(&mut self) -> ParseResult<IfExpressionBody> {
+    let guards = delimited!(self, LCurlyBrace, guard, Comma, RCurlyBrace);
+    Ok(IfExpressionBody::GuardList(guards))
+  });
+
+  parse_method!(guard(&mut self) -> ParseResult<Guard> {
+    unimplemented!()
   });
 
   parse_method!(pattern(&mut self) -> ParseResult<Pattern> {
