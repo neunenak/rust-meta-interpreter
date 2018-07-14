@@ -971,7 +971,7 @@ mod parse_tests {
   use ::std::rc::Rc;
   use super::{parse, tokenize};
   use builtin::{PrefixOp, BinOp};
-  use ast::{AST, Expression, Statement, IfExpressionBody, Discriminator, Pattern, TypeBody, Variant, Enumerator, ForBody};
+  use ast::{AST, Expression, Statement, IfExpressionBody, Discriminator, Pattern, PatternLiteral, TypeBody, Variant, Enumerator, ForBody};
   use super::Statement::*;
   use super::Declaration::*;
   use super::Signature;
@@ -1407,8 +1407,8 @@ fn a(x) {
       "if x is Some(a) then { 4 } else { 9 }", AST(vec![
         exprstatement!(
           IfExpression {
-            discriminator: Discriminator::Simple(ex!(Value("x"))),
-            body: SimplePatternMatch(TupleStruct("Some", [Literal(VarPattern("a"))]), [ExpressionStatement(Expression(NatLiteral(4), None))], Some([ExpressionStatement(Expression(NatLiteral(9), None))])) }
+            discriminator: bx!(Discriminator::Simple(ex!(Value(rc!(x))))),
+            body: bx!(IfExpressionBody::SimplePatternMatch(Pattern::TupleStruct(rc!(Some), vec![Pattern::Literal(PatternLiteral::VarPattern(rc!(a)))]), vec![exprstatement!(NatLiteral(4))], Some(vec![exprstatement!(NatLiteral(9))]))) }
           )
       ])
     }

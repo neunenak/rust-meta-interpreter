@@ -11,7 +11,7 @@ use itertools::Itertools;
 
 use ast;
 use util::StateStack;
-use symbol_table::{SymbolSpec, Symbol, SymbolTable};
+use symbol_table::{SymbolSpec, SymbolTable};
 
 pub type TypeName = Rc<String>;
 type TypeResult<T> = Result<T, String>;
