@@ -71,7 +71,7 @@ prefix_op := '+' | '-' | '!' | '~'
 call_expr := index_expr ( '(' expr_list ')' )*
 expr_list := expression (',' expression)* | ε
 index_expr := primary ( '[' (expression (',' (expression)* | ε) ']' )*
-primary := literal | paren_expr | if_expr | match_expr | for_expr | while_expr | identifier_expr | curly_brace_expr | list_expr
+primary := literal | paren_expr | if_expr | for_expr | while_expr | identifier_expr | curly_brace_expr | list_expr
 
 /* Primary Expressions */
 
@@ -95,19 +95,6 @@ number_literal := int_literal | float_literal
 int_literal = ('0x' | '0b') digits
 float_literal := digits ('.' digits)
 digits := (DIGIT_GROUP underscore)+
-
-/* OLD OBSOLETE */
-
-/* Expression - If */
-if_expr := 'if' expression block else_clause
-else_clause := ε | 'else' block
-
-/* Expression - Match */
-match_expr := 'match' expression match_body
-match_body := '{' (match_arm)* '}'
-match_arm := pattern '=>' expression
-
-/* NEW GOOD */
 
 /* Pattern syntax */
 pattern := '(' (pattern, ',')* ')' | simple_pattern
@@ -580,7 +567,6 @@ impl Parser {
       LParen => self.paren_expr(),
       LSquareBracket => self.list_expr(),
       Keyword(Kw::If) => self.if_expr(),
-      //Keyword(Kw::Match) => self.match_expr(),
       Keyword(Kw::For) => self.for_expr(),
       Keyword(Kw::While) => self.while_expr(),
       Identifier(_) => self.identifier_expr(),
@@ -780,32 +766,6 @@ impl Parser {
   parse_method!(block(&mut self) -> ParseResult<Block> {
     Ok(delimited!(self, LCurlyBrace, statement, Newline | Semicolon, RCurlyBrace, nonstrict))
   });
-
-  /*
-  parse_method!(match_expr(&mut self) -> ParseResult<Expression> {
-    expect!(self, Keyword(Kw::Match));
-    let expr = {
-      self.restrictions.no_struct_literal = true;
-      let x = self.expression();
-      self.restrictions.no_struct_literal = false;
-      x?
-    };
-    let body = self.match_body()?;
-    Ok(Expression(ExpressionType::MatchExpression(bx!(expr), body), None))
-  });
-
-  parse_method!(match_body(&mut self) -> ParseResult<Vec<MatchArm>> {
-    Ok(delimited!(self, LCurlyBrace, match_arm, Comma, RCurlyBrace))
-  });
-
-  parse_method!(match_arm(&mut self) -> ParseResult<MatchArm> {
-    let pat = self.pattern()?;
-    expect!(self, Operator(ref c) if **c == "=>");
-    let expr = self.expression()?;
-    Ok(MatchArm { pat, expr })
-  });
-
-  */
 
   parse_method!(while_expr(&mut self) -> ParseResult<Expression> {
     use self::ExpressionType::*;
