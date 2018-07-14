@@ -125,13 +125,25 @@ pub enum Discriminator {
 pub enum IfExpressionBody {
   SimpleConditional(Block, Option<Block>),
   SimplePatternMatch(Pattern, Block, Option<Block>),
-  GuardList(Vec<Guard>)
+  GuardList(Vec<GuardArm>)
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Guard {
-  pat: Pattern,
-  body: Block,
+pub struct GuardArm {
+  pub guard: Guard,
+  pub body: Block,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Guard {
+  Pat(Pattern),
+  HalfExpr(HalfExpr)
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct HalfExpr {
+  pub op: Option<BinOp>,
+  pub expr: ExpressionType,
 }
 
 #[derive(Debug, PartialEq, Clone)]

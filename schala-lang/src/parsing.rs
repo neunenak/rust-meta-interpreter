@@ -124,7 +124,8 @@ modified_precedence_expression := ???
 conditional := block else_clause
 simple_pattern_match := pattern 'then' conditional
 else_clause := ε | 'else' block
-guard_block := '{' (guard, ',')* '}'
+guard_block := '{' (guard_arm, ',')* '}'
+guard_arm := guard '->' block
 guard := ??
 
 /* Expression - While */
@@ -701,8 +702,15 @@ impl Parser {
   });
 
   parse_method!(guard_block(&mut self) -> ParseResult<IfExpressionBody> {
-    let guards = delimited!(self, LCurlyBrace, guard, Comma, RCurlyBrace);
+    let guards = delimited!(self, LCurlyBrace, guard_arm, Comma, RCurlyBrace);
     Ok(IfExpressionBody::GuardList(guards))
+  });
+
+  parse_method!(guard_arm(&mut self) -> ParseResult<GuardArm> {
+    let guard = self.guard()?;
+    expect!(self, Operator(ref c) if **c == "->");
+    let body = self.block()?;
+    Ok(GuardArm { guard, body })
   });
 
   parse_method!(guard(&mut self) -> ParseResult<Guard> {
