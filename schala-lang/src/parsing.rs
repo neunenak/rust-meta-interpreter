@@ -20,7 +20,7 @@ pub struct ParseError {
 
 impl ParseError {
   fn new<T>(msg: &str) -> ParseResult<T> {
-    Err(ParseError { 
+    Err(ParseError {
       msg: msg.to_string(),
       token: None
     })

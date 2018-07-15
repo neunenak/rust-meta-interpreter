@@ -7,7 +7,7 @@ pub struct LLVMCodeString(pub String);
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EvalOptions {
   pub execution_method: ExecutionMethod,
-  pub debug_passes: HashMap<String, PassDebugDescriptor>,
+  pub debug_passes: HashMap<String, PassDebugOptionsDescriptor>,
 }
 
 #[derive(Debug, Hash, PartialEq)]
@@ -17,7 +17,7 @@ pub struct PassDescriptor {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PassDebugDescriptor {
+pub struct PassDebugOptionsDescriptor {
   pub opts: Vec<String>,
 }
 
@@ -164,12 +164,12 @@ macro_rules! pass_chain {
 macro_rules! pass_chain_helper {
   (($state:expr, $comp:expr, $options:expr); $input:expr, $pass:path $(, $rest:path)*) => {
     {
-      use schala_repl::PassDebugDescriptor;
+      use schala_repl::PassDebugOptionsDescriptor;
       let pass_name = stringify!($pass);
       let output = {
         let ref debug_map = $options.debug_passes;
         let debug_handle = match debug_map.get(pass_name) {
-          Some(PassDebugDescriptor { opts }) => { //(Some(&mut $comp), Some(opts.clone())),
+          Some(PassDebugOptionsDescriptor { opts }) => { //(Some(&mut $comp), Some(opts.clone())),
             let ptr = &mut $comp;
             ptr.cur_debug_options = opts.clone();
             Some(ptr)

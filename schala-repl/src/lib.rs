@@ -34,7 +34,7 @@ const VERSION_STRING: &'static str = "0.1.0";
 include!(concat!(env!("OUT_DIR"), "/static.rs"));
 
 pub use language::{LLVMCodeString, ProgrammingLanguageInterface, EvalOptions,
-  ExecutionMethod, TraceArtifact, FinishedComputation, UnfinishedComputation, PassDebugDescriptor, PassDescriptor};
+  ExecutionMethod, TraceArtifact, FinishedComputation, UnfinishedComputation, PassDebugOptionsDescriptor, PassDescriptor};
 
 pub type PLIGenerator = Box<Fn() -> Box<ProgrammingLanguageInterface> + Send + Sync>;
 
@@ -113,7 +113,7 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
 
   for pass in debug_passes.into_iter() {
     if let Some(_) = language.get_passes().iter().find(|desc| desc.name == pass) {
-      options.debug_passes.insert(pass, PassDebugDescriptor { opts: vec![] });
+      options.debug_passes.insert(pass, PassDebugOptionsDescriptor { opts: vec![] });
     }
   }
 
@@ -453,7 +453,7 @@ impl Repl {
           }
           let msg = format!("{} debug for pass {}", if show { "Enabling" } else { "Disabling" }, debug_pass);
           if show {
-            self.options.debug_passes.insert(desc.name.clone(), PassDebugDescriptor { opts });
+            self.options.debug_passes.insert(desc.name.clone(), PassDebugOptionsDescriptor { opts });
           } else {
             self.options.debug_passes.remove(&desc.name);
           }
