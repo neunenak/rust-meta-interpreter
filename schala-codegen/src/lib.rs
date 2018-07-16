@@ -1,3 +1,4 @@
+#![feature(trace_macros)]
 #![feature(proc_macro)]
 extern crate proc_macro;
 #[macro_use]
@@ -24,7 +25,7 @@ fn extract_attribute_arg_by_name(name: &str, attrs: &Vec<Attribute>) -> Option<S
   })
 }
 
-fn extract_attribute_list(name: &str, attrs: &Vec<Attribute>) -> Option<Vec<Ident>> {
+fn extract_attribute_list(name: &str, attrs: &Vec<Attribute>) -> Option<Vec<(Ident, Option<Vec<Ident>>)>> {
   use syn::{Meta, MetaList, NestedMeta};
   attrs.iter().find(|attr| {
     match attr.path.segments.iter().nth(0) {
@@ -35,7 +36,14 @@ fn extract_attribute_list(name: &str, attrs: &Vec<Attribute>) -> Option<Vec<Iden
     match attr.interpret_meta() {
       Some(Meta::List(MetaList { nested, .. })) => {
         Some(nested.iter().map(|nested_meta| match nested_meta {
-          &NestedMeta::Meta(Meta::Word(ident)) => ident,
+          &NestedMeta::Meta(Meta::Word(ident)) => (ident, None),
+          &NestedMeta::Meta(Meta::List(MetaList { ident, nested: ref nested2, .. })) => {
+            let own_args = nested2.iter().map(|nested_meta2| match nested_meta2 {
+              &NestedMeta::Meta(Meta::Word(ident)) => ident,
+              _ => panic!("Bad format for doubly-nested attribute list")
+            }).collect();
+            (ident, Some(own_args))
+          },
           _ => panic!("Bad format for nested list")
         }).collect())
       },
@@ -46,6 +54,7 @@ fn extract_attribute_list(name: &str, attrs: &Vec<Attribute>) -> Option<Vec<Iden
 
 #[proc_macro_derive(ProgrammingLanguageInterface, attributes(LanguageName, SourceFileExtension, PipelineSteps))]
 pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream {
+  use schala_repl::PassDescriptor;
   let ast: DeriveInput = syn::parse(input).unwrap();
   let name = &ast.ident;
   let attrs = &ast.attrs;
@@ -53,7 +62,23 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
   let language_name: String = extract_attribute_arg_by_name("LanguageName", attrs).expect("LanguageName is required");
   let file_ext = extract_attribute_arg_by_name("SourceFileExtension", attrs).expect("SourceFileExtension is required");
   let passes = extract_attribute_list("PipelineSteps", attrs).expect("PipelineSteps are required");
-  let pass_names: Vec<String> = passes.iter().map(|pass| pass.to_string()).collect();
+  let pass_idents = passes.iter().map(|x| x.0);
+
+  //let pass_names: Vec<String> = passes.iter().map(|pass| pass.0.to_string()).collect();
+  let pass_descriptors = passes.iter().map(|pass| {
+    let name: String = pass.0.to_string();
+    let opts: Vec<String> = match &pass.1 {
+      None => vec![],
+      Some(opts) => opts.iter().map(|o| o.to_string()).collect(),
+    };
+
+    quote! {
+      PassDescriptor {
+        name: #name,
+        debug_options: vec![#(format!(#opts)),*]
+      }
+    }
+  });
 
   let tokens = quote! {
     use schala_repl::PassDescriptor;
@@ -65,11 +90,12 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
         #file_ext.to_string()
       }
       fn execute_pipeline(&mut self, input: &str, options: &EvalOptions) -> FinishedComputation {
-        let mut chain = pass_chain![self, options; #(#passes),* ];
+        let mut chain = pass_chain![self, options; #(#pass_idents),* ];
         chain(input)
       }
       fn get_passes(&self) -> Vec<PassDescriptor> {
-        vec![ #(PassDescriptor { name: #pass_names.to_string(), debug_options: vec![] }),* ]
+        vec![ #(#pass_descriptors),* ]
+        //vec![ #(PassDescriptor { name: #pass_names.to_string(), debug_options: vec![] }),* ]
       }
     }
   };

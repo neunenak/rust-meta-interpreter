@@ -1,3 +1,4 @@
+#![feature(trace_macros)]
 #![feature(slice_patterns, box_patterns, box_syntax)]
 #![feature(proc_macro)]
 extern crate itertools;
@@ -30,15 +31,17 @@ mod typechecking;
 mod reduced_ast;
 mod eval;
 
+trace_macros!(true);
 #[derive(ProgrammingLanguageInterface)]
 #[LanguageName = "Schala"]
 #[SourceFileExtension = "schala"]
-#[PipelineSteps(tokenizing, parsing, symbol_table, typechecking, ast_reducing, eval)]
+#[PipelineSteps(tokenizing, parsing(a,b), symbol_table, typechecking, ast_reducing, eval)]
 pub struct Schala {
   state: eval::State<'static>,
   symbol_table: Rc<RefCell<symbol_table::SymbolTable>>,
   type_context: typechecking::TypeContext<'static>,
 }
+
 
 impl Schala {
   fn new_blank_env() -> Schala {
