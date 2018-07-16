@@ -169,7 +169,7 @@ macro_rules! pass_chain_helper {
       let output = {
         let ref debug_map = $options.debug_passes;
         let debug_handle = match debug_map.get(pass_name) {
-          Some(PassDebugOptionsDescriptor { opts }) => { //(Some(&mut $comp), Some(opts.clone())),
+          Some(PassDebugOptionsDescriptor { opts }) => {
             let ptr = &mut $comp;
             ptr.cur_debug_options = opts.clone();
             Some(ptr)

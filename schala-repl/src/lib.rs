@@ -132,6 +132,7 @@ fn run_noninteractive(filename: &str, languages: Vec<Box<ProgrammingLanguageInte
   }
 }
 
+#[derive(Clone)]
 enum CommandTree {
   Terminal(String, Option<String>),
   NonTerminal(String, Vec<CommandTree>, Option<String>),
@@ -329,14 +330,31 @@ impl Repl {
 
   fn get_directives(&self) -> CommandTree {
     let ref passes = self.get_cur_language().get_passes();
+
+    let passes_directives: Vec<CommandTree> = passes.iter()
+      .map(|pass_descriptor| {
+        let name = &pass_descriptor.name;
+        if pass_descriptor.debug_options.len() == 0 {
+          CommandTree::term(name, None)
+        } else {
+          let sub_opts: Vec<CommandTree> = pass_descriptor.debug_options.iter()
+            .map(|o| CommandTree::term(o, None)).collect();
+          CommandTree::NonTerminal(
+            name.clone(),
+            sub_opts,
+            None
+          )
+        }
+      }).collect();
+
     CommandTree::Top(vec![
       CommandTree::term("exit", Some("exit the REPL")),
       CommandTree::term("quit", Some("exit the REPL")),
       CommandTree::term("help", Some("Print this help message")),
       CommandTree::NonTerminal(format!("debug"), vec![
         CommandTree::term("passes", None),
-        CommandTree::NonTerminal(format!("show"), passes.iter().map(|p| CommandTree::term(&p.name, None)).collect(), None),
-        CommandTree::NonTerminal(format!("hide"), passes.iter().map(|p| CommandTree::term(&p.name, None)).collect(), None),
+        CommandTree::NonTerminal(format!("show"), passes_directives.clone(), None),
+        CommandTree::NonTerminal(format!("hide"), passes_directives.clone(), None),
       ], Some(format!("show or hide pass info for a given pass, or display the names of all passes"))),
       CommandTree::NonTerminal(format!("lang"), vec![
         CommandTree::term("next", None),
