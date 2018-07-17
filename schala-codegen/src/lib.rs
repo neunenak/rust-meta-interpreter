@@ -66,7 +66,7 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
 
   //let pass_names: Vec<String> = passes.iter().map(|pass| pass.0.to_string()).collect();
   let pass_descriptors = passes.iter().map(|pass| {
-    let name: String = pass.0.to_string();
+    let name = pass.0.to_string();
     let opts: Vec<String> = match &pass.1 {
       None => vec![],
       Some(opts) => opts.iter().map(|o| o.to_string()).collect(),
@@ -74,7 +74,7 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
 
     quote! {
       PassDescriptor {
-        name: #name,
+        name: #name.to_string(),
         debug_options: vec![#(format!(#opts)),*]
       }
     }

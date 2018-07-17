@@ -31,7 +31,7 @@ mod typechecking;
 mod reduced_ast;
 mod eval;
 
-trace_macros!(true);
+//trace_macros!(true);
 #[derive(ProgrammingLanguageInterface)]
 #[LanguageName = "Schala"]
 #[SourceFileExtension = "schala"]
