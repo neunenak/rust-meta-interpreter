@@ -35,7 +35,7 @@ mod eval;
 #[derive(ProgrammingLanguageInterface)]
 #[LanguageName = "Schala"]
 #[SourceFileExtension = "schala"]
-#[PipelineSteps(tokenizing, parsing(a,b), symbol_table, typechecking, ast_reducing, eval)]
+#[PipelineSteps(tokenizing, parsing(compact,expanded,trace), symbol_table, typechecking, ast_reducing, eval)]
 pub struct Schala {
   state: eval::State<'static>,
   symbol_table: Rc<RefCell<symbol_table::SymbolTable>>,
