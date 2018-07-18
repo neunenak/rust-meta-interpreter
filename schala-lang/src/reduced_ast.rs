@@ -157,6 +157,9 @@ impl Declaration {
         }
       },
       TypeDecl { .. } => Stmt::Noop,
+      TypeAlias(_, _) => Stmt::Noop,
+      Interface { .. } => Stmt::Noop,
+      Impl { .. } => Stmt::Expr(Expr::UnimplementedSigilValue),
       _ => Stmt::Expr(Expr::UnimplementedSigilValue)
     }
   }
