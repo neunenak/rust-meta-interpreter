@@ -3,7 +3,7 @@
 
 Schala is a Rust framework written to make it easy to
 create and experiment with toy programming languages. It provides
-a common REPL, and a trait `ProgrammingLanguage` with provisions 
+a common REPL, and a trait `ProgrammingLanguage` with provisions
 for tokenizing text, parsing tokens, evaluating an abstract syntax tree,
 and other tasks that are common to all programming languages.
 

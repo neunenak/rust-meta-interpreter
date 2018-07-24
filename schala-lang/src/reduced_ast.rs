@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use ast::{AST, Statement, Expression, Declaration, Discriminator, IfExpressionBody};
+use ast::{AST, Statement, Expression, Declaration, Discriminator, IfExpressionBody, Pattern};
 use symbol_table::{Symbol, SymbolSpec, SymbolTable};
 use builtin::{BinOp, PrefixOp};
 
@@ -44,6 +44,10 @@ pub enum Expr {
     cond: Box<Expr>,
     then_clause: Vec<Stmt>,
     else_clause: Vec<Stmt>,
+  },
+  Match {
+    cond: Box<Expr>,
+    arms: Vec<(Pattern, Vec<Stmt>)>
   },
   UnimplementedSigilValue
 }
@@ -112,33 +116,35 @@ impl Expression {
         args: arguments.iter().map(|arg| arg.reduce(symbol_table)).collect(),
       },
       TupleLiteral(exprs) => Expr::Tuple(exprs.iter().map(|e| e.reduce(symbol_table)).collect()),
-      IfExpression { discriminator, body } => {
-        let cond = Box::new(match **discriminator {
-          Discriminator::Simple(ref expr) => expr.reduce(symbol_table),
-          _ => panic!(),
-        });
-        match **body {
-          IfExpressionBody::SimpleConditional(ref then_clause, ref else_clause) => {
-            let then_clause = then_clause.iter().map(|expr| expr.reduce(symbol_table)).collect();
-            let else_clause = match else_clause {
-              None => vec![],
-              Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
-            };
-            Expr::Conditional { cond, then_clause, else_clause }
-          },
-          IfExpressionBody::SimplePatternMatch(ref pat, ref then_clause, ref else_clause) => {
-            let then_clause = then_clause.iter().map(|expr| expr.reduce(symbol_table)).collect();
-            let else_clause = match else_clause {
-              None => vec![],
-              Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
-            };
-            Expr::Conditional { cond, then_clause, else_clause }
-          },
-          _ => panic!(),
-        }
-      },
+      IfExpression { discriminator, body } => reduce_if_expression(discriminator, body, symbol_table),
       _ => Expr::UnimplementedSigilValue,
     }
+  }
+}
+
+fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, symbol_table: &SymbolTable) -> Expr {
+  let cond = Box::new(match *discriminator {
+    Discriminator::Simple(ref expr) => expr.reduce(symbol_table),
+    _ => panic!(),
+  });
+  match *body {
+    IfExpressionBody::SimpleConditional(ref then_clause, ref else_clause) => {
+      let then_clause = then_clause.iter().map(|expr| expr.reduce(symbol_table)).collect();
+      let else_clause = match else_clause {
+        None => vec![],
+        Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
+      };
+      Expr::Conditional { cond, then_clause, else_clause }
+    },
+    IfExpressionBody::SimplePatternMatch(ref pat, ref then_clause, ref else_clause) => {
+      let then_clause = then_clause.iter().map(|expr| expr.reduce(symbol_table)).collect();
+      let else_clause = match else_clause {
+        None => vec![],
+        Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
+      };
+      Expr::Conditional { cond, then_clause, else_clause }
+    },
+    _ => panic!(),
   }
 }
 
