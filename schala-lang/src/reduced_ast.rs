@@ -142,9 +142,15 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         None => vec![],
         Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
       };
-      Expr::Conditional { cond, then_clause, else_clause }
+      Expr::Match {
+        cond,
+        arms: vec![
+          (pat.clone(), then_clause),
+          (Pattern::Ignored, else_clause)
+        ],
+      }
     },
-    _ => panic!(),
+    IfExpressionBody::GuardList(ref _guard_arms) => panic!(),
   }
 }
 
