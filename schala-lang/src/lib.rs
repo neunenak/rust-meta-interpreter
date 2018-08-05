@@ -56,6 +56,7 @@ impl Schala {
   pub fn new() -> Schala {
     let prelude = r#"
 type Option<T> = Some(T) | None
+type Color = Red | Green | Blue
     "#;
     let mut s = Schala::new_blank_env();
     s.execute_pipeline(prelude, &EvalOptions::default());

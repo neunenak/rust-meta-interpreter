@@ -181,7 +181,7 @@ impl<'a> State<'a> {
     {
       let symbol_table = self.symbol_table_handle.borrow();
       match symbol_table.values.get(&name) {
-        Some(Symbol { spec: SymbolSpec::DataConstructor { type_name, type_args }, name }) => {
+        Some(Symbol { spec: SymbolSpec::DataConstructor { type_name, type_args, .. }, name }) => {
           if args.len() != type_args.len() {
             return Err(format!("Data constructor {} requires {} args", name, type_args.len()));
           }
@@ -292,7 +292,7 @@ impl<'a> State<'a> {
     let value = symbol_table.values.get(&name);
     Ok(match value {
       Some(Symbol { name, spec }) => match spec {
-        SymbolSpec::DataConstructor { type_name, type_args } => {
+        SymbolSpec::DataConstructor { type_name, type_args, .. } => {
           if type_args.len() == 0 {
             Expr::Lit(Lit::Custom(name.clone(), vec![]))
           } else {

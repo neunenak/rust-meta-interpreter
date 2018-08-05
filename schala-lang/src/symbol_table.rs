@@ -33,6 +33,7 @@ impl fmt::Display for Symbol {
 pub enum SymbolSpec {
   Func(Vec<TypeName>),
   DataConstructor {
+    index: usize,
     type_name: Rc<String>,
     type_args: Vec<Rc<String>>,
   },
@@ -43,7 +44,7 @@ impl fmt::Display for SymbolSpec {
     use self::SymbolSpec::*;
     match self {
       Func(type_names) => write!(f, "Func({:?})", type_names),
-      DataConstructor { type_name, type_args } => write!(f, "DataConstructor({:?} -> {})", type_args, type_name),
+      DataConstructor { index, type_name, type_args } => write!(f, "DataConstructor({})({:?} -> {})", index, type_args, type_name),
     }
   }
 }
@@ -79,11 +80,12 @@ impl SymbolTable {
               Symbol { name: signature.name.clone(), spec }
               );
           },
-          TypeDecl { name: TypeSingletonName { name, params}, body: TypeBody(variants), mutable } => {
-            for var in variants {
+          TypeDecl { name: TypeSingletonName { name, params}, body: TypeBody(variants), mutable, } => {
+            for (index, var) in variants.iter().enumerate() {
               match var {
                 Variant::UnitStruct(variant_name) => {
                   let spec = SymbolSpec::DataConstructor {
+                    index,
                     type_name: name.clone(),
                     type_args: vec![],
                   };
@@ -94,7 +96,8 @@ impl SymbolTable {
                     TypeName::Singleton(TypeSingletonName { name, ..}) => name.clone(),
                     TypeName::Tuple(_) => unimplemented!(),
                   }).collect();
-                  let spec = SymbolSpec::DataConstructor { 
+                  let spec = SymbolSpec::DataConstructor {
+                    index,
                     type_name: name.clone(),
                     type_args
                   };
