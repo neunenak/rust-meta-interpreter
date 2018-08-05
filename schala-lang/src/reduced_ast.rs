@@ -32,7 +32,7 @@ pub enum Expr {
   NewConstructor {
     type_name: Rc<String>,
     tag: usize,
-    arg: Box<Expression>,
+    arity: usize,
   },
   Constructor {
     name: Rc<String>,
@@ -117,8 +117,10 @@ impl Expression {
       PrefixExp(op, arg) => op.reduce(symbol_table, arg),
       Value(name) => {
         match symbol_table.values.get(name) {
-          Some(Symbol { spec: SymbolSpec::DataConstructor { type_args, .. }, .. }) => {
-            Expr::Constructor { name: name.clone() }
+          Some(Symbol { spec: SymbolSpec::DataConstructor { index, type_args, type_name}, .. }) => Expr::NewConstructor {
+            type_name: type_name.clone(),
+            tag: index.clone(),
+            arity: type_args.len(),
           },
           _ => Expr::Val(name.clone()),
         }

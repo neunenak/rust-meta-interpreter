@@ -77,7 +77,9 @@ impl Expr {
         UserDefined { name: None, .. } => format!("<function>"),
         UserDefined { name: Some(name), .. } => format!("<function {}>", name),
       },
-      Expr::Constructor { name } => format!("<constructor {}>", name),
+      Expr::NewConstructor { 
+        type_name, tag, arity,
+      } => unimplemented!(),
       Expr::Tuple(exprs) => paren_wrapped_vec(exprs),
       _ => format!("{:?}", self),
     }
