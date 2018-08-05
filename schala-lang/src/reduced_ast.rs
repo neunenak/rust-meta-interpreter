@@ -29,6 +29,11 @@ pub enum Expr {
   Tuple(Vec<Expr>),
   Func(Func),
   Val(Rc<String>),
+  NewConstructor {
+    type_name: Rc<String>,
+    tag: usize,
+    arg: Box<Expression>,
+  },
   Constructor {
     name: Rc<String>,
   },
@@ -47,9 +52,16 @@ pub enum Expr {
   },
   Match {
     cond: Box<Expr>,
-    arms: Vec<(Pattern, Vec<Stmt>)>
+    alternatives: Vec<Alternative>
   },
   UnimplementedSigilValue
+}
+
+#[derive(Debug, Clone)]
+pub struct Alternative {
+  tag: usize,
+  bound_vars: (),
+  item: Vec<Stmt>,
 }
 
 #[derive(Debug, Clone)]
@@ -142,11 +154,19 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         None => vec![],
         Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
       };
-      Expr::Match {
+      Expr::Match { //TODO this still doesn't work right
         cond,
-        arms: vec![
-          (pat.clone(), then_clause),
-          (Pattern::Ignored, else_clause)
+        alternatives: vec![
+          Alternative {
+            tag: 0,
+            bound_vars: (),
+            item: then_clause,
+          },
+          Alternative {
+            tag: 1,
+            bound_vars: (),
+            item: else_clause,
+          },
         ],
       }
     },
