@@ -69,17 +69,21 @@ impl Expr {
         Float(f) => format!("{}", f),
         Bool(b) => format!("{}", b),
         StringLit(s) => format!("\"{}\"", s),
-        Custom(name, args) if args.len() == 0 => format!("{}", name),
-        Custom(name, args) => format!("{}{}", name, paren_wrapped_vec(args)),
+        PrimObject { name, items } if items.len() == 0 => format!("{}", name),
+        PrimObject { name, items } => format!("{}{}", name, paren_wrapped_vec(items)),
       },
       Expr::Func(f) => match f {
-        BuiltIn(name) => format!("<built-in function {}>", name),
+        BuiltIn(name) => format!("<built-in function '{}'>", name),
         UserDefined { name: None, .. } => format!("<function>"),
-        UserDefined { name: Some(name), .. } => format!("<function {}>", name),
+        UserDefined { name: Some(name), .. } => format!("<function '{}'>", name),
       },
       Expr::NewConstructor { 
-        type_name, tag, arity,
-      } => unimplemented!(),
+        type_name, name, tag, arity,
+      } => if *arity == 0 {
+        format!("{}", name)
+      } else {
+        format!("<data constructor '{}'>", name)
+      },
       Expr::Tuple(exprs) => paren_wrapped_vec(exprs),
       _ => format!("{:?}", self),
     }
@@ -148,13 +152,13 @@ impl<'a> State<'a> {
       literal @ Lit(_) => Ok(literal),
       Call { box f, args } => {
         match self.expression(f)? {
-          Constructor {name} => self.apply_data_constructor(name, args),
+          NewConstructor { type_name, name, tag, arity} => self.apply_data_constructor(type_name, name, tag, arity, args),
           Func(f) => self.apply_function(f, args),
           other => return Err(format!("Tried to call {:?} which is not a function or data constructor", other)),
         }
       },
       Val(v) => self.value(v),
-      constr @ Constructor { .. } => Ok(constr),
+      constructor @ NewConstructor { .. } => Ok(constructor),
       func @ Func(_) => Ok(func),
       Tuple(exprs) => Ok(Tuple(exprs.into_iter().map(|expr| self.expression(expr)).collect::<Result<Vec<Expr>,_>>()?)),
       Conditional { box cond, then_clause, else_clause } => self.conditional(cond, then_clause, else_clause),
@@ -179,22 +183,17 @@ impl<'a> State<'a> {
     }
   }
 
-  fn apply_data_constructor(&mut self, name: Rc<String>, args: Vec<Expr>) -> EvalResult<Expr> {
-    {
-      let symbol_table = self.symbol_table_handle.borrow();
-      match symbol_table.values.get(&name) {
-        Some(Symbol { spec: SymbolSpec::DataConstructor { type_name, type_args, .. }, name }) => {
-          if args.len() != type_args.len() {
-            return Err(format!("Data constructor {} requires {} args", name, type_args.len()));
-          }
-          ()
-        },
-        _ => return Err(format!("Bad symbol {}", name))
-      }
+  fn apply_data_constructor(&mut self, type_name: Rc<String>, name: Rc<String>, tag: usize, arity: usize, args: Vec<Expr>) -> EvalResult<Expr> {
+    if arity != args.len() {
+      return Err(format!("Data constructor {} requires {} args", name, arity));
     }
+
     let evaled_args = args.into_iter().map(|expr| self.expression(expr)).collect::<Result<Vec<Expr>,_>>()?;
     //let evaled_args = vec![];
-    Ok(Expr::Lit(self::Lit::Custom(name.clone(), evaled_args)))
+    Ok(Expr::Lit(self::Lit::PrimObject {
+      name: name.clone(),
+      items: evaled_args,
+    }))
   }
 
   fn apply_function(&mut self, f: Func, args: Vec<Expr>) -> EvalResult<Expr> {
@@ -296,7 +295,7 @@ impl<'a> State<'a> {
       Some(Symbol { name, spec }) => match spec {
         SymbolSpec::DataConstructor { type_name, type_args, .. } => {
           if type_args.len() == 0 {
-            Expr::Lit(Lit::Custom(name.clone(), vec![]))
+            Expr::Lit(Lit::PrimObject { name: name.clone(), items: vec![] })
           } else {
             return Err(format!("This data constructor thing not done"))
           }

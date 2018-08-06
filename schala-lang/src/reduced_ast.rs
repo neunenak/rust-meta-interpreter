@@ -31,11 +31,9 @@ pub enum Expr {
   Val(Rc<String>),
   NewConstructor {
     type_name: Rc<String>,
+    name: Rc<String>,
     tag: usize,
     arity: usize,
-  },
-  Constructor {
-    name: Rc<String>,
   },
   Call {
     f: Box<Expr>,
@@ -71,7 +69,10 @@ pub enum Lit {
   Float(f64),
   Bool(bool),
   StringLit(Rc<String>),
-  Custom(Rc<String>, Vec<Expr>),
+  PrimObject { //TODO rethink placement in type heierarchy
+    name: Rc<String>,
+    items: Vec<Expr>,
+  }
 }
 
 #[derive(Debug, Clone)]
@@ -119,6 +120,7 @@ impl Expression {
         match symbol_table.values.get(name) {
           Some(Symbol { spec: SymbolSpec::DataConstructor { index, type_args, type_name}, .. }) => Expr::NewConstructor {
             type_name: type_name.clone(),
+            name: name.clone(),
             tag: index.clone(),
             arity: type_args.len(),
           },
