@@ -77,7 +77,7 @@ impl Expr {
         UserDefined { name: None, .. } => format!("<function>"),
         UserDefined { name: Some(name), .. } => format!("<function '{}'>", name),
       },
-      Expr::NewConstructor { 
+      Expr::Constructor { 
         type_name, name, tag, arity,
       } => if *arity == 0 {
         format!("{}", name)
@@ -152,13 +152,13 @@ impl<'a> State<'a> {
       literal @ Lit(_) => Ok(literal),
       Call { box f, args } => {
         match self.expression(f)? {
-          NewConstructor { type_name, name, tag, arity} => self.apply_data_constructor(type_name, name, tag, arity, args),
+          Constructor { type_name, name, tag, arity} => self.apply_data_constructor(type_name, name, tag, arity, args),
           Func(f) => self.apply_function(f, args),
           other => return Err(format!("Tried to call {:?} which is not a function or data constructor", other)),
         }
       },
       Val(v) => self.value(v),
-      constructor @ NewConstructor { .. } => Ok(constructor),
+      constructor @ Constructor { .. } => Ok(constructor),
       func @ Func(_) => Ok(func),
       Tuple(exprs) => Ok(Tuple(exprs.into_iter().map(|expr| self.expression(expr)).collect::<Result<Vec<Expr>,_>>()?)),
       Conditional { box cond, then_clause, else_clause } => self.conditional(cond, then_clause, else_clause),

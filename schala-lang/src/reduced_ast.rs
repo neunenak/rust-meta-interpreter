@@ -29,7 +29,7 @@ pub enum Expr {
   Tuple(Vec<Expr>),
   Func(Func),
   Val(Rc<String>),
-  NewConstructor {
+  Constructor {
     type_name: Rc<String>,
     name: Rc<String>,
     tag: usize,
@@ -118,7 +118,7 @@ impl Expression {
       PrefixExp(op, arg) => op.reduce(symbol_table, arg),
       Value(name) => {
         match symbol_table.lookup_by_name(name) {
-          Some(Symbol { spec: SymbolSpec::DataConstructor { index, type_args, type_name}, .. }) => Expr::NewConstructor {
+          Some(Symbol { spec: SymbolSpec::DataConstructor { index, type_args, type_name}, .. }) => Expr::Constructor {
             type_name: type_name.clone(),
             name: name.clone(),
             tag: index.clone(),
