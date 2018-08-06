@@ -11,6 +11,8 @@ pub struct SymbolTable {
   pub values: HashMap<Rc<String>, Symbol> //TODO this will eventually have real type information
 }
 
+//TODO add various types of lookups here, maybe multiple hash tables internally? also make values
+//non-public
 impl SymbolTable {
   pub fn new() -> SymbolTable {
     SymbolTable { values: HashMap::new() }

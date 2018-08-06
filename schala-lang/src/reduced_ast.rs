@@ -57,8 +57,8 @@ pub enum Expr {
 
 #[derive(Debug, Clone)]
 pub struct Alternative {
-  tag: usize,
-  bound_vars: (),
+  tag: Option<usize>,
+  bound_vars: Vec<Rc<String>>,
   item: Vec<Stmt>,
 }
 
@@ -158,20 +158,34 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         None => vec![],
         Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
       };
-      Expr::Match { //TODO this still doesn't work right
-        cond,
-        alternatives: vec![
+      
+      /*
+      let alternatives = match pat {
+        Pattern::TupleStruct(name, subpatterns) => {
+          let symbol = symbol_table.values.get(name).unwrap();
+
+          unimplemented!()
+        },
+        _ => panic!()
+      };
+      */
+
+      let alternatives = vec![
           Alternative {
-            tag: 0,
-            bound_vars: (),
+            tag: Some(0),
+            bound_vars: vec![],
             item: then_clause,
           },
           Alternative {
-            tag: 1,
-            bound_vars: (),
+            tag: None,
+            bound_vars: vec![],
             item: else_clause,
           },
-        ],
+      ];
+
+      Expr::Match {
+        cond,
+        alternatives,
       }
     },
     IfExpressionBody::GuardList(ref _guard_arms) => panic!(),
