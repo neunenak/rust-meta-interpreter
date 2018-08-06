@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use ast::{AST, Statement, Expression, Declaration, Discriminator, IfExpressionBody, Pattern};
+use ast::{AST, Statement, Expression, Declaration, Discriminator, IfExpressionBody, Pattern, PatternLiteral};
 use symbol_table::{Symbol, SymbolSpec, SymbolTable};
 use builtin::{BinOp, PrefixOp};
 
@@ -159,28 +159,33 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
       };
       
-      /*
-      let alternatives = match pat {
+      let first_alt: Alternative = match pat {
         Pattern::TupleStruct(name, subpatterns) => {
           let symbol = symbol_table.values.get(name).unwrap();
-
-          unimplemented!()
+          let tag = match symbol.spec {
+            SymbolSpec::DataConstructor { index, .. } => index.clone(),
+            _ => panic!("Bad symbol"),
+          };
+          let bound_vars = subpatterns.iter().flat_map(|p| match p {
+            Pattern::Literal(PatternLiteral::VarPattern(var)) => Some(var.clone()),
+            _ => None,
+          }).collect();
+          Alternative {
+            tag: Some(tag),
+            bound_vars,
+            item: then_clause,
+          }
         },
         _ => panic!()
       };
-      */
 
       let alternatives = vec![
-          Alternative {
-            tag: Some(0),
-            bound_vars: vec![],
-            item: then_clause,
-          },
-          Alternative {
-            tag: None,
-            bound_vars: vec![],
-            item: else_clause,
-          },
+        first_alt,
+        Alternative {
+          tag: None,
+          bound_vars: vec![],
+          item: else_clause,
+        },
       ];
 
       Expr::Match {
