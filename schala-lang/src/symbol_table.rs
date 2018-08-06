@@ -17,6 +17,10 @@ impl SymbolTable {
   pub fn new() -> SymbolTable {
     SymbolTable { values: HashMap::new() }
   }
+
+  pub fn lookup_by_name(&self, name: &Rc<String>) -> Option<&Symbol> {
+    self.values.get(name)
+  }
 }
 
 #[derive(Debug)]

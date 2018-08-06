@@ -290,7 +290,7 @@ impl<'a> State<'a> {
     //in the values table
 
     let symbol_table = self.symbol_table_handle.borrow();
-    let value = symbol_table.values.get(&name);
+    let value = symbol_table.lookup_by_name(&name);
     Ok(match value {
       Some(Symbol { name, spec }) => match spec {
         SymbolSpec::DataConstructor { type_name, type_args, .. } => {

@@ -117,7 +117,7 @@ impl Expression {
       BinExp(binop, lhs, rhs) => binop.reduce(symbol_table, lhs, rhs),
       PrefixExp(op, arg) => op.reduce(symbol_table, arg),
       Value(name) => {
-        match symbol_table.values.get(name) {
+        match symbol_table.lookup_by_name(name) {
           Some(Symbol { spec: SymbolSpec::DataConstructor { index, type_args, type_name}, .. }) => Expr::NewConstructor {
             type_name: type_name.clone(),
             name: name.clone(),
