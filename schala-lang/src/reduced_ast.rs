@@ -116,16 +116,14 @@ impl Expression {
       BoolLiteral(b) => Expr::Lit(Lit::Bool(*b)),
       BinExp(binop, lhs, rhs) => binop.reduce(symbol_table, lhs, rhs),
       PrefixExp(op, arg) => op.reduce(symbol_table, arg),
-      Value(name) => {
-        match symbol_table.lookup_by_name(name) {
-          Some(Symbol { spec: SymbolSpec::DataConstructor { index, type_args, type_name}, .. }) => Expr::Constructor {
-            type_name: type_name.clone(),
-            name: name.clone(),
-            tag: index.clone(),
-            arity: type_args.len(),
-          },
-          _ => Expr::Val(name.clone()),
-        }
+      Value(name) => match symbol_table.lookup_by_name(name) {
+        Some(Symbol { spec: SymbolSpec::DataConstructor { index, type_args, type_name}, .. }) => Expr::Constructor {
+          type_name: type_name.clone(),
+          name: name.clone(),
+          tag: index.clone(),
+          arity: type_args.len(),
+        },
+        _ => Expr::Val(name.clone()),
       },
       Call { f, arguments } => Expr::Call {
         f: Box::new(f.reduce(symbol_table)),
