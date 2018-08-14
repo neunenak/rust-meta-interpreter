@@ -41,6 +41,9 @@ enum Node {
     name: Rc<String>,
     tag: usize,
     items: Vec<Node>,
+  },
+  PrimTuple {
+    items: Vec<Node>
   }
 }
 
@@ -64,6 +67,7 @@ impl Node {
       Node::Expr(e) => e.to_repl(),
       Node::PrimObject { name, items, tag } if items.len() == 0 => format!("{}", name),
       Node::PrimObject { name, items, tag } => format!("{}{}", name, paren_wrapped_vec(items.iter().map(|x| x.to_repl()))),
+      Node::PrimTuple { items } => format!("{}", paren_wrapped_vec(items.iter().map(|x| x.to_repl()))),
     }
   }
 }
@@ -171,23 +175,22 @@ impl<'a> State<'a> {
   fn expression(&mut self, node: Node) -> EvalResult<Node> {
     use self::Expr::*;
     match node {
+      t @ Node::PrimTuple { .. } => Ok(t),
       obj @ Node::PrimObject { .. } =>  Ok(obj),
       Node::Expr(expr) => match expr {
         literal @ Lit(_) => Ok(Node::Expr(literal)),
-        Call { box f, args } => {
-          match self.expression(Node::Expr(f))? {
-            Node::Expr(Constructor { type_name, name, tag, arity }) => self.apply_data_constructor(type_name, name, tag, arity, args),
-            Node::Expr(Func(f)) => self.apply_function(f, args),
-            other => return Err(format!("Tried to call {:?} which is not a function or data constructor", other)),
-          }
+        Call { box f, args } => match self.expression(Node::Expr(f))? {
+          Node::Expr(Constructor { type_name, name, tag, arity }) => self.apply_data_constructor(type_name, name, tag, arity, args),
+          Node::Expr(Func(f)) => self.apply_function(f, args),
+          other => return Err(format!("Tried to call {:?} which is not a function or data constructor", other)),
         },
         Val(v) => self.value(v),
         constructor @ Constructor { .. } => Ok(Node::Expr(constructor)),
         func @ Func(_) => Ok(Node::Expr(func)),
         Tuple(exprs) => {
-          unimplemented!()
+          let nodes = exprs.into_iter().map(|expr| self.expression(Node::Expr(expr))).collect::<Result<Vec<Node>,_>>()?;
+          Ok(Node::PrimTuple { items: nodes })
         },
-        //Tuple(exprs) => Ok(Tuple(exprs.into_iter().map(|expr| self.expression(expr)).collect::<Result<Vec<Expr>,_>>()?)),
         Conditional { box cond, then_clause, else_clause } => self.conditional(cond, then_clause, else_clause),
         Assign { box val, box expr } => {
           let name = match val  {
@@ -221,7 +224,7 @@ impl<'a> State<'a> {
     Ok(Node::PrimObject {
       name: name.clone(),
       items: evaled_args,
-      tag: 0,
+      tag 
     })
   }
 
@@ -253,6 +256,7 @@ impl<'a> State<'a> {
     let evaled_args: Result<Vec<Expr>, String> = args.into_iter().map(|arg| {
       match self.expression(Node::Expr(arg)) {
         Ok(Node::Expr(e)) => Ok(e),
+        Ok(Node::PrimTuple { items }) => Err(format!("Trying to apply a builtin to a tuple")),
         Ok(Node::PrimObject { .. }) => Err(format!("Trying to apply a builtin to a primitive object")),
         Err(e) => Err(e)
       }
