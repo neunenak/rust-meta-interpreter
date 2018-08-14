@@ -69,10 +69,6 @@ pub enum Lit {
   Float(f64),
   Bool(bool),
   StringLit(Rc<String>),
-  PrimObject { //TODO rethink placement in type heierarchy
-    name: Rc<String>,
-    items: Vec<Expr>,
-  }
 }
 
 #[derive(Debug, Clone)]
@@ -156,7 +152,7 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         None => vec![],
         Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
       };
-      
+
       let first_alt: Alternative = match pat {
         Pattern::TupleStruct(name, subpatterns) => {
           let symbol = symbol_table.values.get(name).unwrap();
