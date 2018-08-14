@@ -209,7 +209,9 @@ impl<'a> State<'a> {
           self.values.insert(name.clone(), ValueEntry::Binding { constant: false, val });
           Ok(Node::Expr(Expr::Unit))
         },
-        e => Err(format!("Expr {:?} eval not implemented", e))
+        Unit => Ok(Node::Expr(Unit)),
+        CaseMatch { cond, alternatives } => unimplemented!(),
+        UnimplementedSigilValue => Err(format!("Sigil value eval not implemented"))
       }
     }
   }
