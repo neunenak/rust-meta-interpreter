@@ -48,7 +48,7 @@ pub enum Expr {
     then_clause: Vec<Stmt>,
     else_clause: Vec<Stmt>,
   },
-  Match {
+  CaseMatch {
     cond: Box<Expr>,
     alternatives: Vec<Alternative>
   },
@@ -182,7 +182,7 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         },
       ];
 
-      Expr::Match {
+      Expr::CaseMatch {
         cond,
         alternatives,
       }
