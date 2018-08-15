@@ -29,7 +29,7 @@ impl<'a, T, V> StateStack<'a, T, V> where T: Hash + Eq {
     }
   }
   //TODO rename new_scope
-  pub fn new_frame(&'a self, name: Option<String>) -> StateStack<'a, T, V> where T: Hash + Eq {
+  pub fn new_scope(&'a self, name: Option<String>) -> StateStack<'a, T, V> where T: Hash + Eq {
     StateStack {
       parent: Some(self),
       values: HashMap::default(),

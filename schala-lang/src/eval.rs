@@ -218,7 +218,7 @@ impl<'a> State<'a> {
             for alt in alternatives {
               if alt.tag.map(|t| t == tag).unwrap_or(true) {
                 let mut inner_state = State {
-                  values: self.values.new_frame(None),
+                  values: self.values.new_scope(None),
                   symbol_table_handle: self.symbol_table_handle.clone(),
                 };
                 for (bound_var, val) in alt.bound_vars.iter().zip(items.iter()) {
@@ -262,7 +262,7 @@ impl<'a> State<'a> {
           return Err(format!("calling a {}-argument function with {} args", params.len(), args.len()))
         }
         let mut func_state = State {
-          values: self.values.new_frame(name.map(|n| format!("{}", n))),
+          values: self.values.new_scope(name.map(|n| format!("{}", n))),
           symbol_table_handle: self.symbol_table_handle.clone(),
         };
         for (param, val) in params.into_iter().zip(args.into_iter()) {
