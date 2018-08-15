@@ -49,7 +49,6 @@ pub enum Kw {
   Is,
   Func,
   For, While,
-  Match,
   Const, Let, In,
   Mut,
   Return,

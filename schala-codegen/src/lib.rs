@@ -54,7 +54,6 @@ fn extract_attribute_list(name: &str, attrs: &Vec<Attribute>) -> Option<Vec<(Ide
 
 #[proc_macro_derive(ProgrammingLanguageInterface, attributes(LanguageName, SourceFileExtension, PipelineSteps))]
 pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream {
-  use schala_repl::PassDescriptor;
   let ast: DeriveInput = syn::parse(input).unwrap();
   let name = &ast.ident;
   let attrs = &ast.attrs;

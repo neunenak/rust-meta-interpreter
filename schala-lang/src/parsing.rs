@@ -961,7 +961,7 @@ mod parse_tests {
   use ::std::rc::Rc;
   use super::{parse, tokenize};
   use builtin::{PrefixOp, BinOp};
-  use ast::{AST, Expression, Statement, IfExpressionBody, Discriminator, Pattern, PatternLiteral, TypeBody, Variant, Enumerator, ForBody};
+  use ast::{AST, Expression, Statement, IfExpressionBody, Discriminator, Pattern, PatternLiteral, TypeBody, Enumerator, ForBody};
   use super::Statement::*;
   use super::Declaration::*;
   use super::Signature;
