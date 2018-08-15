@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use colored::*;
 use std::fmt::Write;
+use std::time;
 
 pub struct LLVMCodeString(pub String);
 
@@ -35,12 +36,14 @@ impl Default for ExecutionMethod {
 #[derive(Debug, Default)]
 pub struct UnfinishedComputation {
   artifacts: Vec<(String, TraceArtifact)>,
+  pub durations: Vec<time::Duration>,
   pub cur_debug_options: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct FinishedComputation {
   artifacts: Vec<(String, TraceArtifact)>,
+  durations: Vec<time::Duration>,
   text_output: Result<String, String>,
 }
 
@@ -51,13 +54,15 @@ impl UnfinishedComputation {
   pub fn finish(self, text_output: Result<String, String>) -> FinishedComputation {
     FinishedComputation {
       artifacts: self.artifacts,
-      text_output
+      text_output,
+      durations: self.durations
     }
   }
   pub fn output(self, output: Result<String, String>) -> FinishedComputation {
     FinishedComputation {
       artifacts: self.artifacts,
-      text_output: output
+      text_output: output,
+      durations: self.durations,
     }
   }
 }
@@ -128,7 +133,7 @@ impl TraceArtifact {
 
 pub trait ProgrammingLanguageInterface {
   fn execute_pipeline(&mut self, _input: &str, _eval_options: &EvalOptions) -> FinishedComputation {
-    FinishedComputation { artifacts: vec![], text_output: Err(format!("Execution pipeline not done")) }
+    FinishedComputation { artifacts: vec![], text_output: Err(format!("Execution pipeline not done")), durations: vec![] }
   }
 
   fn get_language_name(&self) -> String;
@@ -164,9 +169,10 @@ macro_rules! pass_chain {
 macro_rules! pass_chain_helper {
   (($state:expr, $comp:expr, $options:expr); $input:expr, $pass:path $(, $rest:path)*) => {
     {
+      use std::time;
       use schala_repl::PassDebugOptionsDescriptor;
       let pass_name = stringify!($pass);
-      let output = {
+      let (output, duration) = {
         let ref debug_map = $options.debug_passes;
         let debug_handle = match debug_map.get(pass_name) {
           Some(PassDebugOptionsDescriptor { opts }) => {
@@ -176,8 +182,12 @@ macro_rules! pass_chain_helper {
           }
           _ => None
         };
-        $pass($state, $input, debug_handle)
+        let start = time::Instant::now();
+        let pass_output = $pass($state, $input, debug_handle);
+        let elapsed = start.elapsed();
+        (pass_output, elapsed)
       };
+      $comp.durations.push(duration);
       match output {
         Ok(result) => pass_chain_helper! { ($state, $comp, $options); result $(, $rest)* },
         Err(err) => {
