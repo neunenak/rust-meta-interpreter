@@ -395,7 +395,7 @@ mod eval_tests {
         let symbol_table = Rc::new(RefCell::new(SymbolTable::new()));
         let mut state = State::new(symbol_table);
         let ast = parse(tokenize($string)).0.unwrap();
-        state.symbol_table_handle.borrow_mut().add_top_level_symbols(&ast);
+        state.symbol_table_handle.borrow_mut().add_top_level_symbols(&ast).unwrap();
         let reduced = ast.reduce(&state.symbol_table_handle.borrow());
         let all_output = state.evaluate(reduced, true);
         all_output
