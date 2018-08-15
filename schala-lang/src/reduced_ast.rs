@@ -57,9 +57,9 @@ pub enum Expr {
 
 #[derive(Debug, Clone)]
 pub struct Alternative {
-  tag: Option<usize>,
-  bound_vars: Vec<Rc<String>>,
-  item: Vec<Stmt>,
+  pub tag: Option<usize>,
+  pub bound_vars: Vec<Option<Rc<String>>>, //remember that order matters here
+  pub item: Vec<Stmt>,
 }
 
 #[derive(Debug, Clone)]
@@ -160,8 +160,9 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
             SymbolSpec::DataConstructor { index, .. } => index.clone(),
             _ => panic!("Bad symbol"),
           };
-          let bound_vars = subpatterns.iter().flat_map(|p| match p {
+          let bound_vars = subpatterns.iter().map(|p| match p {
             Pattern::Literal(PatternLiteral::VarPattern(var)) => Some(var.clone()),
+            Pattern::Ignored => None,
             _ => None,
           }).collect();
           Alternative {

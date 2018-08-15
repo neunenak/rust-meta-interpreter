@@ -1,3 +1,4 @@
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::fmt::Write;
@@ -20,6 +21,7 @@ macro_rules! builtin_binding {
   }
 }
 
+//TODO add a more concise way of getting a new frame
 impl<'a> State<'a> {
   pub fn new(symbol_table_handle: Rc<RefCell<SymbolTable>>) -> State<'a> {
     let mut values = StateStack::new(Some(format!("global")));
@@ -185,6 +187,7 @@ impl<'a> State<'a> {
           other => return Err(format!("Tried to call {:?} which is not a function or data constructor", other)),
         },
         Val(v) => self.value(v),
+        Constructor { arity, ref name, tag, .. } if arity == 0 => Ok(Node::PrimObject { name: name.clone(), tag, items: vec![] }),
         constructor @ Constructor { .. } => Ok(Node::Expr(constructor)),
         func @ Func(_) => Ok(Node::Expr(func)),
         Tuple(exprs) => {
@@ -210,7 +213,27 @@ impl<'a> State<'a> {
           Ok(Node::Expr(Expr::Unit))
         },
         Unit => Ok(Node::Expr(Unit)),
-        CaseMatch { cond, alternatives } => unimplemented!(),
+        CaseMatch { box cond, alternatives } => match self.expression(Node::Expr(cond))? {
+          Node::PrimObject { name, tag, items } => {
+            for alt in alternatives {
+              if alt.tag.map(|t| t == tag).unwrap_or(true) {
+                let mut inner_state = State {
+                  values: self.values.new_frame(None),
+                  symbol_table_handle: self.symbol_table_handle.clone(),
+                };
+                for (bound_var, val) in alt.bound_vars.iter().zip(items.iter()) {
+                  if let Some(bv) = bound_var.as_ref() {
+                    inner_state.values.insert(bv.clone(), ValueEntry::Binding { constant: true, val: val.clone() });
+                  }
+                }
+                return inner_state.block(alt.item)
+              }
+            }
+            return Err(format!("No matches found"));
+          },
+          Node::PrimTuple { .. } => Err(format!("Tuples don't work")),
+          Node::Expr(e) => Err(format!("Exprs don't work {:?}", e))
+        },
         UnimplementedSigilValue => Err(format!("Sigil value eval not implemented"))
       }
     }
