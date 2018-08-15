@@ -155,7 +155,7 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
 
       let first_alt: Alternative = match pat {
         Pattern::TupleStruct(name, subpatterns) => {
-          let symbol = symbol_table.values.get(name).unwrap();
+          let symbol = symbol_table.values.get(name).expect(&format!("Symbol {} not found", name));
           let tag = match symbol.spec {
             SymbolSpec::DataConstructor { index, .. } => index.clone(),
             _ => panic!("Bad symbol"),
