@@ -69,7 +69,7 @@ impl SymbolTable {
             let mut types = vec![];
             for param in signature.params.iter() {
               match param {
-                (_, Some(ty)) => {
+                (_, Some(_ty)) => {
                   //TODO eventually handle this case different
                   types.push(Rc::new(format!("{}", ch)));
                   ch = ((ch as u8) + 1) as char;
@@ -86,7 +86,8 @@ impl SymbolTable {
               Symbol { name: signature.name.clone(), spec }
               );
           },
-          TypeDecl { name: TypeSingletonName { name, params}, body: TypeBody(variants), mutable, } => {
+          //TODO figure out why _params isn't being used here
+          TypeDecl { name: TypeSingletonName { name, params: _params}, body: TypeBody(variants), mutable: _mutable, } => {
             for (index, var) in variants.iter().enumerate() {
               match var {
                 Variant::UnitStruct(variant_name) => {
