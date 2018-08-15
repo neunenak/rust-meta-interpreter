@@ -389,16 +389,27 @@ mod eval_tests {
   use parsing::parse;
   use eval::State;
 
+  macro_rules! all_output {
+    ($string:expr) => {
+      {
+        let symbol_table = Rc::new(RefCell::new(SymbolTable::new()));
+        let mut state = State::new(symbol_table);
+        let ast = parse(tokenize($string)).0.unwrap();
+        state.symbol_table_handle.borrow_mut().add_top_level_symbols(&ast);
+        let reduced = ast.reduce(&state.symbol_table_handle.borrow());
+        let all_output = state.evaluate(reduced, true);
+        all_output
+      }
+    }
+  }
+
   macro_rules! fresh_env {
     ($string:expr, $correct:expr) => {
-      let symbol_table = Rc::new(RefCell::new(SymbolTable::new()));
-      let mut state = State::new(symbol_table);
-      let ast = parse(tokenize($string)).0.unwrap();
-      state.symbol_table_handle.borrow_mut().add_top_level_symbols(&ast);
-      let reduced = ast.reduce(&state.symbol_table_handle.borrow());
-      let all_output = state.evaluate(reduced, true);
-      let ref output = all_output.last().unwrap();
-      assert_eq!(**output, Ok($correct.to_string()));
+      {
+        let all_output = all_output!($string);
+        let ref output = all_output.last().unwrap();
+        assert_eq!(**output, Ok($correct.to_string()));
+      }
     }
   }
 
@@ -436,5 +447,18 @@ mod eval_tests {
     a
     "#;
     fresh_env!(scope_ok, "20");
+  }
+
+  #[test]
+  fn basic_patterns() {
+    let source = r#"
+type Option<T> = Some(T) | None
+let x = Some(9); if x is Some(q) then { q } else { 0 }"#;
+    fresh_env!(source, "9");
+
+    let source = r#"
+type Option<T> = Some(T) | None
+let x = None; if x is Some(q) then { q } else { 0 }"#;
+    fresh_env!(source, "0");
   }
 }
