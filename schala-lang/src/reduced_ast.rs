@@ -189,9 +189,13 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
       }
     },
     IfExpressionBody::GuardList(ref guard_arms) => {
-      for arm in guard_arms.iter() {
-        //TODO do stuff here!!
-      }
+      let alternatives = guard_arms.iter().map(|arm| {
+        Alternative {
+          tag: Some(0),
+          bound_vars: vec![],
+          item: arm.body.iter().map(|expr| expr.reduce(symbol_table)).collect(),
+        }
+      });
       Expr::UnimplementedSigilValue
     }
   }
