@@ -188,7 +188,12 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         alternatives,
       }
     },
-    IfExpressionBody::GuardList(ref _guard_arms) => panic!(),
+    IfExpressionBody::GuardList(ref guard_arms) => {
+      for arm in guard_arms.iter() {
+        //TODO do stuff here!!
+      }
+      Expr::UnimplementedSigilValue
+    }
   }
 }
 

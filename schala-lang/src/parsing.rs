@@ -240,6 +240,10 @@ record_pattern := IDENTIFIER '{' (record_pattern_entry, ',')* '}'
 record_pattern_entry := IDENTIFIER | IDENTIFIER ':' Pattern
 tuple_struct_pattern := IDENTIFIER '(' (pattern, ',')* ')'
 
+
+//TODO when this works bring it to guard_arm
+expr_or_block := '{' (statement delimiter)* '}' | expr
+
 /* Expression - If */
 if_expr := 'if' discriminator ('then' condititional | 'is' simple_pattern_match | guard_block)
 discriminator := modified_precedence_expression
@@ -694,6 +698,7 @@ impl Parser {
   parse_method!(guard_arm(&mut self) -> ParseResult<GuardArm> {
     let guard = self.guard()?;
     expect!(self, Operator(ref c) if **c == "->");
+    println!("WE HIIII? {:?}", self.peek());
     let body = self.block()?;
     Ok(GuardArm { guard, body })
   });
