@@ -67,8 +67,8 @@ impl Node {
   fn to_repl(&self) -> String {
     match self {
       Node::Expr(e) => e.to_repl(),
-      Node::PrimObject { name, items, tag } if items.len() == 0 => format!("{}", name),
-      Node::PrimObject { name, items, tag } => format!("{}{}", name, paren_wrapped_vec(items.iter().map(|x| x.to_repl()))),
+      Node::PrimObject { name, items, .. } if items.len() == 0 => format!("{}", name),
+      Node::PrimObject { name, items, .. } => format!("{}{}", name, paren_wrapped_vec(items.iter().map(|x| x.to_repl()))),
       Node::PrimTuple { items } => format!("{}", paren_wrapped_vec(items.iter().map(|x| x.to_repl()))),
     }
   }
@@ -357,7 +357,8 @@ impl<'a> State<'a> {
     let value = symbol_table.lookup_by_name(&name);
     Ok(match value {
       Some(Symbol { name, spec }) => match spec {
-        SymbolSpec::DataConstructor { type_name, type_args, .. } => {
+        //TODO I'll need this type_name later to do a table lookup
+        SymbolSpec::DataConstructor { type_name: _type_name, type_args, .. } => {
           if type_args.len() == 0 {
             Node::PrimObject { name: name.clone(), tag: 0, items: vec![] }
           } else {
