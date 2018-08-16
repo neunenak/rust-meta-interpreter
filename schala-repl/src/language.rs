@@ -70,11 +70,12 @@ impl UnfinishedComputation {
 impl FinishedComputation {
   pub fn to_repl(&self) -> String {
     let mut buf = String::new();
-    for (stage, artifact) in self.artifacts.iter() {
+    for ((stage, artifact), duration) in self.artifacts.iter().zip(self.durations.iter()) {
       let color = artifact.text_color;
       let stage = stage.color(color).bold();
       let output = artifact.debug_output.color(color);
-      write!(&mut buf, "{}: {}\n", stage, output).unwrap();
+      let timing = (duration.as_secs() as f64) + (duration.subsec_nanos() as f64 * 1e-9);
+      write!(&mut buf, "{} ({}s): {}\n", stage, timing, output).unwrap();
     }
 
     match self.text_output {

@@ -452,7 +452,7 @@ impl Repl {
             let color = "green";
             format!("*{}", desc.name.color(color))
           } else {
-            desc.name 
+            desc.name
           }
         })
         .intersperse(format!(" -> "))
