@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use ast::{AST, Statement, Expression, Declaration, Discriminator, IfExpressionBody, Pattern, PatternLiteral};
+use ast::{AST, Statement, Expression, Declaration, Discriminator, IfExpressionBody, Pattern, PatternLiteral, Guard, HalfExpr};
 use symbol_table::{Symbol, SymbolSpec, SymbolTable};
 use builtin::{BinOp, PrefixOp};
 
@@ -193,7 +193,17 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
     IfExpressionBody::GuardList(ref guard_arms) => {
       let alternatives = guard_arms.iter().map(|arm| {
         let (tag, bound_vars) = match arm.guard {
-          _ => (Some(0), vec![]),
+          Guard::Pat(ref p) => match p {
+            Pattern::Ignored => (None, vec![]),
+            Pattern::TuplePattern(_) => {
+              unimplemented!()
+            },
+            _ => unimplemented!()
+          },
+          Guard::HalfExpr(HalfExpr { ref op, ref expr }) => {
+
+            (Some(0), vec![])
+          }
         };
 
         let item = arm.body.iter().map(|expr| expr.reduce(symbol_table)).collect();
