@@ -135,7 +135,9 @@ impl Expression {
 fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, symbol_table: &SymbolTable) -> Expr {
   let cond = Box::new(match *discriminator {
     Discriminator::Simple(ref expr) => expr.reduce(symbol_table),
-    _ => panic!(),
+    Discriminator::BinOp(ref expr, ref binop) => {
+      panic!()
+    }
   });
   match *body {
     IfExpressionBody::SimpleConditional(ref then_clause, ref else_clause) => {
@@ -190,13 +192,14 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
     },
     IfExpressionBody::GuardList(ref guard_arms) => {
       let alternatives = guard_arms.iter().map(|arm| {
-        Alternative {
-          tag: Some(0),
-          bound_vars: vec![],
-          item: arm.body.iter().map(|expr| expr.reduce(symbol_table)).collect(),
-        }
-      });
-      Expr::UnimplementedSigilValue
+        let (tag, bound_vars) = match arm.guard {
+          _ => (Some(0), vec![]),
+        };
+
+        let item = arm.body.iter().map(|expr| expr.reduce(symbol_table)).collect();
+        Alternative { tag, bound_vars, item }
+      }).collect();
+      Expr::CaseMatch { cond, alternatives }
     }
   }
 }
