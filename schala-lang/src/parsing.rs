@@ -240,19 +240,17 @@ record_pattern := IDENTIFIER '{' (record_pattern_entry, ',')* '}'
 record_pattern_entry := IDENTIFIER | IDENTIFIER ':' Pattern
 tuple_struct_pattern := IDENTIFIER '(' (pattern, ',')* ')'
 
-
-//TODO when this works bring it to guard_arm
 expr_or_block := '{' (statement delimiter)* '}' | expr
 
 /* Expression - If */
 if_expr := 'if' discriminator ('then' condititional | 'is' simple_pattern_match | guard_block)
 discriminator := modified_precedence_expression
 modified_precedence_expression := precedence_expr (operator)+ //TODO this is currently hard, rearchitect things
-conditional := block else_clause
+conditional := expr_or_block else_clause
 simple_pattern_match := pattern 'then' conditional
-else_clause := ε | 'else' block
+else_clause := ε | 'else' expr_or_block
 guard_block := '{' (guard_arm, ',')* '}'
-guard_arm := guard '->' block
+guard_arm := guard '->' expr_or_block
 guard := 'is' pattern | (operator)+ precedence_expr
 
 /* Expression - While */
@@ -667,7 +665,7 @@ impl Parser {
 
   parse_method!(conditional(&mut self) -> ParseResult<IfExpressionBody> {
     expect!(self, Keyword(Kw::Then));
-    let then_clause = self.block()?; //TODO should be block_or_expr
+    let then_clause = self.expr_or_block()?;
     let else_clause = self.else_clause()?;
     Ok(IfExpressionBody::SimpleConditional(then_clause, else_clause))
   });
@@ -676,7 +674,7 @@ impl Parser {
     expect!(self, Keyword(Kw::Is));
     let pat = self.pattern()?;
     expect!(self, Keyword(Kw::Then));
-    let then_clause = self.block()?; //TODO should be block_or_expr
+    let then_clause = self.expr_or_block()?;
     let else_clause = self.else_clause()?;
     Ok(IfExpressionBody::SimplePatternMatch(pat, then_clause, else_clause))
   });
@@ -684,7 +682,7 @@ impl Parser {
   parse_method!(else_clause(&mut self) -> ParseResult<Option<Block>> {
     Ok(if let Keyword(Kw::Else) = self.peek() {
       self.next();
-      Some(self.block()?)
+      Some(self.expr_or_block()?)
     } else {
       None
     })
@@ -699,7 +697,7 @@ impl Parser {
     let guard = self.guard()?;
     expect!(self, Operator(ref c) if **c == "->");
     println!("WE HIIII? {:?}", self.peek());
-    let body = self.block()?;
+    let body = self.expr_or_block()?;
     Ok(GuardArm { guard, body })
   });
 
@@ -769,6 +767,16 @@ impl Parser {
 
   parse_method!(block(&mut self) -> ParseResult<Block> {
     Ok(delimited!(self, LCurlyBrace, statement, Newline | Semicolon, RCurlyBrace, nonstrict))
+  });
+
+  parse_method!(expr_or_block(&mut self) -> ParseResult<Block> {
+    match self.peek() {
+      LCurlyBrace => self.block(),
+      _ => {
+        let expr = self.expression()?;
+        Ok(vec![Statement::ExpressionStatement(expr)])
+      }
+    }
   });
 
   parse_method!(while_expr(&mut self) -> ParseResult<Expression> {
@@ -1400,6 +1408,16 @@ fn a(x) {
   fn patterns() {
     parse_test! {
       "if x is Some(a) then { 4 } else { 9 }", AST(vec![
+        exprstatement!(
+          IfExpression {
+            discriminator: bx!(Discriminator::Simple(ex!(Value(rc!(x))))),
+            body: bx!(IfExpressionBody::SimplePatternMatch(Pattern::TupleStruct(rc!(Some), vec![Pattern::Literal(PatternLiteral::VarPattern(rc!(a)))]), vec![exprstatement!(NatLiteral(4))], Some(vec![exprstatement!(NatLiteral(9))]))) }
+          )
+      ])
+    }
+
+    parse_test! {
+      "if x is Some(a) then 4 else 9", AST(vec![
         exprstatement!(
           IfExpression {
             discriminator: bx!(Discriminator::Simple(ex!(Value(rc!(x))))),
