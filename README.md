@@ -58,6 +58,8 @@ of learning how to write a programming language.
 
 ### Type-checking
 https://skillsmatter.com/skillscasts/10868-inside-the-rust-compiler
+https://www.youtube.com/watch?v=il3gD7XMdmA
+http://dev.stephendiehl.com/fun/006_hindley_milner.html
 
 ### Evaluation
 *Understanding Computation*, Tom Stuart, O'Reilly 2013

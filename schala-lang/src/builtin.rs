@@ -39,10 +39,12 @@ impl BinOp {
   pub fn sigil(&self) -> &Rc<String> {
     &self.sigil
   }
+  /*
   pub fn get_type(&self) -> Result<Type, String> {
     let s = self.sigil.as_str();
     BINOPS.get(s).map(|x| x.0.clone()).ok_or(format!("Binop {} not found", s))
   }
+  */
   pub fn min_precedence() -> i32 {
     i32::min_value()
   }
@@ -67,10 +69,12 @@ impl PrefixOp {
   pub fn is_prefix(op: &str) -> bool {
     PREFIX_OPS.get(op).is_some()
   }
+  /*
   pub fn get_type(&self) -> Result<Type, String> {
     let s = self.sigil.as_str();
     PREFIX_OPS.get(s).map(|x| x.0.clone()).ok_or(format!("Prefix op {} not found", s))
   }
+  */
 }
 lazy_static! {
   static ref PREFIX_OPS: HashMap<&'static str, (Type, ())> = 

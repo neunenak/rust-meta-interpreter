@@ -196,22 +196,22 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
           Guard::Pat(ref p) => match p {
             Pattern::Ignored => (None, vec![]),
             Pattern::Literal(lit) => match lit {
-              PatternLiteral::NumPattern(expr) => unimplemented!(),
-              PatternLiteral::StringPattern(s) => unimplemented!(),
-              PatternLiteral::BoolPattern(b) => unimplemented!(),
-              PatternLiteral::VarPattern(var) => unimplemented!(),
+              PatternLiteral::NumPattern(_expr) => unimplemented!(),
+              PatternLiteral::StringPattern(_s) => unimplemented!(),
+              PatternLiteral::BoolPattern(_b) => unimplemented!(),
+              PatternLiteral::VarPattern(_var) => unimplemented!(),
             },
             Pattern::TuplePattern(_) => {
               unimplemented!()
             },
-            Pattern::TupleStruct(name, subpatterns) => {
+            Pattern::TupleStruct(_name, _subpatterns) => {
               unimplemented!()
             },
-            Pattern::Record(name, pairs) => {
+            Pattern::Record(_name, _pairs) => {
               unimplemented!()
             },
           },
-          Guard::HalfExpr(HalfExpr { ref op, ref expr }) => {
+          Guard::HalfExpr(HalfExpr { op: _, expr: _ }) => {
 
             (Some(0), vec![])
           }

@@ -28,7 +28,7 @@ enum TConst {
   Unit,
   Nat,
   StringT,
-  Custom(String)
+  //Custom(String)
 }
 
 #[derive(Debug, PartialEq, Clone)]
