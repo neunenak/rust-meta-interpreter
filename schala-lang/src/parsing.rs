@@ -710,7 +710,7 @@ impl Parser {
         let pat = self.pattern()?;
         Guard::Pat(pat)
       },
-      _ => unimplemented!() //TODO fix
+      e => return ParseError::new(&format!("{:?} not valid in pattern guard", e)),
     })
   });
 
