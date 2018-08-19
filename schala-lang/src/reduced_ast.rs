@@ -195,10 +195,21 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         let (tag, bound_vars) = match arm.guard {
           Guard::Pat(ref p) => match p {
             Pattern::Ignored => (None, vec![]),
+            Pattern::Literal(lit) => match lit {
+              PatternLiteral::NumPattern(expr) => unimplemented!(),
+              PatternLiteral::StringPattern(s) => unimplemented!(),
+              PatternLiteral::BoolPattern(b) => unimplemented!(),
+              PatternLiteral::VarPattern(var) => unimplemented!(),
+            },
             Pattern::TuplePattern(_) => {
               unimplemented!()
             },
-            _ => unimplemented!()
+            Pattern::TupleStruct(name, subpatterns) => {
+              unimplemented!()
+            },
+            Pattern::Record(name, pairs) => {
+              unimplemented!()
+            },
           },
           Guard::HalfExpr(HalfExpr { ref op, ref expr }) => {
 
