@@ -106,7 +106,7 @@ impl Expr {
         UserDefined { name: Some(name), .. } => format!("<function '{}'>", name),
       },
       Expr::Constructor { 
-        type_name, name, tag, arity,
+        type_name: _, name, tag, arity,
       } => if *arity == 0 {
         format!("{}", name)
       } else {
@@ -281,7 +281,7 @@ impl<'a> State<'a> {
     let evaled_args: Result<Vec<Expr>, String> = args.into_iter().map(|arg| {
       match self.expression(Node::Expr(arg)) {
         Ok(Node::Expr(e)) => Ok(e),
-        Ok(Node::PrimTuple { items }) => Err(format!("Trying to apply a builtin to a tuple")),
+        Ok(Node::PrimTuple { .. }) => Err(format!("Trying to apply a builtin to a tuple")),
         Ok(Node::PrimObject { .. }) => Err(format!("Trying to apply a builtin to a primitive object")),
         Err(e) => Err(e)
       }
