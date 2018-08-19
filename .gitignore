@@ -2,3 +2,4 @@ Cargo.lock
 target
 .schala_repl
 .schala_history
+rusty-tags.vi
