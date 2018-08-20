@@ -73,7 +73,11 @@ impl BinOp {
       RAngleBracket => ">",
       _ => return None
     };
-    Some(BINOPS.get(s).map(|x| x.2.clone()).expect("Custom operators not handled yet"))
+    let default = 10_000_000;
+    Some(BINOPS.get(s).map(|x| x.2.clone()).unwrap_or_else(|| {
+      println!("Warning: operator {} not defined", s);
+      default
+    }))
   }
 }
 
@@ -128,5 +132,6 @@ lazy_static! {
       "<" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
       "<=" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
       "==" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
+      "=" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
     };
 }
