@@ -653,12 +653,11 @@ impl Parser {
 
   parse_method!(discriminator(&mut self) -> ParseResult<Discriminator> {
     let lhs = self.prefix_expr()?;
-    Ok(match self.peek() {
-      //TODO make this whole process nicer
-      Operator(_) | Period | Pipe | Slash =>  {
-        unimplemented!()
-      },
-      _ => Discriminator::Simple(lhs)
+    let ref next = self.peek();
+    Ok(if let Some(op) = BinOp::from_sigil_token(next) {
+      Discriminator::BinOp(lhs, op)
+    } else {
+      Discriminator::Simple(lhs)
     })
   });
 
