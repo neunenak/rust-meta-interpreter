@@ -6,12 +6,12 @@ use std::io;
 
 use itertools::Itertools;
 
-use util::StateStack;
+use util::ScopeStack;
 use reduced_ast::{ReducedAST, Stmt, Expr, Lit, Func};
 use symbol_table::{SymbolSpec, Symbol, SymbolTable};
 
 pub struct State<'a> {
-  values: StateStack<'a, Rc<String>, ValueEntry>,
+  values: ScopeStack<'a, Rc<String>, ValueEntry>,
   symbol_table_handle: Rc<RefCell<SymbolTable>>,
 }
 
@@ -24,7 +24,7 @@ macro_rules! builtin_binding {
 //TODO add a more concise way of getting a new frame
 impl<'a> State<'a> {
   pub fn new(symbol_table_handle: Rc<RefCell<SymbolTable>>) -> State<'a> {
-    let mut values = StateStack::new(Some(format!("global")));
+    let mut values = ScopeStack::new(Some(format!("global")));
     builtin_binding!("print", values);
     builtin_binding!("println", values);
     builtin_binding!("getline", values);

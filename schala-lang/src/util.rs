@@ -2,17 +2,16 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::cmp::Eq;
 
-//TODO rename this ScopeStack
 #[derive(Default, Debug)]
-pub struct StateStack<'a, T: 'a, V: 'a>  where T: Hash + Eq {
-  parent: Option<&'a StateStack<'a, T, V>>,
+pub struct ScopeStack<'a, T: 'a, V: 'a>  where T: Hash + Eq {
+  parent: Option<&'a ScopeStack<'a, T, V>>,
   values: HashMap<T, V>,
   scope_name: Option<String>
 }
 
-impl<'a, T, V> StateStack<'a, T, V> where T: Hash + Eq {
-  pub fn new(name: Option<String>) -> StateStack<'a, T, V> where T: Hash + Eq {
-    StateStack {
+impl<'a, T, V> ScopeStack<'a, T, V> where T: Hash + Eq {
+  pub fn new(name: Option<String>) -> ScopeStack<'a, T, V> where T: Hash + Eq {
+    ScopeStack {
       parent: None,
       values: HashMap::new(),
       scope_name: name
@@ -29,8 +28,8 @@ impl<'a, T, V> StateStack<'a, T, V> where T: Hash + Eq {
     }
   }
   //TODO rename new_scope
-  pub fn new_scope(&'a self, name: Option<String>) -> StateStack<'a, T, V> where T: Hash + Eq {
-    StateStack {
+  pub fn new_scope(&'a self, name: Option<String>) -> ScopeStack<'a, T, V> where T: Hash + Eq {
+    ScopeStack {
       parent: Some(self),
       values: HashMap::default(),
       scope_name: name,

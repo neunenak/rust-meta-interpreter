@@ -10,7 +10,7 @@ use itertools::Itertools;
 */
 
 use ast;
-use util::StateStack;
+use util::ScopeStack;
 use symbol_table::{SymbolSpec, SymbolTable};
 
 pub type TypeName = Rc<String>;
@@ -80,14 +80,14 @@ impl TypeEnv {
 }
 
 pub struct TypeContext<'a> {
-  values: StateStack<'a, TypeName, Type>,
+  values: ScopeStack<'a, TypeName, Type>,
   symbol_table_handle: Rc<RefCell<SymbolTable>>,
   global_env: TypeEnv
 }
 
 impl<'a> TypeContext<'a> {
   pub fn new(symbol_table_handle: Rc<RefCell<SymbolTable>>) -> TypeContext<'static> {
-    TypeContext { values: StateStack::new(None), global_env: TypeEnv::default(), symbol_table_handle }
+    TypeContext { values: ScopeStack::new(None), global_env: TypeEnv::default(), symbol_table_handle }
   }
 
   pub fn debug_types(&self) -> String {
