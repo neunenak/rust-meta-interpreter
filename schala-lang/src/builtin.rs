@@ -3,18 +3,18 @@ use std::collections::HashMap;
 use std::fmt;
 
 use tokenizing::TokenType;
-use self::Type::*; use self::TConstOld::*;
+use self::BuiltinTypeSpecifier::*;
+use self::BuiltinTConst::*;
 
 
-//TODO get rid of these types and replace them with the right MonoType or whatever ones later
 #[derive(Debug, PartialEq, Clone)]
-pub enum Type {
-  Const(TConstOld),
-  Func(Box<Type>, Box<Type>),
+pub enum BuiltinTypeSpecifier {
+  Const(BuiltinTConst),
+  Func(Box<BuiltinTypeSpecifier>, Box<BuiltinTypeSpecifier>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum TConstOld {
+pub enum BuiltinTConst {
   Nat,
   Int,
   Float,
@@ -22,7 +22,7 @@ pub enum TConstOld {
   Bool,
 }
 
-impl fmt::Display for Type {
+impl fmt::Display for BuiltinTypeSpecifier {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     write!(f, "{:?}", self)
   }
@@ -104,7 +104,7 @@ impl PrefixOp {
   */
 }
 lazy_static! {
-  static ref PREFIX_OPS: HashMap<&'static str, (Type, ())> = 
+  static ref PREFIX_OPS: HashMap<&'static str, (BuiltinTypeSpecifier, ())> = 
     hashmap! {
       "+" => (Func(bx!(Const(Int)),  bx!(Const(Int))), ()),
       "-" => (Func(bx!(Const(Int)),  bx!(Const(Int))), ()),
@@ -115,7 +115,7 @@ lazy_static! {
 /* the second tuple member is a placeholder for when I want to make evaluation rules tied to the
  * binop definition */
 lazy_static! {
-  static ref BINOPS: HashMap<&'static str, (Type, (), i32)> =
+  static ref BINOPS: HashMap<&'static str, (BuiltinTypeSpecifier, (), i32)> =
     hashmap! {
       "+" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 10),
       "-" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 10),
