@@ -2,6 +2,13 @@
 # TODO Items
 
 
+*A neat idea for pattern matching optimization would be if you could match on one of several things in a list
+ex:
+if x {
+ is (comp, LHSPat, RHSPat) if comp in ["==, "<"] -> ...
+}
+
+
 - https://nshipster.com/never/
 -https://cranelift.readthedocs.io/en/latest/?badge=latest<Paste>
 

@@ -47,6 +47,8 @@ impl BinOp {
       Period => ".",
       Pipe => "|",
       Slash => "/",
+      LAngleBracket => "<",
+      RAngleBracket => ">",
       _ => return None
     };
     Some(BinOp::from_sigil(s))
@@ -67,10 +69,11 @@ impl BinOp {
       Period => ".",
       Pipe => "|",
       Slash => "/",
+      LAngleBracket => "<",
+      RAngleBracket => ">",
       _ => return None
     };
-    let default = 10_000_000;
-    Some(BINOPS.get(s).map(|x| x.2.clone()).unwrap_or(default))
+    Some(BINOPS.get(s).map(|x| x.2.clone()).expect("Custom operators not handled yet"))
   }
 }
 
@@ -120,5 +123,10 @@ lazy_static! {
       "^" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
       "&" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
       "|" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
+      ">" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
+      ">=" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
+      "<" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
+      "<=" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
+      "==" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
     };
 }
