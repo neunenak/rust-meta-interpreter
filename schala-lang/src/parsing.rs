@@ -244,8 +244,7 @@ expr_or_block := '{' (statement delimiter)* '}' | expr
 
 /* Expression - If */
 if_expr := 'if' discriminator ('then' condititional | 'is' simple_pattern_match | guard_block)
-discriminator := modified_precedence_expression
-modified_precedence_expression := precedence_expr (operator)+ //TODO this is currently hard, rearchitect things
+discriminator := precedence_expr (operator)+
 conditional := expr_or_block else_clause
 simple_pattern_match := pattern 'then' conditional
 else_clause := ε | 'else' expr_or_block
@@ -660,7 +659,14 @@ impl Parser {
   });
 
   parse_method!(discriminator(&mut self) -> ParseResult<Discriminator> {
-    Ok(Discriminator::Simple(self.expression()?)) //TODO make proper
+    let lhs = self.prefix_expr()?;
+    Ok(match self.peek() {
+      //TODO make this whole process nicer
+      Operator(_) | Period | Pipe | Slash =>  {
+        unimplemented!()
+      },
+      _ => Discriminator::Simple(lhs)
+    })
   });
 
   parse_method!(conditional(&mut self) -> ParseResult<IfExpressionBody> {
