@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::collections::HashMap;
 use std::fmt;
 
+use tokenizing::TokenType;
 use self::Type::*; use self::TConstOld::*;
 
 
@@ -39,6 +40,17 @@ impl BinOp {
   pub fn sigil(&self) -> &Rc<String> {
     &self.sigil
   }
+  pub fn from_sigil_token(tok: &TokenType) -> Option<BinOp> {
+    use self::TokenType::*;
+    let s = match tok {
+      Operator(op) => op,
+      Period => ".",
+      Pipe => "|",
+      Slash => "/",
+      _ => return None
+    };
+    Some(BinOp::from_sigil(s))
+  }
   /*
   pub fn get_type(&self) -> Result<Type, String> {
     let s = self.sigil.as_str();
@@ -48,9 +60,17 @@ impl BinOp {
   pub fn min_precedence() -> i32 {
     i32::min_value()
   }
-  pub fn get_precedence(op: &str) -> i32 {
+  pub fn get_precedence_from_token(op: &TokenType) -> Option<i32> {
+    use self::TokenType::*;
+    let s = match op {
+      Operator(op) => op,
+      Period => ".",
+      Pipe => "|",
+      Slash => "/",
+      _ => return None
+    };
     let default = 10_000_000;
-    BINOPS.get(op).map(|x| x.2.clone()).unwrap_or(default)
+    Some(BINOPS.get(s).map(|x| x.2.clone()).unwrap_or(default))
   }
 }
 

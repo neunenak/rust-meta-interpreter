@@ -496,26 +496,19 @@ impl Parser {
 
     let mut lhs = self.prefix_expr()?;
     loop {
-      let new_precedence = match self.peek() {
-        Operator(op) => BinOp::get_precedence(&*op),
-        Period => BinOp::get_precedence("."),
-        Pipe => BinOp::get_precedence("|"),
-        Slash => BinOp::get_precedence("/"),
-        _ => break,
+      let new_precedence = match BinOp::get_precedence_from_token(&self.peek()) {
+        Some(p) => p,
+        None => break,
       };
 
       if precedence >= new_precedence {
         break;
       }
-      let sigil = match self.next() {
-        Operator(op) => op,
-        Period => Rc::new(".".to_string()),
-        Pipe => Rc::new("|".to_string()),
-        Slash => Rc::new("/".to_string()),
-        _ => unreachable!(),
+      let operation = match BinOp::from_sigil_token(&self.next()) {
+        Some(sigil) => sigil,
+        None => unreachable!()
       };
       let rhs = self.precedence_expr(new_precedence)?;
-      let operation = BinOp::from_sigil(sigil.as_ref());
       lhs = Expression(ExpressionType::BinExp(operation, bx!(lhs), bx!(rhs)), None);
     }
     self.parse_level -= 1;
