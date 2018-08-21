@@ -1,12 +1,11 @@
-
-const c = 10
+let c = 10
 
 fn add(a, b) {
-  const c = a + b
+  let c = a + b
   c
 }
 
-var b = 20
+let mut b = 20
 
 println(add(1,2))
 println(c + b)

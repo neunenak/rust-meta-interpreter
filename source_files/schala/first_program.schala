@@ -1,10 +1,15 @@
 fn main() {
-  const a = 10
-  const b = 20
+  let a = 10
+  let b = 20
   a + b
 }
 
-//foo
+//this is a one-line comment
+
+/* this is
+a multiline
+comment
+*/
 
 print(main())
 

@@ -6,7 +6,7 @@ fn sua(x): Int {
 }
 
 
-//const a = getline()
+//let a = getline()
 
 /*
 if a == "true" {
