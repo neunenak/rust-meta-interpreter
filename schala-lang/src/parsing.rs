@@ -736,10 +736,18 @@ impl Parser {
           _ => Pattern::Literal(PatternLiteral::VarPattern(id))
         }
       },
-      //TODO I think these are buggy b/c they don't advance the parser
-      Keyword(Kw::True) => Pattern::Literal(PatternLiteral::BoolPattern(true)),
-      Keyword(Kw::False) => Pattern::Literal(PatternLiteral::BoolPattern(false)),
-      StrLiteral(s) =>  Pattern::Literal(PatternLiteral::StringPattern(s)),
+      Keyword(Kw::True) => {
+        self.next();
+        Pattern::Literal(PatternLiteral::BoolPattern(true))
+      },
+      Keyword(Kw::False) => {
+        self.next();
+        Pattern::Literal(PatternLiteral::BoolPattern(false))
+      },
+      StrLiteral(s) => {
+        self.next();
+        Pattern::Literal(PatternLiteral::StringPattern(s))
+      },
       DigitGroup(_) | HexLiteral(_) | BinNumberSigil | Period => self.signed_number_literal()?,
       Operator(ref op) if **op == "-" => self.signed_number_literal()?,
       Underscore => {
@@ -1451,6 +1459,10 @@ fn a(x) {
       ])
     }
 
+  }
+
+  #[test]
+  fn pattern_literals() {
     parse_test! {
       "if x is -1 then 1 else 2", AST(vec![
         exprstatement!(
@@ -1481,6 +1493,34 @@ fn a(x) {
       ])
     }
 
+    parse_test! {
+      "if x is true then 1 else 2", AST(vec![
+        exprstatement!(
+          IfExpression {
+            discriminator: bx!(Discriminator::Simple(ex!(Value(rc!(x))))),
+            body: bx!(IfExpressionBody::SimplePatternMatch(
+              Pattern::Literal(PatternLiteral::BoolPattern(true)),
+              vec![exprstatement!(NatLiteral(1))],
+              Some(vec![exprstatement!(NatLiteral(2))]),
+            ))
+          }
+        )
+      ])
+    }
 
+    parse_test! {
+      "if x is \"gnosticism\" then 1 else 2", AST(vec![
+        exprstatement!(
+          IfExpression {
+            discriminator: bx!(Discriminator::Simple(ex!(Value(rc!(x))))),
+            body: bx!(IfExpressionBody::SimplePatternMatch(
+              Pattern::Literal(PatternLiteral::StringPattern(rc!(gnosticism))),
+              vec![exprstatement!(NatLiteral(1))],
+              Some(vec![exprstatement!(NatLiteral(2))]),
+            ))
+          }
+        )
+      ])
+    }
   }
 }
