@@ -695,7 +695,6 @@ impl Parser {
   parse_method!(guard_arm(&mut self) -> ParseResult<GuardArm> {
     let guard = self.guard()?;
     expect!(self, Operator(ref c) if **c == "->");
-    println!("WE HIIII? {:?}", self.peek());
     let body = self.expr_or_block()?;
     Ok(GuardArm { guard, body })
   });
@@ -707,7 +706,15 @@ impl Parser {
         let pat = self.pattern()?;
         Guard::Pat(pat)
       },
-      e => return ParseError::new(&format!("{:?} not valid in pattern guard", e)),
+      ref tok if BinOp::from_sigil_token(tok).is_some() => {
+        let op = BinOp::from_sigil_token(&self.next()).unwrap();
+        let Expression(expr, _) = self.expression()?;
+        Guard::HalfExpr(HalfExpr { op: Some(op), expr })
+      },
+      _ => {
+        let Expression(expr, _) = self.expression()?;
+        Guard::HalfExpr(HalfExpr { op: None, expr })
+      }
     })
   });
 
