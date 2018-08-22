@@ -157,7 +157,10 @@ pub enum Pattern {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum PatternLiteral {
-  NumPattern(ExpressionType), //TODO fix
+  NumPattern {
+    neg: bool,
+    num: ExpressionType,
+  },
   StringPattern(Rc<String>),
   BoolPattern(bool),
   VarPattern(Rc<String>)

@@ -235,7 +235,8 @@ digits := (DIGIT_GROUP underscore)+
 /* Pattern syntax */
 pattern := '(' (pattern, ',')* ')' | simple_pattern
 simple_pattern := pattern_literal | record_pattern | tuple_struct_pattern
-pattern_literal := 'true' | 'false' | number_literal | STR_LITERAL | IDENTIFIER
+pattern_literal := 'true' | 'false' | signed_number_literal | STR_LITERAL | IDENTIFIER
+signed_number_literal := '-'? number_literal
 record_pattern := IDENTIFIER '{' (record_pattern_entry, ',')* '}'
 record_pattern_entry := IDENTIFIER | IDENTIFIER ':' Pattern
 tuple_struct_pattern := IDENTIFIER '(' (pattern, ',')* ')'
@@ -735,20 +736,30 @@ impl Parser {
           _ => Pattern::Literal(PatternLiteral::VarPattern(id))
         }
       },
+      //TODO I think these are buggy b/c they don't advance the parser
       Keyword(Kw::True) => Pattern::Literal(PatternLiteral::BoolPattern(true)),
       Keyword(Kw::False) => Pattern::Literal(PatternLiteral::BoolPattern(false)),
       StrLiteral(s) =>  Pattern::Literal(PatternLiteral::StringPattern(s)),
-      DigitGroup(_) | HexLiteral(_) | BinNumberSigil | Period => {
-        //TODO handle negatives
-        let Expression(expr_type, _) = self.number_literal()?;
-        Pattern::Literal(PatternLiteral::NumPattern(expr_type))
-      },
+      DigitGroup(_) | HexLiteral(_) | BinNumberSigil | Period => self.signed_number_literal()?,
+      Operator(ref op) if **op == "-" => self.signed_number_literal()?,
       Underscore => {
         self.next();
         Pattern::Ignored
       },
       other => return ParseError::new(&format!("{:?} is not a valid Pattern", other))
     })
+  });
+
+  parse_method!(signed_number_literal(&mut self) -> ParseResult<Pattern> {
+    let neg = match self.peek() {
+      Operator(ref op) if **op == "-" => {
+        self.next();
+        true
+      },
+      _ => false
+    };
+    let Expression(expr_type, _) = self.number_literal()?;
+    Ok(Pattern::Literal(PatternLiteral::NumPattern { neg, num: expr_type }))
   });
 
   parse_method!(record_pattern_entry(&mut self) -> ParseResult<(Rc<String>, Pattern)> {
@@ -1439,5 +1450,37 @@ fn a(x) {
           )
       ])
     }
+
+    parse_test! {
+      "if x is -1 then 1 else 2", AST(vec![
+        exprstatement!(
+          IfExpression {
+            discriminator: bx!(Discriminator::Simple(ex!(Value(rc!(x))))),
+            body: bx!(IfExpressionBody::SimplePatternMatch(
+              Pattern::Literal(PatternLiteral::NumPattern { neg: true, num: NatLiteral(1) }),
+              vec![exprstatement!(NatLiteral(1))],
+              Some(vec![exprstatement!(NatLiteral(2))]),
+            ))
+          }
+        )
+      ])
+    }
+
+    parse_test! {
+      "if x is 1 then 1 else 2", AST(vec![
+        exprstatement!(
+          IfExpression {
+            discriminator: bx!(Discriminator::Simple(ex!(Value(rc!(x))))),
+            body: bx!(IfExpressionBody::SimplePatternMatch(
+              Pattern::Literal(PatternLiteral::NumPattern { neg: false, num: NatLiteral(1) }),
+              vec![exprstatement!(NatLiteral(1))],
+              Some(vec![exprstatement!(NatLiteral(2))]),
+            ))
+          }
+        )
+      ])
+    }
+
+
   }
 }

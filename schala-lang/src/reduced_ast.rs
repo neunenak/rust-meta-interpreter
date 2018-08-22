@@ -173,7 +173,7 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
             item: then_clause,
           }
         },
-        _ => panic!()
+        e => { println!("SAW {:?}", e); panic!() }
       };
 
       let alternatives = vec![
@@ -196,7 +196,7 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
           Guard::Pat(ref p) => match p {
             Pattern::Ignored => (None, vec![]),
             Pattern::Literal(lit) => match lit {
-              PatternLiteral::NumPattern(_expr) => unimplemented!(),
+              PatternLiteral::NumPattern { neg, num } => unimplemented!(),
               PatternLiteral::StringPattern(_s) => unimplemented!(),
               PatternLiteral::BoolPattern(_b) => unimplemented!(),
               PatternLiteral::VarPattern(_var) => unimplemented!(),
