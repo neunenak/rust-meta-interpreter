@@ -10,8 +10,6 @@ use ast::*;
 
 use builtin::{BinOp, PrefixOp};
 
-type TokenIter = Peekable<IntoIter<Token>>;
-
 #[derive(Debug)]
 pub struct ParseError {
   pub msg: String,
@@ -37,7 +35,7 @@ pub struct ParseRecord {
 }
 
 struct Parser {
-  tokens: TokenIter,
+  tokens: Peekable<IntoIter<Token>>,
   parse_record: Vec<ParseRecord>,
   parse_level: u32,
   restrictions: ParserRestrictions,
