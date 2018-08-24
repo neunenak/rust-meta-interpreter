@@ -155,29 +155,8 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         Some(stmts) => stmts.iter().map(|expr| expr.reduce(symbol_table)).collect(),
       };
 
-      let first_alt: Alternative = match pat {
-        Pattern::TupleStruct(name, subpatterns) => {
-          let symbol = symbol_table.values.get(name).expect(&format!("Symbol {} not found", name));
-          let tag = match symbol.spec {
-            SymbolSpec::DataConstructor { index, .. } => index.clone(),
-            _ => panic!("Bad symbol"),
-          };
-          let bound_vars = subpatterns.iter().map(|p| match p {
-            Pattern::Literal(PatternLiteral::VarPattern(var)) => Some(var.clone()),
-            Pattern::Ignored => None,
-            _ => None,
-          }).collect();
-          Alternative {
-            tag: Some(tag),
-            bound_vars,
-            item: then_clause,
-          }
-        },
-        e => { println!("SAW {:?}", e); panic!() }
-      };
-
       let alternatives = vec![
-        first_alt,
+        pat.to_alternative(then_clause, symbol_table),
         Alternative {
           tag: None,
           bound_vars: vec![],
@@ -191,36 +170,54 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
       }
     },
     IfExpressionBody::GuardList(ref guard_arms) => {
-      let alternatives = guard_arms.iter().map(|arm| {
-        let (tag, bound_vars) = match arm.guard {
-          Guard::Pat(ref p) => match p {
-            Pattern::Ignored => (None, vec![]),
-            Pattern::Literal(lit) => match lit {
-              PatternLiteral::NumPattern { neg, num } => unimplemented!(),
-              PatternLiteral::StringPattern(_s) => unimplemented!(),
-              PatternLiteral::BoolPattern(_b) => unimplemented!(),
-              PatternLiteral::VarPattern(_var) => unimplemented!(),
-            },
-            Pattern::TuplePattern(_) => {
-              unimplemented!()
-            },
-            Pattern::TupleStruct(_name, _subpatterns) => {
-              unimplemented!()
-            },
-            Pattern::Record(_name, _pairs) => {
-              unimplemented!()
-            },
-          },
-          Guard::HalfExpr(HalfExpr { op: _, expr: _ }) => {
-
-            (Some(0), vec![])
-          }
-        };
-
-        let item = arm.body.iter().map(|expr| expr.reduce(symbol_table)).collect();
-        Alternative { tag, bound_vars, item }
+      let alternatives = guard_arms.iter().map(|arm| match arm.guard {
+        Guard::Pat(ref p) =>  {
+          let item = arm.body.iter().map(|expr| expr.reduce(symbol_table)).collect();
+          p.to_alternative(item, symbol_table)
+        },
+        Guard::HalfExpr(HalfExpr { op: _, expr: _ }) => {
+          unimplemented!()
+        }
       }).collect();
       Expr::CaseMatch { cond, alternatives }
+    }
+  }
+}
+
+impl Pattern {
+  fn to_alternative(&self, item: Vec<Stmt>, symbol_table: &SymbolTable) -> Alternative {
+    use self::Pattern::*;
+    match self {
+      TupleStruct(name, subpatterns) => {
+        let symbol = symbol_table.values.get(name).expect(&format!("Symbol {} not found", name));
+        let tag = match symbol.spec {
+          SymbolSpec::DataConstructor { index, .. } => index.clone(),
+          _ => panic!("Bad symbol"),
+        };
+        let bound_vars = subpatterns.iter().map(|p| match p {
+          Literal(PatternLiteral::VarPattern(var)) => Some(var.clone()),
+          Ignored => None,
+          _ => None,
+        }).collect();
+        Alternative {
+          tag: Some(tag),
+          bound_vars,
+          item,
+        }
+      },
+      TuplePattern(_items) => {
+        unimplemented!()
+      },
+      Record(_name, _pairs) => {
+        unimplemented!()
+      },
+      Ignored => unimplemented!(),
+      Literal(lit) => match lit {
+        PatternLiteral::NumPattern { neg, num } => unimplemented!(),
+        PatternLiteral::StringPattern(_s) => unimplemented!(),
+        PatternLiteral::BoolPattern(_b) => unimplemented!(),
+        PatternLiteral::VarPattern(_var) => unimplemented!(),
+      },
     }
   }
 }
