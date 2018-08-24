@@ -46,6 +46,7 @@ pub enum Declaration {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Signature {
   pub name: Rc<String>,
+  pub operator: bool,
   pub params: Vec<FormalParam>,
   pub type_anno: Option<TypeName>,
 }
