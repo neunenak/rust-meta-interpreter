@@ -133,5 +133,6 @@ lazy_static! {
       "<=" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
       "==" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
       "=" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
+      "<=>" => (Func(bx!(Const(Nat)), bx!(Func(bx!(Const(Nat)), bx!(Const(Nat))))), (), 20),
     };
 }

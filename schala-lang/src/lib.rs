@@ -57,6 +57,7 @@ impl Schala {
     let prelude = r#"
 type Option<T> = Some(T) | None
 type Color = Red | Green | Blue
+type Ord = LT | EQ | GT
     "#;
     let mut s = Schala::new_blank_env();
     s.execute_pipeline(prelude, &EvalOptions::default());
