@@ -58,6 +58,7 @@ pub enum Expr {
 #[derive(Debug, Clone)]
 pub struct Alternative {
   pub tag: Option<usize>,
+  pub guard: Option<Expr>,
   pub bound_vars: Vec<Option<Rc<String>>>, //remember that order matters here
   pub item: Vec<Stmt>,
 }
@@ -159,6 +160,7 @@ fn reduce_if_expression(discriminator: &Discriminator, body: &IfExpressionBody, 
         pat.to_alternative(then_clause, symbol_table),
         Alternative {
           tag: None,
+          guard: None,
           bound_vars: vec![],
           item: else_clause,
         },
@@ -201,6 +203,7 @@ impl Pattern {
         }).collect();
         Alternative {
           tag: Some(tag),
+          guard: None,
           bound_vars,
           item,
         }
