@@ -156,6 +156,9 @@ pub trait ProgrammingLanguageInterface {
   fn custom_interpreter_directives_help(&self) -> String {
     format!(">> No custom interpreter directives specified <<")
   }
+  fn get_doc(&mut self, _commands: &Vec<&str>) -> Option<String> {
+    None
+  }
 }
 
 /* a pass_chain function signature looks like: 

@@ -361,6 +361,7 @@ impl Repl {
         CommandTree::term("prev", None),
         CommandTree::NonTerminal(format!("go"), vec![], None)//TODO
       ], Some(format!("switch between languages, or go directly to a langauge by name"))),
+      CommandTree::term("doc", Some("Get language-specific help for an item")),
     ])
   }
 
@@ -437,6 +438,9 @@ impl Repl {
         Some(buf)
       },
       "debug" => self.handle_debug(commands),
+      "doc" => self.languages[self.current_language_index]
+        .get_doc(&commands)
+        .or(Some(format!("No docs implemented"))),
       e => self.languages[self.current_language_index]
         .handle_custom_interpreter_directives(&commands)
         .or(Some(format!("Unknown command: {}", e)))
