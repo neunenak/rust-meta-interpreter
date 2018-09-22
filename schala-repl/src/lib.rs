@@ -291,7 +291,7 @@ impl Repl {
     self.line_reader.load_history(".schala_history").unwrap_or(());
 
     loop {
-      let language_name = self.languages[self.current_language_index].get_language_name();
+      let language_name = self.get_cur_language().get_language_name();
       let directives = self.get_directives();
       let tab_complete_handler = TabCompleteHandler::new(self.interpreter_directive_sigil, directives);
       self.line_reader.set_completer(std::sync::Arc::new(tab_complete_handler));
