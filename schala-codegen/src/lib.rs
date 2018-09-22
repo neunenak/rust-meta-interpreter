@@ -1,5 +1,4 @@
 #![feature(trace_macros)]
-#![feature(proc_macro)]
 extern crate proc_macro;
 #[macro_use]
 extern crate quote;
@@ -52,7 +51,7 @@ fn extract_attribute_list(name: &str, attrs: &Vec<Attribute>) -> Option<Vec<(Ide
   })
 }
 
-#[proc_macro_derive(ProgrammingLanguageInterface, attributes(LanguageName, SourceFileExtension, PipelineSteps))]
+#[proc_macro_derive(ProgrammingLanguageInterface, attributes(LanguageName, SourceFileExtension, PipelineSteps, DocMethod))]
 pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream {
   let ast: DeriveInput = syn::parse(input).unwrap();
   let name = &ast.ident;
@@ -62,6 +61,7 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
   let file_ext = extract_attribute_arg_by_name("SourceFileExtension", attrs).expect("SourceFileExtension is required");
   let passes = extract_attribute_list("PipelineSteps", attrs).expect("PipelineSteps are required");
   let pass_idents = passes.iter().map(|x| x.0);
+  let doc_method: Option<String> = extract_attribute_arg_by_name("DocMethod", attrs);
 
   //let pass_names: Vec<String> = passes.iter().map(|pass| pass.0.to_string()).collect();
   let pass_descriptors = passes.iter().map(|pass| {
@@ -97,6 +97,8 @@ pub fn derive_programming_language_interface(input: TokenStream) -> TokenStream 
         //vec![ #(PassDescriptor { name: #pass_names.to_string(), debug_options: vec![] }),* ]
       }
     }
+    //TODO if  doc_method is defined, add code here
   };
+
   tokens.into()
 }

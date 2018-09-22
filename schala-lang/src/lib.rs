@@ -35,12 +35,18 @@ mod eval;
 #[LanguageName = "Schala"]
 #[SourceFileExtension = "schala"]
 #[PipelineSteps(tokenizing, parsing(compact,expanded,trace), symbol_table, typechecking, ast_reducing, eval)]
+#[DocMethod = "get_doc"]
 pub struct Schala {
   state: eval::State<'static>,
   symbol_table: Rc<RefCell<symbol_table::SymbolTable>>,
   type_context: typechecking::TypeContext<'static>,
 }
 
+impl Schala {
+  fn get_doc(&self, _commands: &Vec<&str>) -> Option<String> {
+    Some(format!("yup this is getting called right"))
+  }
+}
 
 impl Schala {
   fn new_blank_env() -> Schala {
