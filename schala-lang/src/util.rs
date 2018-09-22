@@ -27,7 +27,7 @@ impl<'a, T, V> ScopeStack<'a, T, V> where T: Hash + Eq {
       (Some(value), _) => Some(value),
     }
   }
-  //TODO rename new_scope
+
   pub fn new_scope(&'a self, name: Option<String>) -> ScopeStack<'a, T, V> where T: Hash + Eq {
     ScopeStack {
       parent: Some(self),
