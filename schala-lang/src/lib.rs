@@ -1,6 +1,5 @@
 #![feature(trace_macros)]
 #![feature(slice_patterns, box_patterns, box_syntax)]
-#![feature(proc_macro)]
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
